@@ -1,0 +1,226 @@
+// ALPHAY — Customer Ordering Data Model
+// Dev default is SQLite (zero setup). Swap provider to "postgresql" and set
+// DATABASE_URL for production — the schema below is portable to both.
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum RestaurantStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum BillingStatus {
+  ACTIVE
+  PENDING
+  OVERDUE
+}
+
+model Restaurant {
+  id                   String   @id @default(cuid())
+  name                 String
+  logoUrl              String?
+  latitude             Float
+  longitude            Float
+  geofenceRadiusMeters Int      @default(150)
+  gstPercent           Float    @default(5)
+  currency             String   @default("INR")
+  status               RestaurantStatus @default(ACTIVE)
+  commissionPercent    Float    @default(5)
+  billingDueDate       DateTime?
+  billingStatus        BillingStatus @default(ACTIVE)
+  lastReminderSentAt   DateTime?
+  createdAt            DateTime @default(now())
+
+  tables      DiningTable[]
+  categories  Category[]
+  menuItems   MenuItem[]
+  sessions    CustomerSession[]
+  orders      Order[]
+  staffCalls  StaffCallRequest[]
+  managers    Manager[]
+  staff       StaffMember[]
+}
+
+model DiningTable {
+  id             String   @id @default(cuid())
+  restaurantId   String
+  restaurant     Restaurant @relation(fields: [restaurantId], references: [id])
+  number         String   // e.g. "12" or "P" for parcel counter
+  isParcelCounter Boolean @default(false)
+
+  sessions CustomerSession[]
+  orders   Order[]
+  staffCalls StaffCallRequest[]
+
+  @@unique([restaurantId, number])
+}
+
+model Category {
+  id           String   @id @default(cuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  name         String   // Starters, Biryani, Curries, Naan, Desserts, Drinks...
+  isVeg        Boolean  @default(true)  // appears under VEG MENU
+  isNonVeg     Boolean  @default(false) // appears under NON-VEG MENU
+  sortOrder    Int      @default(0)
+
+  menuItems MenuItem[]
+}
+
+model MenuItem {
+  id            String   @id @default(cuid())
+  restaurantId  String
+  restaurant    Restaurant @relation(fields: [restaurantId], references: [id])
+  categoryId    String
+  category      Category @relation(fields: [categoryId], references: [id])
+  name          String
+  description   String
+  price         Float
+  prepTimeMinutes Int
+  isVeg         Boolean
+  isAvailable   Boolean  @default(true)
+  imageUrl      String?
+  badges        String?  // comma-separated: BEST_SELLER,CHEF_SPECIAL,SPICY,HEALTHY
+  isTodaysSpecial Boolean @default(false)
+  isRecommended   Boolean @default(false)
+  isPopular       Boolean @default(false)
+  sortOrder     Int      @default(0)
+
+  orderItems OrderItem[]
+}
+
+model CustomerSession {
+  id           String   @id @default(cuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  tableId      String
+  table        DiningTable @relation(fields: [tableId], references: [id])
+  token        String   @unique
+  latitude     Float
+  longitude    Float
+  distanceMeters Float
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime
+
+  orders Order[]
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  CONFIRMED
+  PREPARING
+  READY
+  SERVED
+  PAYMENT_FAILED
+  CANCELLED
+}
+
+model Order {
+  id            String   @id @default(cuid())
+  restaurantId  String
+  restaurant    Restaurant @relation(fields: [restaurantId], references: [id])
+  tableId       String
+  table         DiningTable @relation(fields: [tableId], references: [id])
+  sessionId     String
+  session       CustomerSession @relation(fields: [sessionId], references: [id])
+  status        OrderStatus @default(PENDING_PAYMENT)
+  subtotal      Float
+  gstAmount     Float
+  total         Float
+  specialInstructions String?
+  razorpayOrderId   String?  @unique
+  razorpayPaymentId String?
+  queuePosition     Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  items   OrderItem[]
+  payment Payment?
+  rating  Rating?
+}
+
+model OrderItem {
+  id         String @id @default(cuid())
+  orderId    String
+  order      Order  @relation(fields: [orderId], references: [id])
+  menuItemId String
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+  name       String
+  price      Float
+  quantity   Int
+  notes      String?
+}
+
+model Payment {
+  id                String   @id @default(cuid())
+  orderId           String   @unique
+  order             Order    @relation(fields: [orderId], references: [id])
+  razorpayOrderId   String
+  razorpayPaymentId String?
+  razorpaySignature String?
+  status            String   // created | verified | failed
+  amount            Float
+  verifiedAt        DateTime?
+  createdAt         DateTime @default(now())
+}
+
+model StaffCallRequest {
+  id           String   @id @default(cuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  tableId      String
+  table        DiningTable @relation(fields: [tableId], references: [id])
+  type         String   // WAITER | WATER | HELP
+  status       String   @default("PENDING") // PENDING | RESOLVED
+  createdAt    DateTime @default(now())
+}
+
+model Rating {
+  id        String   @id @default(cuid())
+  orderId   String   @unique
+  order     Order    @relation(fields: [orderId], references: [id])
+  stars     Int
+  comment   String?
+  createdAt DateTime @default(now())
+}
+
+model Manager {
+  id           String   @id @default(cuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  name         String
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+model StaffMember {
+  id           String   @id @default(cuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  empCode      String
+  name         String
+  department   String   // KITCHEN | CLEANING | SERVICE | MANAGEMENT | ...
+  salary       Float
+  createdAt    DateTime @default(now())
+
+  @@unique([restaurantId, empCode])
+}
+
+// ALPHAY platform operators — sign in with Google, oversee every restaurant.
+model AdminUser {
+  id        String   @id @default(cuid())
+  googleId  String   @unique
+  email     String   @unique
+  name      String
+  avatarUrl String?
+  createdAt DateTime @default(now())
+}
