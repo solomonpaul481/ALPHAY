@@ -56,14 +56,16 @@ export default function PaymentPage() {
       name: checkoutOrder.restaurantName,
       description: `Table ${checkoutOrder.tableNumber} · ${items.length} item${items.length === 1 ? "" : "s"}`,
       theme: { color: "#6D28D9" },
-      handler: function () {
-        // NOTE: this fires the instant Razorpay's own checkout believes the
-        // payment succeeded. We never trust this to mark the order paid —
-        // we just move to the "verifying" screen, which polls our backend.
-        // The order only becomes CONFIRMED once our webhook verifies the
-        // signature directly with Razorpay's servers.
+      handler: function (response) {
+        // Clear cart and pass verification details to processing page
         clearCart();
-        router.push(`/r/${restaurantId}/payment/processing?orderId=${checkoutOrder.orderId}`);
+        const query = new URLSearchParams({
+          orderId: checkoutOrder.orderId,
+          paymentId: response?.razorpay_payment_id || "",
+          signature: response?.razorpay_signature || "",
+          razorpayOrderId: response?.razorpay_order_id || "",
+        }).toString();
+        router.push(`/r/${restaurantId}/payment/processing?${query}`);
       },
       modal: {
         ondismiss: async () => {

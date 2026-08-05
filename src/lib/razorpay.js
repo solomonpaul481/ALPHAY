@@ -5,14 +5,17 @@ let instance = null;
 
 function getRazorpay() {
   if (!instance) {
-    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+    const keyId = (process.env.RAZORPAY_KEY_ID || "").trim();
+    const keySecret = (process.env.RAZORPAY_KEY_SECRET || "").trim();
+
+    if (!keyId || !keySecret || keySecret.includes("*")) {
       throw new Error(
-        "RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET are not set. Add your test keys to .env"
+        "RAZORPAY_KEY_SECRET is not configured or is set to placeholder asterisks ('*****'). Replace it with your actual key secret from Razorpay Dashboard -> Settings -> API Keys."
       );
     }
     instance = new Razorpay({
-      key_id: process.env.RAZORPAY_KEY_ID,
-      key_secret: process.env.RAZORPAY_KEY_SECRET,
+      key_id: keyId,
+      key_secret: keySecret,
     });
   }
   return instance;
@@ -64,9 +67,15 @@ function verifyWebhookSignature({ rawBody, signature }) {
   return expected === signature;
 }
 
+async function fetchRazorpayOrder(razorpayOrderId) {
+  const razorpay = getRazorpay();
+  return razorpay.orders.fetch(razorpayOrderId);
+}
+
 module.exports = {
   getRazorpay,
   createRazorpayOrder,
   verifyCheckoutSignature,
   verifyWebhookSignature,
+  fetchRazorpayOrder,
 };

@@ -99,9 +99,9 @@ async function POST(request, { params }) {
       tableNumber: session.table.number,
     });
   } catch (err) {
-    console.error("Failed to create Razorpay order:", err);
+    console.error("Failed to create Razorpay order:", err?.message || err);
     return NextResponse.json(
-      { error: "Could not start payment. Please try again." },
+      { error: err?.message || "Could not start payment. Please check your Razorpay API keys." },
       { status: 502 }
     );
   }

@@ -3,11 +3,14 @@ const crypto = require("crypto");
 const { buildGoogleAuthUrl } = require("@/lib/google-oauth");
 
 async function GET() {
-  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+  const clientId = (process.env.GOOGLE_CLIENT_ID || "").trim();
+  const clientSecret = (process.env.GOOGLE_CLIENT_SECRET || "").trim();
+
+  if (!clientId || !clientSecret) {
     return NextResponse.json(
       {
         error:
-          "Google sign-in isn't configured yet. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env — see README.",
+          "Google sign-in isn't configured yet. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in environment variables.",
       },
       { status: 500 }
     );

@@ -2,7 +2,16 @@ const QRCode = require("qrcode");
 const { getManagerSession } = require("@/lib/manager-auth");
 
 function appUrl(path) {
-  return `${process.env.APP_URL || "http://localhost:3000"}${path}`;
+  let base = process.env.APP_URL;
+  if (!base && process.env.VERCEL_URL) {
+    base = `https://${process.env.VERCEL_URL}`;
+  }
+  if (!base) {
+    base = "http://localhost:3000";
+  }
+  base = base.trim().replace(/\/+$/, "");
+  const formattedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${base}${formattedPath}`;
 }
 
 async function GET(request) {

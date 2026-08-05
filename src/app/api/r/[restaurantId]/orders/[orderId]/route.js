@@ -12,13 +12,36 @@ async function GET(request, { params }) {
     return NextResponse.json({ error: "session_required" }, { status: 401 });
   }
 
-  const order = await db.order.findUnique({
+  let order = await db.order.findUnique({
     where: { id: orderId },
     include: { items: true },
   });
 
   if (!order || order.restaurantId !== restaurantId || order.sessionId !== session.id) {
     return NextResponse.json({ error: "Order not found." }, { status: 404 });
+  }
+
+  // Fallback: If still pending payment, try fetching status directly from Razorpay
+  if (order.status === "PENDING_PAYMENT" && order.razorpayOrderId) {
+    try {
+      const { fetchRazorpayOrder } = require("@/lib/razorpay");
+      const rzpOrder = await fetchRazorpayOrder(order.razorpayOrderId);
+      if (rzpOrder && rzpOrder.status === "paid") {
+        await db.$transaction([
+          db.order.update({
+            where: { id: order.id },
+            data: { status: "CONFIRMED" },
+          }),
+          db.payment.updateMany({
+            where: { orderId: order.id },
+            data: { status: "verified", verifiedAt: new Date() },
+          }),
+        ]);
+        order.status = "CONFIRMED";
+      }
+    } catch (err) {
+      // Best-effort check during polling
+    }
   }
 
   let queuePosition = null;

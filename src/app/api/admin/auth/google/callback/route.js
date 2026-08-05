@@ -4,7 +4,16 @@ const { exchangeCodeForTokens, fetchGoogleProfile } = require("@/lib/google-oaut
 const { ADMIN_COOKIE, ADMIN_TTL_SECONDS, signAdminToken } = require("@/lib/admin-auth");
 
 function appUrl(path) {
-  return `${process.env.APP_URL || "http://localhost:3000"}${path}`;
+  let base = process.env.APP_URL;
+  if (!base && process.env.VERCEL_URL) {
+    base = `https://${process.env.VERCEL_URL}`;
+  }
+  if (!base) {
+    base = "http://localhost:3000";
+  }
+  base = base.trim().replace(/\/+$/, "");
+  const formattedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${base}${formattedPath}`;
 }
 
 async function GET(request) {
