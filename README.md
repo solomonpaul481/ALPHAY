@@ -1,4 +1,4 @@
-# ALPHAX — Restaurant Self-Ordering Platform
+# ALPHAY — Restaurant Self-Ordering Platform
 
 A real, working Next.js app covering all three portals from the brief, sharing
 one database, structured as a hierarchy — an order flows up from the
@@ -12,7 +12,7 @@ into the platform that oversees it:
    Manager Portal         fulfills it, for one restaurant
           │
           ▼
-   Admin Portal (ALPHAX)  oversees every restaurant on the platform
+   Admin Portal (ALPHAY)  oversees every restaurant on the platform
 ```
 
 - **Customer Portal** (`/r/<restaurantId>`) — QR → menu → cart → Razorpay
