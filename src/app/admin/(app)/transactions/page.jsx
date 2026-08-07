@@ -3,12 +3,6 @@
 import { useEffect, useState } from "react";
 import Topbar from "@/components/dashboard/Topbar";
 
-const PAYMENT_STATUS_STYLE = {
-  ACTIVE: "bg-veg-tint text-veg",
-  PENDING: "bg-gold/10 text-gold",
-  OVERDUE: "bg-nonveg-tint text-nonveg",
-};
-
 export default function AdminTransactionsPage() {
   const [rows, setRows] = useState(null);
   const [busyId, setBusyId] = useState(null);
@@ -21,6 +15,29 @@ export default function AdminTransactionsPage() {
   useEffect(() => {
     load();
   }, []);
+
+  const togglePaymentStatus = async (r) => {
+    const isCurrentlyDone = ["DONE", "PAID", "ACTIVE"].includes(r.billingStatus);
+    const nextStatus = isCurrentlyDone ? "PENDING" : "DONE";
+    setBusyId(r.id);
+    try {
+      const res = await fetch(`/api/admin/transactions/${r.id}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.error || "Failed to update payment status.");
+        return;
+      }
+      await load();
+    } catch (err) {
+      alert("Error updating payment status.");
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   const sendReminder = async (r) => {
     setBusyId(r.id);
@@ -68,60 +85,82 @@ export default function AdminTransactionsPage() {
                   </td>
                 </tr>
               ) : (
-                rows.map((r) => (
-                  <tr key={r.id}>
-                    <td className="px-5 py-3.5 font-medium text-ink">{r.name}</td>
-                    <td className="px-5 py-3.5 font-mono text-xs tabular-nums text-ink">
-                      ₹{r.sales.toFixed(0)}
-                    </td>
-                    <td className="px-5 py-3.5 font-mono text-xs tabular-nums text-purple font-semibold">
-                      ₹{r.commission.toFixed(0)}{" "}
-                      <span className="text-ink2/60 font-normal">({r.commissionPercent}%)</span>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <span
-                        className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                          r.status === "ACTIVE" ? "bg-veg-tint text-veg" : "bg-nonveg-tint text-nonveg"
-                        }`}
-                      >
-                        {r.status === "ACTIVE" ? "Active" : "Suspended"}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <span
-                        className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                          PAYMENT_STATUS_STYLE[r.billingStatus] || "bg-cream text-ink2"
-                        }`}
-                      >
-                        {r.billingStatus ? r.billingStatus.charAt(0) + r.billingStatus.slice(1).toLowerCase() : "Active"}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5 text-right">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => sendReminder(r)}
-                          disabled={busyId === r.id}
-                          className="rounded-full bg-purple-50 px-3 py-1.5 text-xs font-semibold text-purple disabled:opacity-50 hover:bg-purple/10"
-                        >
-                          Send Reminder
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => toggleRestaurantStatus(r)}
-                          disabled={busyId === r.id}
-                          className={`rounded-full px-3 py-1.5 text-xs font-semibold disabled:opacity-50 ${
-                            r.status === "ACTIVE"
-                              ? "bg-nonveg-tint text-nonveg hover:bg-nonveg/20"
-                              : "bg-veg-tint text-veg hover:bg-veg/20"
+                rows.map((r) => {
+                  const isDone = ["DONE", "PAID", "ACTIVE"].includes(r.billingStatus);
+                  return (
+                    <tr key={r.id}>
+                      <td className="px-5 py-3.5 font-medium text-ink">{r.name}</td>
+                      <td className="px-5 py-3.5 font-mono text-xs tabular-nums text-ink">
+                        ₹{r.sales.toFixed(0)}
+                      </td>
+                      <td className="px-5 py-3.5 font-mono text-xs tabular-nums text-purple font-semibold">
+                        ₹{r.commission.toFixed(0)}{" "}
+                        <span className="text-ink2/60 font-normal">({r.commissionPercent}%)</span>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                            r.status === "ACTIVE" ? "bg-veg-tint text-veg" : "bg-nonveg-tint text-nonveg"
                           }`}
                         >
-                          {r.status === "ACTIVE" ? "Suspend" : "Reactivate"}
+                          {r.status === "ACTIVE" ? "Active" : "Suspended"}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <button
+                          type="button"
+                          onClick={() => togglePaymentStatus(r)}
+                          disabled={busyId === r.id}
+                          title="Click to change payment status"
+                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-all hover:scale-105 disabled:opacity-50 ${
+                            isDone
+                              ? "bg-veg-tint text-veg border border-veg/20"
+                              : "bg-gold/10 text-gold border border-gold/20"
+                          }`}
+                        >
+                          <span className={`h-1.5 w-1.5 rounded-full ${isDone ? "bg-veg" : "bg-gold"}`} />
+                          {isDone ? "Done" : "Pending"}
                         </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                      <td className="px-5 py-3.5 text-right">
+                        <div className="flex justify-end gap-2 items-center">
+                          <button
+                            type="button"
+                            onClick={() => togglePaymentStatus(r)}
+                            disabled={busyId === r.id}
+                            className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
+                              isDone
+                                ? "bg-gold/10 text-gold hover:bg-gold/20"
+                                : "bg-veg-tint text-veg hover:bg-veg/20"
+                            }`}
+                          >
+                            {isDone ? "Mark Pending" : "Mark Done"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => sendReminder(r)}
+                            disabled={busyId === r.id}
+                            className="rounded-full bg-purple-50 px-3 py-1.5 text-xs font-semibold text-purple disabled:opacity-50 hover:bg-purple/10"
+                          >
+                            Send Reminder
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleRestaurantStatus(r)}
+                            disabled={busyId === r.id}
+                            className={`rounded-full px-3 py-1.5 text-xs font-semibold disabled:opacity-50 ${
+                              r.status === "ACTIVE"
+                                ? "bg-nonveg-tint text-nonveg hover:bg-nonveg/20"
+                                : "bg-veg-tint text-veg hover:bg-veg/20"
+                            }`}
+                          >
+                            {r.status === "ACTIVE" ? "Suspend" : "Reactivate"}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -130,3 +169,4 @@ export default function AdminTransactionsPage() {
     </>
   );
 }
+

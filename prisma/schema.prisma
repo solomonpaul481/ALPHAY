@@ -20,6 +20,8 @@ enum BillingStatus {
   ACTIVE
   PENDING
   OVERDUE
+  DONE
+  PAID
 }
 
 model Restaurant {
