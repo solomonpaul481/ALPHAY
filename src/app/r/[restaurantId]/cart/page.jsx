@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import { useCart } from "@/lib/cart-context";
 import QuantitySelector from "@/components/QuantitySelector";
 import VegDot from "@/components/VegDot";
 import { createApiClient } from "@/lib/api-client";
+import { IconArrowLeft, IconCart, IconArrowRight } from "@/components/Icons";
 
 const QUICK_NOTES = ["Less spicy", "No onion", "Extra gravy", "No garlic", "Make it crispy"];
 
@@ -27,6 +27,7 @@ export default function CartPage() {
   const [restaurantName, setRestaurantName] = useState("");
 
   useEffect(() => {
+    if (!restaurantId) return;
     api
       .getInfo()
       .then((info) => {
@@ -35,7 +36,7 @@ export default function CartPage() {
       })
       .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [restaurantId]);
 
   const gstAmount = Math.round(subtotal * (gstPercent / 100) * 100) / 100;
   const grandTotal = Math.round((subtotal + gstAmount) * 100) / 100;
@@ -57,16 +58,18 @@ export default function CartPage() {
 
   if (hydrated && items.length === 0) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center px-6 text-center bg-cream">
-        <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-purple-100 text-4xl shadow-soft">
-          🛒
+      <main className="flex min-h-screen flex-col items-center justify-center px-6 text-center bg-slate-50 dark:bg-zinc-950">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-50 dark:bg-zinc-800 text-indigo-600 dark:text-indigo-400 mb-3 shadow-sm">
+          <IconCart className="h-8 w-8" />
         </div>
-        <h1 className="mt-4 font-display text-2xl font-bold text-ink">Your cart is empty</h1>
-        <p className="mt-1 text-sm text-ink2">Add some delicious dishes from our menu to begin.</p>
+        <h1 className="text-xl font-extrabold text-slate-900 dark:text-white">Your Cart is Empty</h1>
+        <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
+          Add some delicious items from our menu to begin.
+        </p>
         <button
           type="button"
           onClick={() => router.push(`/r/${restaurantId}/menu`)}
-          className="mt-6 rounded-2xl bg-purple px-8 py-3.5 text-sm font-bold text-white shadow-lift hover:bg-purple-deep transition-all"
+          className="mt-6 rounded-2xl bg-indigo-600 px-6 py-3.5 text-xs font-bold text-white shadow-md hover:bg-indigo-700 cursor-pointer"
         >
           Browse Menu
         </button>
@@ -75,40 +78,37 @@ export default function CartPage() {
   }
 
   return (
-    <main className="min-h-screen bg-cream px-4 pb-36 pt-5">
+    <main className="min-h-screen bg-slate-50 dark:bg-zinc-950 px-4 pb-36 pt-5 text-slate-900 dark:text-white">
       <div className="mx-auto max-w-lg">
-        {/* Top bar */}
+        {/* Top Header */}
         <div className="mb-6 flex items-center gap-3">
           <button
             type="button"
             onClick={() => router.back()}
-            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white shadow-soft text-ink font-bold hover:bg-purple-50 transition-colors"
-            aria-label="Back to menu"
+            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white shadow-xs hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer"
+            aria-label="Back"
           >
-            ←
+            <IconArrowLeft className="h-5 w-5" />
           </button>
           <div>
-            <h1 className="font-display text-xl font-bold text-ink">Cart Summary</h1>
+            <h1 className="text-xl font-extrabold">Order Summary</h1>
             {restaurantName && (
-              <p className="text-xs font-semibold text-purple">{restaurantName}</p>
+              <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400">{restaurantName}</p>
             )}
           </div>
         </div>
 
-        {/* Selected Food Items */}
+        {/* Food Items */}
         <div className="space-y-3">
           {items.map((item) => (
-            <motion.div
+            <div
               key={item.menuItemId}
-              layout
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-3.5 rounded-2xl bg-white p-4 shadow-soft border border-purple-50"
+              className="flex items-center gap-3.5 rounded-2xl bg-white dark:bg-zinc-900 p-4 shadow-sm border border-slate-200 dark:border-zinc-800"
             >
               <VegDot isVeg={item.isVeg} />
               <div className="min-w-0 flex-1">
-                <p className="truncate font-display text-base font-bold text-ink">{item.name}</p>
-                <p className="mt-0.5 font-mono text-xs font-semibold text-ink2 tabular-nums">
+                <p className="truncate text-sm font-extrabold text-slate-900 dark:text-white">{item.name}</p>
+                <p className="mt-0.5 font-mono text-xs font-bold text-slate-500 dark:text-zinc-400 tabular-nums">
                   ₹{item.price} each
                 </p>
               </div>
@@ -117,13 +117,13 @@ export default function CartPage() {
                 onIncrease={() => setQuantity(item.menuItemId, item.quantity + 1)}
                 onDecrease={() => setQuantity(item.menuItemId, item.quantity - 1)}
               />
-            </motion.div>
+            </div>
           ))}
         </div>
 
         {/* Special Instructions */}
-        <section className="mt-6 rounded-2xl bg-white p-5 shadow-soft border border-purple-50">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-ink2">
+        <section className="mt-6 rounded-2xl bg-white dark:bg-zinc-900 p-5 shadow-sm border border-slate-200 dark:border-zinc-800">
+          <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-600 dark:text-zinc-400">
             Special Instructions for Kitchen
           </h2>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -132,10 +132,10 @@ export default function CartPage() {
                 key={note}
                 type="button"
                 onClick={() => toggleNote(note)}
-                className={`rounded-full border px-3.5 py-1.5 text-xs font-bold transition-all ${
+                className={`rounded-full border px-3.5 py-1.5 text-xs font-extrabold transition-all cursor-pointer ${
                   activeNotes.includes(note)
-                    ? "border-purple bg-purple text-white shadow-soft"
-                    : "border-purple/20 bg-purple-50/50 text-ink2 hover:bg-purple-50"
+                    ? "border-indigo-600 bg-indigo-600 text-white shadow-xs"
+                    : "border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:border-slate-400"
                 }`}
               >
                 {note}
@@ -147,43 +147,45 @@ export default function CartPage() {
             onChange={(e) => setSpecialInstructions(e.target.value)}
             placeholder="Add any specific notes for the chef..."
             rows={2}
-            className="mt-3.5 w-full rounded-xl border border-purple/20 bg-purple-50/30 p-3 text-xs font-medium text-ink placeholder:text-ink2/50 focus:border-purple focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple/10"
+            className="mt-3.5 w-full rounded-xl border border-slate-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 p-3 text-xs font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-indigo-600 focus:outline-none"
           />
         </section>
 
-        {/* Bill Breakdown */}
-        <section className="mt-6 rounded-2xl bg-white p-5 shadow-soft border border-purple-50">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-ink2 mb-3">
+        {/* Bill Summary */}
+        <section className="mt-6 rounded-2xl bg-white dark:bg-zinc-900 p-5 shadow-sm border border-slate-200 dark:border-zinc-800">
+          <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-3">
             Payment Summary
           </h2>
-          <div className="flex justify-between text-xs font-semibold text-ink2">
+          <div className="flex justify-between text-xs font-bold text-slate-600 dark:text-zinc-400">
             <span>Item Subtotal</span>
             <span className="font-mono tabular-nums">₹{subtotal.toFixed(2)}</span>
           </div>
-          <div className="mt-2 flex justify-between text-xs font-semibold text-ink2">
+          <div className="mt-2 flex justify-between text-xs font-bold text-slate-600 dark:text-zinc-400">
             <span>Taxes & GST ({gstPercent}%)</span>
             <span className="font-mono tabular-nums">₹{gstAmount.toFixed(2)}</span>
           </div>
-          <div className="mt-4 pt-3 border-t border-purple-50 flex justify-between items-center font-display text-lg font-bold text-ink">
+          <div className="mt-4 pt-3 border-t border-slate-200 dark:border-zinc-800 flex justify-between items-center text-base font-extrabold text-slate-900 dark:text-white">
             <span>Grand Total</span>
-            <span className="font-mono text-xl font-bold text-purple tabular-nums">
+            <span className="font-mono text-lg font-black text-indigo-600 dark:text-indigo-400 tabular-nums">
               ₹{grandTotal.toFixed(2)}
             </span>
           </div>
         </section>
       </div>
 
-      {/* Sticky Bottom Action Bar */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-purple-50 bg-white/95 px-4 py-4 backdrop-blur-md">
+      {/* Sticky Proceed Button */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 px-4 py-4 backdrop-blur-md">
         <div className="mx-auto max-w-lg">
           <button
             type="button"
             onClick={proceedToPayment}
             disabled={items.length === 0}
-            className="flex w-full items-center justify-between rounded-2xl bg-purple px-6 py-4 text-base font-bold text-white shadow-lift transition-all hover:bg-purple-deep active:scale-[0.98] disabled:opacity-50"
+            className="flex w-full items-center justify-between rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 px-6 py-4 text-sm font-extrabold text-white shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
           >
             <span>Proceed to Payment</span>
-            <span className="font-mono text-lg tabular-nums">₹{grandTotal.toFixed(2)} →</span>
+            <span className="font-mono text-base font-black flex items-center gap-1">
+              ₹{grandTotal.toFixed(2)} <IconArrowRight className="h-4 w-4" />
+            </span>
           </button>
         </div>
       </div>

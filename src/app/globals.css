@@ -1,43 +1,39 @@
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --font-display: "Fraunces", Georgia, serif;
-  --font-body: "Manrope", system-ui, sans-serif;
+  --font-display: "Inter", -apple-system, system-ui, sans-serif;
+  --font-body: "Inter", -apple-system, system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", monospace;
 
-  /* Theme Defaults - Light Theme */
-  --color-primary: #6D28D9;
-  --color-primary-deep: #2E1065;
-  --color-primary-tint: #A78BFA;
-  --color-primary-50: #F5F2FE;
-  --color-primary-100: #EDE7FD;
-
-  --bg-main: #FDFCFF;
+  /* Elegant Light Mode Color Scheme - Clean White & Subtle Slate */
+  --bg-main: #FAFAFA;
   --bg-card: #FFFFFF;
-  --bg-cream: #FDFCFF;
-  --text-ink: #1C1524;
-  --text-ink2: #5B5468;
-  --border-subtle: #EDE7FD;
+  --bg-cream: #FAFAFA;
+  --text-ink: #0F172A;
+  --text-ink2: #475569;
+  --border-subtle: #E2E8F0;
+
+  --color-primary: #6366F1;
+  --color-primary-deep: #4338CA;
+  --color-primary-50: #EEF2FF;
 }
 
 [data-theme="dark"] {
-  /* Theme Defaults - Dark Theme */
-  --color-primary: #8B5CF6;
-  --color-primary-deep: #4C1D95;
-  --color-primary-tint: #C4B5FD;
-  --color-primary-50: #1E1B4B;
-  --color-primary-100: #312E81;
-
-  --bg-main: #0F172A;
-  --bg-card: #1E293B;
-  --bg-cream: #0F172A;
+  /* Sleek Dark Mode Color Scheme - Black & Charcoal Grey */
+  --bg-main: #09090B;
+  --bg-card: #18181B;
+  --bg-cream: #09090B;
   --text-ink: #F8FAFC;
-  --text-ink2: #94A3B8;
-  --border-subtle: #334155;
+  --text-ink2: #A1A1AA;
+  --border-subtle: #27272A;
+
+  --color-primary: #818CF8;
+  --color-primary-deep: #4F46E5;
+  --color-primary-50: #18181B;
 }
 
 html {
@@ -49,23 +45,29 @@ body {
   color: var(--text-ink);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
-  transition: background-color 0.25s ease, color 0.25s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Complete Dark Mode Overrides for Headers, Topbars, and Cards */
+/* Dark Mode Universal Overrides for Crisp High-Contrast Black/Grey Theme */
+[data-theme="dark"] body {
+  background-color: #09090B !important;
+  color: #F8FAFC !important;
+}
+
 [data-theme="dark"] header,
 [data-theme="dark"] nav,
 [data-theme="dark"] aside,
 [data-theme="dark"] [class*="bg-white"],
 [data-theme="dark"] [class*="bg-cream"] {
-  background-color: #0F172A !important;
+  background-color: #18181B !important;
   color: #F8FAFC !important;
-  border-color: #1E293B !important;
+  border-color: #27272A !important;
 }
 
-[data-theme="dark"] [class*="bg-purple-50"] {
-  background-color: #1E1B4B !important;
-  color: #C4B5FD !important;
+[data-theme="dark"] [class*="bg-purple-50"],
+[data-theme="dark"] [class*="bg-indigo-50"] {
+  background-color: #27272A !important;
+  color: #E0E7FF !important;
 }
 
 [data-theme="dark"] .text-ink {
@@ -73,11 +75,12 @@ body {
 }
 
 [data-theme="dark"] .text-ink2 {
-  color: #94A3B8 !important;
+  color: #A1A1AA !important;
 }
 
-[data-theme="dark"] [class*="border-purple"] {
-  border-color: #334155 !important;
+[data-theme="dark"] [class*="border-purple"],
+[data-theme="dark"] [class*="border-indigo"] {
+  border-color: #27272A !important;
 }
 
 * {
@@ -88,38 +91,8 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* 3D Perspective Utilities */
-.perspective-1000 {
-  perspective: 1000px;
-}
-
-.preserve-3d {
-  transform-style: preserve-3d;
-}
-
-.ticket-edge-bottom {
-  --scallop: 14px;
-  -webkit-mask-image: radial-gradient(
-    circle at var(--scallop) 0,
-    transparent calc(var(--scallop) - 0.5px),
-    black var(--scallop)
-  );
-  -webkit-mask-size: calc(var(--scallop) * 2) calc(var(--scallop) * 2);
-  -webkit-mask-repeat: repeat-x;
-  -webkit-mask-position: bottom left;
-  mask-image: radial-gradient(
-    circle at var(--scallop) 0,
-    transparent calc(var(--scallop) - 0.5px),
-    black var(--scallop)
-  );
-  mask-size: calc(var(--scallop) * 2) calc(var(--scallop) * 2);
-  mask-repeat: repeat-x;
-  mask-position: bottom left;
-  padding-bottom: calc(var(--scallop) * 0.75);
-}
-
 .ticket-divider {
-  border-top: 2px dashed rgba(139, 92, 246, 0.25);
+  border-top: 2px dashed rgba(99, 102, 241, 0.3);
 }
 
 @media print {
@@ -134,16 +107,5 @@ body {
     left: 0;
     top: 0;
     width: 100%;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-    scroll-behavior: auto !important;
   }
 }

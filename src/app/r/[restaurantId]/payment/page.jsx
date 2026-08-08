@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Script from "next/script";
-import { motion } from "framer-motion";
 import { useCart } from "@/lib/cart-context";
 import { createApiClient } from "@/lib/api-client";
+import { IconTransactions, IconArrowLeft } from "@/components/Icons";
 
 export default function PaymentPage() {
   const { restaurantId } = useParams();
@@ -53,9 +53,9 @@ export default function PaymentPage() {
       amount: checkoutOrder.amountInPaise,
       currency: "INR",
       order_id: checkoutOrder.razorpayOrderId,
-      name: checkoutOrder.restaurantName || "ALPHAX Restaurant",
+      name: checkoutOrder.restaurantName || "ALPHAX Dining",
       description: `Table ${checkoutOrder.tableNumber} · ${items.length} item${items.length === 1 ? "" : "s"}`,
-      theme: { color: "#6D28D9" },
+      theme: { color: "#4F46E5" },
       handler: function (response) {
         clearCart();
         const query = new URLSearchParams({
@@ -87,42 +87,38 @@ export default function PaymentPage() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-purple-50/50 via-cream to-white px-6">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-slate-50 dark:bg-zinc-950 px-4 text-slate-900 dark:text-white">
       <Script
         src="https://checkout.razorpay.com/v1/checkout.js"
         onLoad={() => setScriptReady(true)}
       />
 
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-sm rounded-3xl bg-white p-7 text-center shadow-lift border border-purple-50"
-      >
-        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-100 text-purple text-2xl font-bold">
-          💳
+      <div className="w-full max-w-sm rounded-3xl bg-white dark:bg-zinc-900 p-7 text-center shadow-xl border border-slate-200 dark:border-zinc-800">
+        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 dark:bg-zinc-800 text-indigo-600 dark:text-indigo-400">
+          <IconTransactions className="h-7 w-7" />
         </div>
 
-        <h1 className="font-display text-2xl font-bold text-ink">Checkout & Pay</h1>
-        <p className="mt-1 text-xs font-semibold text-ink2">
+        <h1 className="text-2xl font-extrabold">Payment & Order</h1>
+        <p className="mt-1 text-xs font-bold text-slate-500 dark:text-zinc-400">
           {items.length} item{items.length === 1 ? "" : "s"} · Table Order
         </p>
 
-        <div className="my-6 rounded-2xl bg-purple-50/60 p-4 border border-purple-100">
-          <p className="text-xs font-bold uppercase tracking-wider text-ink2">Total Payable Amount</p>
-          <p className="mt-1 font-mono text-4xl font-bold text-purple tabular-nums">
+        <div className="my-6 rounded-2xl bg-slate-100 dark:bg-zinc-800 p-4 border border-slate-200 dark:border-zinc-700">
+          <p className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-zinc-400">Total Amount</p>
+          <p className="mt-1 font-mono text-3xl font-black text-indigo-600 dark:text-indigo-400 tabular-nums">
             ₹{checkoutOrder ? checkoutOrder.amount.toFixed(2) : subtotal.toFixed(2)}
           </p>
         </div>
 
         {error && (
-          <p className="mt-4 rounded-xl bg-nonveg-tint p-3 text-xs font-semibold text-nonveg">{error}</p>
+          <p className="mt-4 rounded-xl bg-red-50 dark:bg-red-950/60 p-3 text-xs font-bold text-red-600 dark:text-red-300">{error}</p>
         )}
 
         <button
           type="button"
           onClick={openCheckout}
           disabled={!checkoutOrder || !scriptReady || opening}
-          className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-purple py-4 text-base font-bold text-white shadow-lift hover:bg-purple-deep transition-all active:scale-[0.98] disabled:opacity-50"
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 py-4 text-sm font-extrabold text-white shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
         >
           {!checkoutOrder || !scriptReady ? (
             <span className="flex items-center gap-2">
@@ -134,10 +130,10 @@ export default function PaymentPage() {
           )}
         </button>
 
-        <p className="mt-4 text-[11px] font-medium text-ink2">
-          🔒 Secured 256-bit SSL Razorpay Gateway. Orders are confirmed only upon payment verification.
+        <p className="mt-4 text-[11px] font-medium text-slate-400 dark:text-zinc-500">
+          🔒 Verified SSL Razorpay Gateway. Orders are confirmed upon payment completion.
         </p>
-      </motion.div>
+      </div>
     </main>
   );
 }
