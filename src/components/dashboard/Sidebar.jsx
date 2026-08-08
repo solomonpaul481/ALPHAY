@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import ThemeSwitcher from "@/components/ThemeSwitcher";
 
 export default function Sidebar({ brand, subtitle, items, logoutHref }) {
   const pathname = usePathname();
@@ -42,6 +43,10 @@ export default function Sidebar({ brand, subtitle, items, logoutHref }) {
           );
         })}
       </nav>
+
+      <div className="mb-3 px-2">
+        <ThemeSwitcher />
+      </div>
 
       <button
         type="button"

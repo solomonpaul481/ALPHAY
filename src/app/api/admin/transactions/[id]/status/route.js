@@ -27,9 +27,14 @@ async function POST(request, { params }) {
     newStatus = isCurrentlyDone ? "PENDING" : "DONE";
   }
 
+  const updateData = { billingStatus: newStatus };
+  if (newStatus === "DONE") {
+    updateData.lastSettledAt = new Date();
+  }
+
   const updated = await db.restaurant.update({
     where: { id },
-    data: { billingStatus: newStatus },
+    data: updateData,
   });
 
   return NextResponse.json({ ok: true, billingStatus: updated.billingStatus });

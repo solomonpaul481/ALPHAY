@@ -38,6 +38,7 @@ model Restaurant {
   billingDueDate       DateTime?
   billingStatus        BillingStatus @default(ACTIVE)
   lastReminderSentAt   DateTime?
+  lastSettledAt        DateTime?
   createdAt            DateTime @default(now())
 
   tables      DiningTable[]

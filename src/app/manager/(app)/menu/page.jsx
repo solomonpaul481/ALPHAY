@@ -17,9 +17,22 @@ export default function ManagerMenuPage() {
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
   const [form, setForm] = useState(EMPTY_FORM);
+  
+  // New Category states
   const [newCategory, setNewCategory] = useState("");
   const [newCategoryIsVeg, setNewCategoryIsVeg] = useState(true);
   const [newCategoryIsNonVeg, setNewCategoryIsNonVeg] = useState(false);
+  
+  // Category Editing states
+  const [editingCategoryId, setEditingCategoryId] = useState(null);
+  const [editCategoryName, setEditCategoryName] = useState("");
+  const [editCategoryIsVeg, setEditCategoryIsVeg] = useState(true);
+  const [editCategoryIsNonVeg, setEditCategoryIsNonVeg] = useState(false);
+  const [categoryUpdating, setCategoryUpdating] = useState(false);
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
+
   const [error, setError] = useState("");
   const [categoryError, setCategoryError] = useState("");
   const [categorySuccess, setCategorySuccess] = useState("");
@@ -89,6 +102,71 @@ export default function ManagerMenuPage() {
     }
   };
 
+  const startEditCategory = (cat) => {
+    setEditingCategoryId(cat.id);
+    setEditCategoryName(cat.name);
+    setEditCategoryIsVeg(cat.isVeg !== false);
+    setEditCategoryIsNonVeg(cat.isNonVeg === true);
+    setCategoryError("");
+    setCategorySuccess("");
+  };
+
+  const cancelEditCategory = () => {
+    setEditingCategoryId(null);
+    setEditCategoryName("");
+  };
+
+  const saveEditCategory = async (catId) => {
+    if (!editCategoryName.trim()) {
+      setCategoryError("Category name cannot be empty.");
+      return;
+    }
+    setCategoryUpdating(true);
+    setCategoryError("");
+    setCategorySuccess("");
+    try {
+      const res = await fetch(`/api/manager/categories/${catId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editCategoryName.trim(),
+          isVeg: editCategoryIsVeg,
+          isNonVeg: editCategoryIsNonVeg,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update category.");
+      setCategorySuccess(`Category updated successfully!`);
+      setEditingCategoryId(null);
+      await load();
+    } catch (err) {
+      setCategoryError(err.message || "Couldn't update category.");
+    } finally {
+      setCategoryUpdating(false);
+    }
+  };
+
+  const deleteCategory = async (cat) => {
+    const itemCount = items.filter((i) => i.categoryId === cat.id).length;
+    const confirmMsg = itemCount > 0
+      ? `Are you sure you want to delete category "${cat.name}"? This will also delete ${itemCount} item(s) under this category.`
+      : `Delete category "${cat.name}"?`;
+      
+    if (!confirm(confirmMsg)) return;
+
+    setCategoryError("");
+    setCategorySuccess("");
+    try {
+      const res = await fetch(`/api/manager/categories/${cat.id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to delete category.");
+      setCategorySuccess(`Category "${cat.name}" deleted.`);
+      await load();
+    } catch (err) {
+      setCategoryError(err.message || "Couldn't delete category.");
+    }
+  };
+
   const addItem = async (e) => {
     e.preventDefault();
     setError("");
@@ -131,6 +209,17 @@ export default function ManagerMenuPage() {
   };
 
   const isBothSections = (!newCategoryIsVeg && !newCategoryIsNonVeg) || (newCategoryIsVeg && newCategoryIsNonVeg);
+
+  // Filter items by search query
+  const filteredItems = items.filter((item) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    return (
+      item.name.toLowerCase().includes(q) ||
+      (item.categoryName && item.categoryName.toLowerCase().includes(q)) ||
+      (item.description && item.description.toLowerCase().includes(q))
+    );
+  });
 
   return (
     <>
@@ -336,13 +425,162 @@ export default function ManagerMenuPage() {
               </button>
             </form>
           </div>
+
+          {/* CATEGORIES EDIT & DELETE MANAGEMENT PANEL */}
+          <div className="rounded-card bg-white p-5 shadow-soft">
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-base font-medium text-ink">Manage Categories ({categories.length})</h2>
+            </div>
+
+            <div className="mt-4 space-y-3">
+              {categories.map((c) => {
+                const itemCount = items.filter((i) => i.categoryId === c.id).length;
+                const isEditing = editingCategoryId === c.id;
+
+                if (isEditing) {
+                  return (
+                    <div key={c.id} className="rounded-xl border border-purple-50 bg-cream p-3 space-y-3">
+                      <div>
+                        <label className="text-[11px] font-semibold uppercase text-ink2">Category Name</label>
+                        <input
+                          value={editCategoryName}
+                          onChange={(e) => setEditCategoryName(e.target.value)}
+                          className="mt-1 w-full rounded-lg border border-purple/20 bg-white px-2.5 py-1.5 text-xs font-medium text-ink focus:border-purple focus:outline-none"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditCategoryIsVeg(!editCategoryIsVeg)}
+                          className={`flex-1 rounded-lg py-1 px-2 text-[11px] font-semibold border ${
+                            editCategoryIsVeg ? "bg-veg-tint border-veg text-veg" : "bg-white text-ink2 opacity-60"
+                          }`}
+                        >
+                          🥦 Veg {editCategoryIsVeg ? "✓" : ""}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditCategoryIsNonVeg(!editCategoryIsNonVeg)}
+                          className={`flex-1 rounded-lg py-1 px-2 text-[11px] font-semibold border ${
+                            editCategoryIsNonVeg ? "bg-nonveg-tint border-nonveg text-nonveg" : "bg-white text-ink2 opacity-60"
+                          }`}
+                        >
+                          🍗 Non-Veg {editCategoryIsNonVeg ? "✓" : ""}
+                        </button>
+                      </div>
+                      <div className="flex justify-end gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={cancelEditCategory}
+                          className="rounded-lg px-2.5 py-1 text-xs font-medium text-ink2 hover:bg-slate-200"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          disabled={categoryUpdating}
+                          onClick={() => saveEditCategory(c.id)}
+                          className="rounded-lg bg-purple px-3 py-1 text-xs font-semibold text-white hover:bg-purple-dark disabled:opacity-50"
+                        >
+                          {categoryUpdating ? "Saving…" : "Save"}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+
+                const sectionTag =
+                  c.isVeg && !c.isNonVeg
+                    ? "🥦 Veg"
+                    : !c.isVeg && c.isNonVeg
+                    ? "🍗 Non-Veg"
+                    : "🥦 Veg & 🍗 Non-Veg";
+
+                return (
+                  <div key={c.id} className="flex items-center justify-between rounded-xl border border-purple-50 bg-cream/50 px-3 py-2.5">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-xs text-ink truncate">{c.name}</p>
+                      <p className="text-[11px] text-ink2">
+                        {sectionTag} · {itemCount} {itemCount === 1 ? "item" : "items"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5 ml-2">
+                      <button
+                        type="button"
+                        onClick={() => startEditCategory(c)}
+                        className="rounded-lg border border-purple/20 bg-white px-2.5 py-1 text-[11px] font-semibold text-purple hover:bg-purple-50 transition-colors"
+                        title="Edit Category"
+                      >
+                        ✏️ Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteCategory(c)}
+                        className="rounded-lg border border-nonveg/20 bg-white px-2 py-1 text-[11px] font-semibold text-nonveg hover:bg-nonveg-tint transition-colors"
+                        title="Delete Category"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+              {categories.length === 0 && (
+                <p className="py-3 text-center text-xs text-ink2">No categories defined yet.</p>
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* YOUR MENU ITEMS LIST */}
+        {/* YOUR MENU ITEMS LIST WITH SEARCH BAR */}
         <div className="rounded-card bg-white p-5 shadow-soft">
-          <h2 className="font-display text-base font-medium text-ink">Your Menu ({items.length})</h2>
-          <div className="mt-4 divide-y divide-purple-50">
-            {items.map((item) => (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-purple-50 pb-4">
+            <h2 className="font-display text-base font-medium text-ink">
+              Your Menu ({filteredItems.length}{filteredItems.length !== items.length ? ` of ${items.length}` : ""})
+            </h2>
+
+            {/* SEARCH BUTTON & INPUT BAR */}
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1 sm:w-64">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search menu items..."
+                  className="w-full rounded-xl border border-purple/20 bg-cream pl-9 pr-8 py-1.5 text-xs text-ink placeholder:text-ink2/60 focus:border-purple focus:outline-none"
+                />
+                <svg
+                  className="absolute left-2.5 top-2 h-4 w-4 text-ink2/60"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-2.5 top-2 text-xs font-bold text-ink2 hover:text-ink"
+                    title="Clear search"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => {}}
+                className="flex items-center gap-1.5 rounded-xl bg-purple px-3 py-1.5 text-xs font-semibold text-white shadow-soft hover:bg-purple-dark transition-colors"
+              >
+                <span>🔍</span>
+                <span className="hidden sm:inline">Search</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="divide-y divide-purple-50">
+            {filteredItems.map((item) => (
               <div key={item.id} className="flex items-center gap-3.5 py-3">
                 {item.imageUrl ? (
                   <img src={item.imageUrl} alt={item.name} className="h-12 w-12 flex-shrink-0 rounded-lg object-cover border border-purple-50" />
@@ -377,8 +615,17 @@ export default function ManagerMenuPage() {
                 </button>
               </div>
             ))}
-            {items.length === 0 && (
-              <p className="py-6 text-center text-sm text-ink2">No items yet — add your first one.</p>
+            {filteredItems.length === 0 && (
+              <div className="py-12 text-center">
+                <p className="text-sm font-medium text-ink">No menu items found</p>
+                {searchQuery ? (
+                  <p className="mt-1 text-xs text-ink2">
+                    No results for &ldquo;{searchQuery}&rdquo;. Try clearing your search filter.
+                  </p>
+                ) : (
+                  <p className="mt-1 text-xs text-ink2">No items yet — add your first one using the form.</p>
+                )}
+              </div>
             )}
           </div>
         </div>

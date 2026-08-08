@@ -11,8 +11,17 @@ async function GET() {
 
   const rows = await Promise.all(
     restaurants.map(async (r) => {
+      const whereClause = {
+        restaurantId: r.id,
+        status: { in: REVENUE_STATUSES },
+      };
+
+      if (r.lastSettledAt) {
+        whereClause.createdAt = { gt: r.lastSettledAt };
+      }
+
       const orders = await db.order.findMany({
-        where: { restaurantId: r.id, status: { in: REVENUE_STATUSES } },
+        where: whereClause,
         select: { total: true },
       });
       const sales = orders.reduce((s, o) => s + o.total, 0);
