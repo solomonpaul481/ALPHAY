@@ -5,13 +5,6 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { createApiClient } from "@/lib/api-client";
 
-const STATE = {
-  IDLE: "idle",
-  LOCATING: "locating",
-  SUBMITTING: "submitting",
-  ERROR: "error",
-};
-
 function WelcomeForm() {
   const { restaurantId } = useParams();
   const searchParams = useSearchParams();
@@ -20,83 +13,66 @@ function WelcomeForm() {
 
   const [restaurant, setRestaurant] = useState(null);
   const [tableNumber, setTableNumber] = useState(searchParams.get("table") || "");
-  const [state, setState] = useState(STATE.IDLE);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     api
       .getInfo()
       .then(setRestaurant)
-      .catch(() => setRestaurant({ name: "ALPHAY" }));
+      .catch(() => setRestaurant({ name: "ALPHAX Restaurant" }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleContinue = async (e) => {
     if (e) e.preventDefault();
-    if (!tableNumber.trim()) return;
+    const cleanTable = tableNumber.trim();
+    if (!cleanTable) return;
     setError("");
+    setSubmitting(true);
 
-    if (!("geolocation" in navigator)) {
-      setError("Your browser doesn't support geolocation, which is required to verify you are at the restaurant.");
-      setState(STATE.ERROR);
-      return;
+    try {
+      await api.startSession({
+        tableNumber: cleanTable,
+      });
+      router.push(`/r/${restaurantId}/menu`);
+    } catch (err) {
+      setError(err.message || "Invalid table number. Please check your table and try again.");
+      setSubmitting(false);
     }
-
-    setState(STATE.LOCATING);
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        setState(STATE.SUBMITTING);
-        try {
-          await api.startSession({
-            tableNumber: tableNumber.trim(),
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          });
-          router.push(`/r/${restaurantId}/menu`);
-        } catch (err) {
-          setError(err.message || "Could not verify your location at this restaurant. Please try again.");
-          setState(STATE.ERROR);
-        }
-      },
-      (geoErr) => {
-        if (geoErr.code === geoErr.PERMISSION_DENIED) {
-          setError("Location permission denied. Please allow location access in your browser settings so we can verify you're at the restaurant.");
-        } else {
-          setError("Unable to retrieve your current location. Please ensure location services are enabled and try again.");
-        }
-        setState(STATE.ERROR);
-      },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
-    );
   };
-
-  const busy = state === STATE.LOCATING || state === STATE.SUBMITTING;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-      className="w-full max-w-sm text-center"
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className="w-full max-w-sm"
     >
-      <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-purple text-3xl text-white shadow-lift">
-        🍽️
+      <div className="text-center">
+        <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-purple shadow-lift">
+          {restaurant?.logoUrl ? (
+            <img src={restaurant.logoUrl} alt={restaurant.name} className="h-12 w-12 object-contain" />
+          ) : (
+            <span className="text-4xl text-white">🍽️</span>
+          )}
+        </div>
+        <p className="font-mono text-xs font-bold uppercase tracking-[0.25em] text-purple">
+          ALPHAX
+        </p>
+        <h1 className="mt-1 font-display text-2xl font-bold text-ink">
+          Welcome to {restaurant?.name || "our Restaurant"}
+        </h1>
+        <p className="mt-2 text-sm text-ink2">
+          Please enter your table number to start your order.
+        </p>
       </div>
-      <p className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-purple">
-        ALPHAY
-      </p>
-      <h1 className="mt-1 font-display text-3xl font-medium text-ink">
-        {restaurant?.name || "Welcome"}
-      </h1>
-      <p className="mt-2 text-sm text-ink2">
-        Please enter your table number to begin your dining experience.
-      </p>
 
       <form
         onSubmit={handleContinue}
-        className="mt-8 rounded-card bg-white p-6 text-left shadow-lift"
+        className="mt-8 rounded-card bg-white p-6 shadow-lift border border-purple-50"
       >
-        <label htmlFor="table" className="text-xs font-semibold uppercase tracking-wide text-ink2">
+        <label htmlFor="table" className="block text-xs font-bold uppercase tracking-wider text-ink2">
           Table Number
         </label>
         <input
@@ -105,30 +81,31 @@ function WelcomeForm() {
           onChange={(e) => setTableNumber(e.target.value)}
           type="text"
           inputMode="text"
-          placeholder="e.g. 12"
+          placeholder="Enter Table Number (e.g. 12)"
           autoFocus
-          className="mt-2 w-full rounded-xl border border-purple/15 bg-cream px-4 py-3 text-lg font-semibold text-ink placeholder:text-ink2/60 focus:border-purple focus:outline-none focus:ring-2 focus:ring-purple/20"
+          className="mt-2.5 w-full rounded-2xl border border-purple/20 bg-purple-50/40 px-4 py-3.5 text-center text-xl font-bold text-ink placeholder:text-ink2/40 placeholder:font-normal focus:border-purple focus:bg-white focus:outline-none focus:ring-4 focus:ring-purple/10 transition-all"
         />
 
         {error && (
-          <div className="mt-4 rounded-xl border border-nonveg/20 bg-nonveg-tint p-3.5 text-xs text-nonveg leading-relaxed">
-            <p className="font-semibold">📍 Location Verification Notice</p>
-            <p className="mt-1">{error}</p>
+          <div className="mt-4 rounded-xl bg-nonveg-tint p-3.5 text-xs font-semibold text-nonveg leading-relaxed text-center">
+            ⚠️ {error}
           </div>
         )}
 
         <button
           type="submit"
-          disabled={!tableNumber.trim() || busy}
-          className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-purple py-3.5 text-sm font-semibold text-white shadow-soft transition-transform active:scale-[0.98] disabled:opacity-50"
+          disabled={!tableNumber.trim() || submitting}
+          className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-purple py-4 text-base font-semibold text-white shadow-lift transition-all hover:bg-purple-deep active:scale-[0.98] disabled:opacity-50"
         >
-          {state === STATE.LOCATING && "Verifying your location…"}
-          {state === STATE.SUBMITTING && "Confirming table session…"}
-          {(state === STATE.IDLE || state === STATE.ERROR) && "Continue"}
+          {submitting ? (
+            <span className="flex items-center gap-2">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              Validating Table...
+            </span>
+          ) : (
+            "Continue →"
+          )}
         </button>
-        <p className="mt-3 text-center text-xs text-ink2">
-          GPS location is verified to ensure ordering is permitted only within {restaurant?.name || "the restaurant"}'s premises.
-        </p>
       </form>
     </motion.div>
   );
@@ -136,8 +113,8 @@ function WelcomeForm() {
 
 export default function WelcomePage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-purple-50 to-cream px-6">
-      <Suspense fallback={<div className="text-sm text-ink2">Loading…</div>}>
+    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-purple-50/60 via-cream to-white px-6 py-12">
+      <Suspense fallback={<div className="text-sm text-ink2">Loading...</div>}>
         <WelcomeForm />
       </Suspense>
     </main>

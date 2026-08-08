@@ -6,10 +6,14 @@ import FullscreenButton from "@/components/FullscreenButton";
 
 const NAV_ITEMS = [
   { href: "/manager/dashboard", label: "Dashboard", icon: "📋" },
-  { href: "/manager/analytics", label: "Analytics", icon: "📈" },
-  { href: "/manager/menu", label: "Menu", icon: "🍽️" },
+  { href: "/manager/orders", label: "Live Orders", icon: "🛎️" },
+  { href: "/kitchen", label: "Kitchen Display", icon: "👨‍🍳" },
+  { href: "/manager/transactions", label: "Transactions", icon: "💳" },
+  { href: "/manager/menu", label: "Menu Management", icon: "🍽️" },
   { href: "/manager/qr", label: "QR & Tables", icon: "🔗" },
+  { href: "/manager/analytics", label: "Analytics", icon: "📈" },
   { href: "/manager/staff", label: "Staff", icon: "👥" },
+  { href: "/manager/settings", label: "Settings", icon: "⚙️" },
 ];
 
 export default async function ManagerAppLayout({ children }) {
@@ -19,15 +23,15 @@ export default async function ManagerAppLayout({ children }) {
   }
 
   return (
-    <div className="min-h-screen bg-cream">
+    <div className="min-h-screen bg-cream text-ink">
       <Sidebar
         brand={manager.restaurant.name}
-        subtitle="Manager Portal"
+        subtitle="ALPHAX Manager Portal"
         items={NAV_ITEMS}
         logoutHref="/api/manager/auth/logout"
       />
       <MobileNav items={NAV_ITEMS} />
-      <div className="pb-20 md:ml-60 md:pb-0">{children}</div>
+      <div className="pb-24 md:ml-60 md:pb-0">{children}</div>
       <FullscreenButton />
     </div>
   );

@@ -4,8 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import Topbar from "@/components/dashboard/Topbar";
 import StatCard from "@/components/dashboard/StatCard";
 
-const STATUS_LABEL = { CONFIRMED: "Confirmed", PREPARING: "Preparing", READY: "Ready" };
-const NEXT_ACTION_LABEL = { CONFIRMED: "Start Preparing", PREPARING: "Mark Ready", READY: "Mark Served" };
+const STATUS_LABEL = { CONFIRMED: "CONFIRMED", PREPARING: "PREPARING", READY: "READY" };
+const NEXT_ACTION_LABEL = { CONFIRMED: "Mark Preparing", PREPARING: "Mark Ready", READY: "Mark Served" };
 const CALL_LABEL = { WAITER: "🙋 Call Waiter", WATER: "💧 Request Water", HELP: "🆘 Need Help" };
 
 function timeAgo(iso) {
@@ -23,50 +23,62 @@ function KotModal({ order, restaurantName, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="w-full max-w-md rounded-card bg-white p-6 shadow-lift">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-lift border border-purple-50">
         <div className="flex items-center justify-between border-b border-purple-50 pb-3">
           <div>
-            <span className="font-mono text-xs font-bold uppercase text-purple">KITCHEN ORDER TICKET (KOT)</span>
-            <h3 className="font-display text-lg font-medium text-ink">{restaurantName || "ALPHAY"}</h3>
+            <span className="font-mono text-xs font-bold uppercase tracking-wider text-purple">
+              ALPHAX THERMAL KOT TOKEN
+            </span>
+            <h3 className="font-display text-xl font-bold text-ink">{restaurantName || "ALPHAX Restaurant"}</h3>
           </div>
-          <button type="button" onClick={onClose} className="text-sm font-semibold text-ink2">✕</button>
+          <button type="button" onClick={onClose} className="rounded-full bg-purple-50 px-3 py-1 text-xs font-bold text-ink2 hover:bg-purple-100">✕</button>
         </div>
 
-        {/* Printable Ticket Slip */}
-        <div className="printable-kot mt-4 rounded-xl border border-purple-50 bg-cream p-4">
-          <div className="flex justify-between font-mono text-xs text-ink">
-            <span><strong>ORDER #:</strong> {order.id.slice(-6).toUpperCase()}</span>
-            <span><strong>TABLE:</strong> {order.table}</span>
+        {/* Thermal Slip View */}
+        <div className="printable-kot mt-4 rounded-2xl border border-purple-100 bg-purple-50/30 p-5 font-mono text-xs text-ink space-y-3">
+          <div className="text-center pb-2 border-b border-dashed border-purple-200">
+            <p className="font-bold text-base">ALPHAX KITCHEN TICKET</p>
+            <p className="text-[11px] text-ink2">{restaurantName}</p>
           </div>
-          <p className="mt-1 font-mono text-[11px] text-ink2">
+
+          <div className="flex justify-between font-bold text-sm">
+            <span>ORDER #: {order.id.slice(-6).toUpperCase()}</span>
+            <span className="text-purple">TABLE: {order.table}</span>
+          </div>
+
+          <p className="text-[11px] text-ink2">
             Time: {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </p>
 
-          <div className="ticket-divider mt-3 pt-3">
+          <div className="ticket-divider pt-2">
             <table className="w-full text-left font-mono text-xs">
               <thead>
-                <tr className="border-b border-purple-50 text-[10px] uppercase text-ink2">
+                <tr className="border-b border-dashed border-purple-200 text-[10px] uppercase text-ink2">
                   <th className="pb-1 font-bold">QTY</th>
                   <th className="pb-1 font-bold">ITEM</th>
                   <th className="pb-1 text-right font-bold">AMT</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-purple-50/50">
+              <tbody className="divide-y divide-purple-50">
                 {order.items.map((it, i) => (
                   <tr key={i}>
                     <td className="py-1.5 font-bold text-purple">{it.quantity}x</td>
-                    <td className="py-1.5 font-medium text-ink">{it.name}</td>
-                    <td className="py-1.5 text-right text-ink2">₹{(it.price * it.quantity).toFixed(0)}</td>
+                    <td className="py-1.5 font-semibold text-ink">{it.name}</td>
+                    <td className="py-1.5 text-right font-bold text-ink2">₹{(it.price * it.quantity).toFixed(0)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
 
-          <div className="ticket-divider mt-3 flex justify-between pt-3 font-mono text-xs font-bold text-ink">
-            <span>TOTAL</span>
+          <div className="pt-3 border-t border-dashed border-purple-200 flex justify-between font-bold text-sm">
+            <span>GRAND TOTAL</span>
             <span>₹{order.total.toFixed(0)}</span>
+          </div>
+
+          <div className="text-center pt-2 text-[10px] text-ink2 font-semibold">
+            PAID VIA RAZORPAY VERIFIED ✓
           </div>
         </div>
 
@@ -74,16 +86,16 @@ function KotModal({ order, restaurantName, onClose }) {
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl bg-cream px-4 py-2.5 text-xs font-semibold text-ink2"
+            className="rounded-2xl bg-purple-50 px-5 py-2.5 text-xs font-bold text-ink2 hover:bg-purple-100"
           >
             Close
           </button>
           <button
             type="button"
             onClick={handlePrint}
-            className="rounded-xl bg-purple px-5 py-2.5 text-xs font-semibold text-white shadow-soft"
+            className="rounded-2xl bg-purple px-6 py-2.5 text-xs font-bold text-white shadow-lift hover:bg-purple-deep transition-all"
           >
-            🖨 Print Ticket Now
+            🖨 Print Token Now
           </button>
         </div>
       </div>
@@ -103,7 +115,7 @@ export default function ManagerDashboardPage() {
 
   useEffect(() => {
     load();
-    const interval = setInterval(load, 6000);
+    const interval = setInterval(load, 5000);
     return () => clearInterval(interval);
   }, [load]);
 
@@ -130,33 +142,38 @@ export default function ManagerDashboardPage() {
   return (
     <>
       <Topbar title="Manager Dashboard" />
-      <div className="p-6">
+      <div className="p-6 max-w-7xl mx-auto space-y-8">
         {!data ? (
-          <div className="animate-pulse text-sm text-ink2">Loading…</div>
+          <div className="animate-pulse space-y-4">
+            <div className="h-28 w-full rounded-3xl bg-purple-50" />
+            <div className="h-64 w-full rounded-3xl bg-purple-50" />
+          </div>
         ) : (
           <>
-            {/* EXACTLY 5 STAT BOXES */}
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-              <StatCard label="Orders Today" value={data.todayOrders} />
-              <StatCard label="Earnings Today" value={`₹${data.todayEarnings.toFixed(0)}`} accent="gold" />
-              <StatCard label="Active Orders" value={data.active} accent="purple" />
-              <StatCard label="Ready Orders" value={data.ready} accent="veg" />
+            {/* 4 MAIN STAT CARDS */}
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+              <StatCard label="Today's Sales" value={`₹${data.todayEarnings.toFixed(0)}`} accent="gold" />
+              <StatCard label="Today's Orders" value={data.todayOrders} />
+              <StatCard label="Pending Orders" value={data.active} accent="purple" />
               <StatCard label="Completed Orders" value={data.completedToday} accent="veg" />
             </div>
 
             {/* ASSISTANCE REQUESTS */}
             {data.staffCalls.length > 0 && (
-              <section className="mt-6">
-                <h2 className="font-display text-lg font-medium text-ink">Assistance Requests</h2>
-                <div className="mt-3 flex flex-wrap gap-3">
+              <section>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xl">🔔</span>
+                  <h2 className="font-display text-lg font-bold text-ink">Assistance Requests</h2>
+                </div>
+                <div className="flex flex-wrap gap-3">
                   {data.staffCalls.map((c) => (
                     <div
                       key={c.id}
-                      className="flex items-center gap-3 rounded-xl bg-white px-4 py-3 shadow-soft"
+                      className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-soft border border-purple-50"
                     >
                       <div>
-                        <p className="text-sm font-semibold text-ink">{CALL_LABEL[c.type]}</p>
-                        <p className="text-xs text-ink2">
+                        <p className="text-xs font-bold text-ink">{CALL_LABEL[c.type] || c.type}</p>
+                        <p className="text-[11px] font-semibold text-ink2">
                           Table {c.table} · {timeAgo(c.createdAt)}
                         </p>
                       </div>
@@ -164,7 +181,7 @@ export default function ManagerDashboardPage() {
                         type="button"
                         onClick={() => resolveCall(c.id)}
                         disabled={busyId === c.id}
-                        className="rounded-full bg-purple-50 px-3 py-1.5 text-xs font-semibold text-purple disabled:opacity-50"
+                        className="rounded-full bg-purple-50 px-3 py-1.5 text-xs font-bold text-purple hover:bg-purple hover:text-white transition-all disabled:opacity-50"
                       >
                         Resolve
                       </button>
@@ -174,70 +191,90 @@ export default function ManagerDashboardPage() {
               </section>
             )}
 
-            {/* LIVE ORDERS WITH KOT PRINT AT TOP RIGHT CORNER OF TOKEN */}
-            <section className="mt-6">
-              <div className="flex items-center justify-between">
-                <h2 className="font-display text-lg font-medium text-ink">
-                  Live Orders ({data.liveOrders.length})
-                </h2>
-                <span className="text-xs font-mono text-ink2">Auto-refreshing live</span>
+            {/* LIVE ORDERS */}
+            <section>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="font-display text-xl font-bold text-ink">
+                    Live Restaurant Orders ({data.liveOrders.length})
+                  </h2>
+                  <p className="text-xs font-semibold text-ink2">Only verified paid orders are shown.</p>
+                </div>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-50 px-3 py-1 text-xs font-bold text-purple">
+                  <span className="h-2 w-2 rounded-full bg-purple animate-ping" />
+                  Auto-refreshing Live
+                </span>
               </div>
 
               {data.liveOrders.length === 0 ? (
-                <p className="mt-3 rounded-card bg-white p-6 text-center text-sm text-ink2 shadow-soft">
-                  No active orders right now.
-                </p>
+                <div className="rounded-3xl bg-white p-8 text-center shadow-soft border border-purple-50">
+                  <p className="text-3xl mb-2">🍽️</p>
+                  <p className="font-display text-base font-bold text-ink">No Active Live Orders</p>
+                  <p className="text-xs text-ink2 mt-1">New customer orders will appear here automatically.</p>
+                </div>
               ) : (
-                <div className="mt-3 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
                   {data.liveOrders.map((order) => (
-                    <div key={order.id} className="relative rounded-card bg-white p-5 shadow-soft border border-purple-50">
-                      {/* TOP RIGHT CORNER: PRINT KOT TOKEN BUTTON */}
-                      <button
-                        type="button"
-                        onClick={() => setPrintingOrder(order)}
-                        className="absolute top-4 right-4 rounded-full bg-purple-50 px-3 py-1 text-xs font-semibold text-purple hover:bg-purple hover:text-white transition-all shadow-sm flex items-center gap-1"
-                        title="Print KOT Token"
-                      >
-                        <span>🖨</span>
-                        <span>Print KOT</span>
-                      </button>
-
-                      <div className="pr-24">
-                        <p className="font-mono text-xs uppercase tracking-wide text-ink2">
-                          Order #{order.id.slice(-6).toUpperCase()}
-                        </p>
-                        <p className="font-display text-lg font-medium text-ink">Table {order.table}</p>
-                      </div>
-
-                      <div className="mt-2">
-                        <span className="inline-block rounded-full bg-purple-50 px-2.5 py-0.5 text-xs font-semibold text-purple">
-                          {STATUS_LABEL[order.status]}
-                        </span>
-                      </div>
-
-                      <ul className="mt-4 space-y-1.5 text-sm text-ink2 border-t border-purple-50/60 pt-3">
-                        {order.items.map((it, i) => (
-                          <li key={i} className="flex justify-between">
-                            <span className="font-medium text-ink">
-                              <span className="font-bold text-purple">{it.quantity}×</span> {it.name}
+                    <div key={order.id} className="relative rounded-3xl bg-white p-6 shadow-soft border border-purple-50 flex flex-col justify-between">
+                      <div>
+                        {/* Top Bar */}
+                        <div className="flex items-start justify-between border-b border-purple-50 pb-3">
+                          <div>
+                            <span className="font-mono text-xs font-bold text-purple">
+                              ORDER #{order.id.slice(-6).toUpperCase()}
                             </span>
-                            <span className="font-mono text-xs">₹{(it.price * it.quantity).toFixed(0)}</span>
-                          </li>
-                        ))}
-                      </ul>
+                            <h3 className="font-display text-xl font-bold text-ink">Table {order.table}</h3>
+                            <p className="text-[11px] font-semibold text-ink2 mt-0.5">{timeAgo(order.createdAt)}</p>
+                          </div>
 
-                      <div className="ticket-divider mt-4 flex items-center justify-between pt-3">
+                          <button
+                            type="button"
+                            onClick={() => setPrintingOrder(order)}
+                            className="rounded-xl bg-purple-50 px-3 py-1.5 text-xs font-bold text-purple hover:bg-purple hover:text-white transition-all shadow-xs flex items-center gap-1.5"
+                            title="Print KOT Token"
+                          >
+                            <span>🖨</span>
+                            <span>Print Token</span>
+                          </button>
+                        </div>
+
+                        {/* Status & Payment badges */}
+                        <div className="mt-3 flex items-center gap-2">
+                          <span className="rounded-full bg-veg-tint px-2.5 py-0.5 text-xs font-bold text-veg border border-veg/20">
+                            PAID ✓
+                          </span>
+                          <span className="rounded-full bg-purple-50 px-2.5 py-0.5 text-xs font-bold text-purple">
+                            {STATUS_LABEL[order.status]}
+                          </span>
+                        </div>
+
+                        {/* Items list */}
+                        <ul className="mt-4 space-y-2 text-xs font-semibold text-ink border-t border-purple-50/60 pt-3">
+                          {order.items.map((it, i) => (
+                            <li key={i} className="flex justify-between items-center">
+                              <span>
+                                <span className="font-bold text-purple mr-1">{it.quantity}×</span>
+                                {it.name}
+                              </span>
+                              <span className="font-mono text-ink2">₹{(it.price * it.quantity).toFixed(0)}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      {/* Footer Actions */}
+                      <div className="mt-6 pt-3 border-t border-purple-50 flex items-center justify-between">
                         <div>
-                          <p className="font-mono text-sm font-bold tabular-nums text-ink">
+                          <p className="text-[10px] font-bold uppercase text-ink2">Total Bill</p>
+                          <p className="font-mono text-base font-bold text-purple tabular-nums">
                             ₹{order.total.toFixed(0)}
                           </p>
-                          <p className="text-xs text-ink2">{timeAgo(order.createdAt)}</p>
                         </div>
                         <button
                           type="button"
                           onClick={() => advanceOrder(order.id)}
                           disabled={busyId === order.id}
-                          className="rounded-xl bg-purple px-4 py-2 text-xs font-semibold text-white shadow-soft active:scale-95 disabled:opacity-50"
+                          className="rounded-2xl bg-purple px-5 py-2.5 text-xs font-bold text-white shadow-lift hover:bg-purple-deep transition-all active:scale-95 disabled:opacity-50"
                         >
                           {NEXT_ACTION_LABEL[order.status]}
                         </button>

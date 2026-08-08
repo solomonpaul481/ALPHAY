@@ -11,52 +11,79 @@ export default function FoodCard({ item, layout = "grid" }) {
   const quantity = quantityOf(item.id);
   const isWide = layout === "wide";
 
+  // Normalize badges
+  const badgeList = [];
+  if (item.isTodaysSpecial) badgeList.push("CHEF_SPECIAL");
+  if (item.isPopular) badgeList.push("POPULAR");
+  if (item.badges) {
+    const split = item.badges.split(",").map((b) => b.trim());
+    split.forEach((b) => {
+      if (b && !badgeList.includes(b)) badgeList.push(b);
+    });
+  }
+
   return (
     <motion.div
-      whileHover={{ y: -3 }}
-      whileTap={{ scale: 0.99 }}
+      whileHover={{ y: -4 }}
+      whileTap={{ scale: 0.98 }}
       transition={{ type: "spring", stiffness: 300, damping: 24 }}
-      className={`group relative overflow-hidden rounded-card bg-white shadow-soft border border-purple-50/50 ${
-        isWide ? "flex w-[280px] flex-shrink-0 flex-col" : "flex flex-col"
+      className={`group relative overflow-hidden rounded-2xl bg-white shadow-soft hover:shadow-lift border border-purple-50/70 transition-all ${
+        isWide ? "flex w-[290px] flex-shrink-0 flex-col" : "flex flex-col h-full"
       } ${!item.isAvailable ? "opacity-60" : ""}`}
     >
-      <div className={`relative ${isWide ? "h-36" : "aspect-[4/3] max-h-48"} w-full overflow-hidden bg-purple-50/70 flex items-center justify-center`}>
+      {/* Image Container */}
+      <div className={`relative ${isWide ? "h-40" : "aspect-[4/3] max-h-48"} w-full overflow-hidden bg-purple-50/60`}>
         {item.imageUrl ? (
           <img
             src={item.imageUrl}
             alt={item.name}
-            className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+            className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-108"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-4xl bg-purple-50/50">🍽️</div>
-        )}
-        <div className="absolute left-2.5 top-2.5 z-10">
-          <VegDot isVeg={item.isVeg} />
-        </div>
-        {item.badges?.[0] && (
-          <div className="absolute right-2.5 top-2.5 z-10">
-            <Badge code={item.badges[0]} />
+          <div className="flex h-full w-full items-center justify-center text-4xl bg-gradient-to-br from-purple-50 to-purple-100/50">
+            🍽️
           </div>
         )}
+
+        <div className="absolute left-3 top-3 z-10">
+          <VegDot isVeg={item.isVeg} />
+        </div>
+
+        {badgeList.length > 0 && (
+          <div className="absolute right-3 top-3 z-10 flex flex-col gap-1 items-end">
+            <Badge code={badgeList[0]} />
+          </div>
+        )}
+
         {!item.isAvailable && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center bg-ink/50 text-sm font-semibold text-white backdrop-blur-[1px]">
-            Currently unavailable
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-ink/60 text-xs font-bold text-white backdrop-blur-[2px]">
+            OUT OF STOCK
           </div>
         )}
       </div>
 
-      <div className="flex flex-1 flex-col gap-1.5 p-3.5">
-        <h3 className="font-display text-base font-medium leading-snug text-ink">{item.name}</h3>
-        <p className="line-clamp-2 text-[13px] leading-snug text-ink2">{item.description}</p>
-        <div className="mt-0.5 flex items-center gap-1 text-xs text-ink2">
-          <span aria-hidden>⏱</span>
-          <span>{item.prepTimeMinutes} mins</span>
+      {/* Content Container */}
+      <div className="flex flex-1 flex-col justify-between p-4">
+        <div>
+          <h3 className="font-display text-base font-bold leading-snug text-ink group-hover:text-purple transition-colors">
+            {item.name}
+          </h3>
+          <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-ink2">
+            {item.description || "Freshly prepared delicious item."}
+          </p>
         </div>
 
-        <div className="mt-2 flex items-center justify-between gap-2">
-          <span className="font-mono text-[15px] font-semibold text-ink tabular-nums">
-            ₹{item.price}
-          </span>
+        <div className="mt-4 pt-2 border-t border-purple-50/60 flex items-center justify-between gap-2">
+          <div>
+            <span className="font-mono text-base font-bold text-ink tabular-nums">
+              ₹{item.price}
+            </span>
+            {item.prepTimeMinutes && (
+              <span className="block text-[11px] font-medium text-ink2">
+                ⏱ {item.prepTimeMinutes} min
+              </span>
+            )}
+          </div>
 
           {item.isAvailable &&
             (quantity > 0 ? (
@@ -67,13 +94,14 @@ export default function FoodCard({ item, layout = "grid" }) {
                 size="sm"
               />
             ) : (
-              <button
+              <motion.button
+                whileTap={{ scale: 0.92 }}
                 type="button"
                 onClick={() => addItem(item, 1)}
-                className="rounded-full bg-purple px-4 py-1.5 text-sm font-semibold text-white shadow-soft transition-transform active:scale-95"
+                className="rounded-full bg-purple px-4 py-1.5 text-xs font-bold text-white shadow-soft hover:bg-purple-deep transition-all"
               >
-                Add
-              </button>
+                + Add
+              </motion.button>
             ))}
         </div>
       </div>

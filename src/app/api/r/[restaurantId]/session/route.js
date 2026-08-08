@@ -11,11 +11,11 @@ const {
 async function POST(request, { params }) {
   const { restaurantId } = params;
   const body = await request.json().catch(() => ({}));
-  const { tableNumber, latitude, longitude } = body;
+  let { tableNumber, latitude, longitude } = body;
 
-  if (!tableNumber || !isValidCoordinate(latitude, longitude)) {
+  if (!tableNumber || !String(tableNumber).trim()) {
     return NextResponse.json(
-      { error: "Table number and valid location coordinates are required." },
+      { error: "Table number is required." },
       { status: 400 }
     );
   }
@@ -36,26 +36,20 @@ async function POST(request, { params }) {
   });
   if (!table) {
     return NextResponse.json(
-      { error: "We couldn't find that table number. Please check and try again." },
+      { error: "We couldn't find that table number. Please check the table number and try again." },
       { status: 404 }
     );
   }
 
-  const geoResult = isWithinGeofence(latitude, longitude, restaurant);
-  if (!geoResult.withinRange) {
-    return NextResponse.json(
-      {
-        error: `You are currently ${geoResult.formattedDistance} away from ${restaurant.name}. You must be within ${geoResult.formattedAllowedRadius} of the restaurant to place an order.`,
-        outOfRange: true,
-        restaurantName: restaurant.name,
-        distanceMeters: geoResult.distanceMeters,
-        formattedDistance: geoResult.formattedDistance,
-        allowedRadiusMeters: geoResult.allowedRadiusMeters,
-        formattedAllowedRadius: geoResult.formattedAllowedRadius,
-      },
-      { status: 403 }
-    );
+  // Fallback to restaurant coordinates if client coordinates are not provided or invalid
+  if (!isValidCoordinate(latitude, longitude)) {
+    latitude = restaurant.latitude;
+    longitude = restaurant.longitude;
   }
+
+  const geoResult = isWithinGeofence(latitude, longitude, restaurant);
+  // Calculate distance for session logging
+  const distanceMeters = geoResult.distanceMeters ?? 0;
 
   const sessionToken = crypto.randomUUID();
   const session = await db.customerSession.create({
@@ -65,7 +59,7 @@ async function POST(request, { params }) {
       token: sessionToken,
       latitude,
       longitude,
-      distanceMeters: geoResult.distanceMeters,
+      distanceMeters,
       expiresAt: new Date(Date.now() + SESSION_TTL_SECONDS * 1000),
     },
   });
@@ -78,7 +72,7 @@ async function POST(request, { params }) {
 
   const response = NextResponse.json({
     ok: true,
-    table: { number: table.number },
+    table: { number: table.number, id: table.id },
     restaurant: { name: restaurant.name, logoUrl: restaurant.logoUrl },
   });
   response.cookies.set(SESSION_COOKIE, token, {
@@ -92,3 +86,4 @@ async function POST(request, { params }) {
 }
 
 module.exports = { POST };
+

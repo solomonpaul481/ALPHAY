@@ -13,7 +13,7 @@ export default function PaymentPage() {
   const api = createApiClient(restaurantId);
   const { items, subtotal, specialInstructions, hydrated, clearCart } = useCart();
 
-  const [checkoutOrder, setCheckoutOrder] = useState(null); // { orderId, razorpayOrderId, amount, keyId, ... }
+  const [checkoutOrder, setCheckoutOrder] = useState(null);
   const [scriptReady, setScriptReady] = useState(false);
   const [error, setError] = useState("");
   const [opening, setOpening] = useState(false);
@@ -25,7 +25,7 @@ export default function PaymentPage() {
       router.replace(`/r/${restaurantId}/menu`);
       return;
     }
-    if (createdRef.current) return; // guard against double-invoke in dev/StrictMode
+    if (createdRef.current) return;
     createdRef.current = true;
 
     api
@@ -39,7 +39,7 @@ export default function PaymentPage() {
           router.replace(`/r/${restaurantId}`);
           return;
         }
-        setError(err.message || "Couldn't start payment. Please go back and try again.");
+        setError(err.message || "Couldn't start payment. Please return to your cart and try again.");
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated]);
@@ -53,11 +53,10 @@ export default function PaymentPage() {
       amount: checkoutOrder.amountInPaise,
       currency: "INR",
       order_id: checkoutOrder.razorpayOrderId,
-      name: checkoutOrder.restaurantName,
+      name: checkoutOrder.restaurantName || "ALPHAX Restaurant",
       description: `Table ${checkoutOrder.tableNumber} · ${items.length} item${items.length === 1 ? "" : "s"}`,
       theme: { color: "#6D28D9" },
       handler: function (response) {
-        // Clear cart and pass verification details to processing page
         clearCart();
         const query = new URLSearchParams({
           orderId: checkoutOrder.orderId,
@@ -73,7 +72,7 @@ export default function PaymentPage() {
           try {
             await api.cancelOrder(checkoutOrder.orderId);
           } catch (err) {
-            // best-effort — the order simply stays PENDING_PAYMENT otherwise
+            // best effort
           }
           router.push(`/r/${restaurantId}/payment/failure?orderId=${checkoutOrder.orderId}`);
         },
@@ -88,42 +87,56 @@ export default function PaymentPage() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center px-6">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-purple-50/50 via-cream to-white px-6">
       <Script
         src="https://checkout.razorpay.com/v1/checkout.js"
         onLoad={() => setScriptReady(true)}
       />
 
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-sm rounded-card bg-white p-6 text-center shadow-lift"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-sm rounded-3xl bg-white p-7 text-center shadow-lift border border-purple-50"
       >
-        <h1 className="font-display text-xl font-medium text-ink">Ready to pay</h1>
-        <p className="mt-1 text-sm text-ink2">
-          {items.length} item{items.length === 1 ? "" : "s"} · Table order
+        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-100 text-purple text-2xl font-bold">
+          💳
+        </div>
+
+        <h1 className="font-display text-2xl font-bold text-ink">Checkout & Pay</h1>
+        <p className="mt-1 text-xs font-semibold text-ink2">
+          {items.length} item{items.length === 1 ? "" : "s"} · Table Order
         </p>
 
-        <p className="mt-6 font-mono text-4xl font-semibold text-ink tabular-nums">
-          ₹{checkoutOrder ? checkoutOrder.amount.toFixed(2) : subtotal.toFixed(2)}
-        </p>
+        <div className="my-6 rounded-2xl bg-purple-50/60 p-4 border border-purple-100">
+          <p className="text-xs font-bold uppercase tracking-wider text-ink2">Total Payable Amount</p>
+          <p className="mt-1 font-mono text-4xl font-bold text-purple tabular-nums">
+            ₹{checkoutOrder ? checkoutOrder.amount.toFixed(2) : subtotal.toFixed(2)}
+          </p>
+        </div>
 
         {error && (
-          <p className="mt-4 rounded-lg bg-nonveg-tint px-3 py-2 text-sm text-nonveg">{error}</p>
+          <p className="mt-4 rounded-xl bg-nonveg-tint p-3 text-xs font-semibold text-nonveg">{error}</p>
         )}
 
         <button
           type="button"
           onClick={openCheckout}
           disabled={!checkoutOrder || !scriptReady || opening}
-          className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-purple py-3.5 text-sm font-semibold text-white shadow-soft transition-transform active:scale-[0.98] disabled:opacity-50"
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-purple py-4 text-base font-bold text-white shadow-lift hover:bg-purple-deep transition-all active:scale-[0.98] disabled:opacity-50"
         >
-          {!checkoutOrder || !scriptReady
-            ? "Preparing secure payment…"
-            : `Pay ₹${checkoutOrder.amount.toFixed(2)}`}
+          {!checkoutOrder || !scriptReady ? (
+            <span className="flex items-center gap-2">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              Preparing Razorpay...
+            </span>
+          ) : (
+            `Pay ₹${checkoutOrder.amount.toFixed(2)}`
+          )}
         </button>
 
-        <p className="mt-4 text-xs text-ink2">Secured by Razorpay. Your card details never touch our servers.</p>
+        <p className="mt-4 text-[11px] font-medium text-ink2">
+          🔒 Secured 256-bit SSL Razorpay Gateway. Orders are confirmed only upon payment verification.
+        </p>
       </motion.div>
     </main>
   );
