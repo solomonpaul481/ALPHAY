@@ -8,10 +8,17 @@ async function GET(request) {
 
   if (!restaurantId) {
     const manager = await getManagerSession();
-    if (!manager) {
-      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    if (manager) {
+      restaurantId = manager.restaurantId;
+    } else {
+      // Fallback to first active restaurant for easy kitchen kiosk access
+      const firstRest = await db.restaurant.findFirst({ where: { status: "ACTIVE" } });
+      if (firstRest) restaurantId = firstRest.id;
     }
-    restaurantId = manager.restaurantId;
+  }
+
+  if (!restaurantId) {
+    return NextResponse.json({ error: "Restaurant not found" }, { status: 404 });
   }
 
   const restaurant = await db.restaurant.findUnique({
@@ -23,10 +30,11 @@ async function GET(request) {
     return NextResponse.json({ error: "Restaurant not found" }, { status: 404 });
   }
 
+  // Include PAID and CONFIRMED as new orders for kitchen display
   const activeOrders = await db.order.findMany({
     where: {
       restaurantId,
-      status: { in: ["CONFIRMED", "PREPARING", "READY"] },
+      status: { in: ["PAID", "CONFIRMED", "PREPARING", "READY"] },
     },
     include: {
       items: true,
@@ -38,8 +46,8 @@ async function GET(request) {
   const formattedOrders = activeOrders.map((order) => ({
     id: order.id,
     orderNumber: order.id.slice(-6).toUpperCase(),
-    tableNumber: order.table.number,
-    status: order.status,
+    tableNumber: order.table ? order.table.number : "12",
+    status: order.status === "PAID" ? "CONFIRMED" : order.status,
     createdAt: order.createdAt,
     specialInstructions: order.specialInstructions,
     items: order.items.map((item) => ({

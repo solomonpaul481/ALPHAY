@@ -30,14 +30,8 @@ async function GET(request) {
     const tokens = await exchangeCodeForTokens(code);
     const profile = await fetchGoogleProfile(tokens.access_token);
 
-    // Optional allowlist — set ADMIN_ALLOWED_EMAILS in .env as a comma
-    // separated list to restrict who can ever become an ALPHAY operator.
-    // Leave unset during local development to allow any Google account.
-    const allowlist = (process.env.ADMIN_ALLOWED_EMAILS || "")
-      .split(",")
-      .map((e) => e.trim().toLowerCase())
-      .filter(Boolean);
-    if (allowlist.length > 0 && !allowlist.includes((profile.email || "").toLowerCase())) {
+    const ALLOWED_ADMIN_EMAIL = "solomonpaul481@gmail.com";
+    if ((profile.email || "").toLowerCase() !== ALLOWED_ADMIN_EMAIL) {
       return NextResponse.redirect(appUrl("/admin/login?error=not_allowed"));
     }
 

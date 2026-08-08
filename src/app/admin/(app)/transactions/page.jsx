@@ -2,14 +2,15 @@
 
 import { useEffect, useState } from "react";
 import Topbar from "@/components/dashboard/Topbar";
+import { IconSparkles, IconTransactions } from "@/components/Icons";
 
 export default function AdminTransactionsPage() {
-  const [rows, setRows] = useState(null);
+  const [data, setData] = useState(null);
   const [busyId, setBusyId] = useState(null);
 
   const load = async () => {
     const res = await fetch("/api/admin/transactions");
-    if (res.ok) setRows((await res.json()).transactions);
+    if (res.ok) setData(await res.json());
   };
 
   useEffect(() => {
@@ -61,86 +62,153 @@ export default function AdminTransactionsPage() {
     }
   };
 
+  const summary = data?.summary || {
+    dailyEarnings: 0,
+    dailyFee: 0,
+    monthlyEarnings: 0,
+    monthlyFee: 0,
+    yearlyEarnings: 0,
+    yearlyFee: 0,
+  };
+
+  const rows = data?.transactions || null;
+
   return (
     <>
       <Topbar title="Transactions & Financials" />
-      <div className="p-6">
-        <div className="overflow-x-auto rounded-card bg-white shadow-soft">
-          <table className="w-full min-w-[880px] text-left text-sm">
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
+        {/* Daily, Monthly, Yearly Earnings & Platform Fee Cards */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {/* Daily Card */}
+          <div className="rounded-3xl bg-white dark:bg-zinc-900 p-6 shadow-sm border border-slate-200 dark:border-zinc-800">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3">
+              <span className="text-xs font-black uppercase text-slate-500 dark:text-zinc-400">Daily Earnings</span>
+              <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 text-[11px] font-bold text-emerald-600">Today</span>
+            </div>
+            <p className="mt-3 font-mono text-3xl font-black text-slate-900 dark:text-white tabular-nums">
+              ₹{summary.dailyEarnings.toFixed(2)}
+            </p>
+            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between">
+              <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
+                <IconSparkles className="h-3.5 w-3.5" /> ALPHAY Platform Fee
+              </span>
+              <span className="font-mono text-sm font-black text-indigo-600 dark:text-indigo-400 tabular-nums">
+                ₹{summary.dailyFee.toFixed(2)}
+              </span>
+            </div>
+          </div>
+
+          {/* Monthly Card */}
+          <div className="rounded-3xl bg-white dark:bg-zinc-900 p-6 shadow-sm border border-slate-200 dark:border-zinc-800">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3">
+              <span className="text-xs font-black uppercase text-slate-500 dark:text-zinc-400">Monthly Earnings</span>
+              <span className="rounded-full bg-indigo-50 dark:bg-zinc-800 px-2.5 py-0.5 text-[11px] font-bold text-indigo-600">This Month</span>
+            </div>
+            <p className="mt-3 font-mono text-3xl font-black text-slate-900 dark:text-white tabular-nums">
+              ₹{summary.monthlyEarnings.toFixed(2)}
+            </p>
+            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between">
+              <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
+                <IconSparkles className="h-3.5 w-3.5" /> ALPHAY Platform Fee
+              </span>
+              <span className="font-mono text-sm font-black text-indigo-600 dark:text-indigo-400 tabular-nums">
+                ₹{summary.monthlyFee.toFixed(2)}
+              </span>
+            </div>
+          </div>
+
+          {/* Yearly Card */}
+          <div className="rounded-3xl bg-white dark:bg-zinc-900 p-6 shadow-sm border border-slate-200 dark:border-zinc-800">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3">
+              <span className="text-xs font-black uppercase text-slate-500 dark:text-zinc-400">Yearly Earnings</span>
+              <span className="rounded-full bg-indigo-50 dark:bg-zinc-800 px-2.5 py-0.5 text-[11px] font-bold text-indigo-600">This Year</span>
+            </div>
+            <p className="mt-3 font-mono text-3xl font-black text-slate-900 dark:text-white tabular-nums">
+              ₹{summary.yearlyEarnings.toFixed(2)}
+            </p>
+            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between">
+              <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
+                <IconSparkles className="h-3.5 w-3.5" /> ALPHAY Platform Fee
+              </span>
+              <span className="font-mono text-sm font-black text-indigo-600 dark:text-indigo-400 tabular-nums">
+                ₹{summary.yearlyFee.toFixed(2)}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Transactions Table */}
+        <div className="overflow-x-auto rounded-3xl bg-white dark:bg-zinc-900 shadow-sm border border-slate-200 dark:border-zinc-800">
+          <table className="w-full text-left font-mono text-xs">
             <thead>
-              <tr className="border-b border-purple-50 text-xs uppercase tracking-wide text-ink2">
-                <th className="px-5 py-3.5 font-semibold">NAME</th>
-                <th className="px-5 py-3.5 font-semibold">SALES</th>
-                <th className="px-5 py-3.5 font-semibold">COMMISSION</th>
-                <th className="px-5 py-3.5 font-semibold">RESTAURANT STATUS</th>
-                <th className="px-5 py-3.5 font-semibold">PAYMENT STATUS</th>
-                <th className="px-5 py-3.5 font-semibold text-right">ACTION</th>
+              <tr className="border-b border-slate-200 dark:border-zinc-800 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+                <th className="px-6 py-4">Venue Name</th>
+                <th className="px-6 py-4">Gross Sales</th>
+                <th className="px-6 py-4">Platform Fee (Commission)</th>
+                <th className="px-6 py-4">Venue Status</th>
+                <th className="px-6 py-4">Settlement Status</th>
+                <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-purple-50">
+            <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">
               {rows === null ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-8 text-center text-sm text-ink2">
-                    Loading transactions…
+                  <td colSpan={6} className="px-6 py-8 text-center text-xs font-bold text-slate-500">
+                    Loading financials...
                   </td>
                 </tr>
               ) : (
                 rows.map((r) => {
                   const isDone = ["DONE", "PAID", "ACTIVE"].includes(r.billingStatus);
                   return (
-                    <tr key={r.id}>
-                      <td className="px-5 py-3.5 font-medium text-ink">{r.name}</td>
-                      <td className="px-5 py-3.5 font-mono text-xs tabular-nums text-ink">
-                        ₹{r.sales.toFixed(0)}
+                    <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-zinc-800/50 transition-colors">
+                      <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">{r.name}</td>
+                      <td className="px-6 py-4 font-bold text-slate-900 dark:text-white tabular-nums">
+                        ₹{r.sales.toFixed(2)}
                       </td>
-                      <td className="px-5 py-3.5 font-mono text-xs tabular-nums text-purple font-semibold">
-                        ₹{r.commission.toFixed(0)}{" "}
-                        <span className="text-ink2/60 font-normal">({r.commissionPercent}%)</span>
+                      <td className="px-6 py-4 font-bold text-indigo-600 dark:text-indigo-400 tabular-nums">
+                        ₹{r.commission.toFixed(2)}{" "}
+                        <span className="text-[10px] text-slate-400 font-normal">({r.commissionPercent}%)</span>
                       </td>
-                      <td className="px-5 py-3.5">
+                      <td className="px-6 py-4">
                         <span
-                          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                            r.status === "ACTIVE" ? "bg-veg-tint text-veg" : "bg-nonveg-tint text-nonveg"
+                          className={`rounded-full px-3 py-1 text-xs font-bold ${
+                            r.status === "ACTIVE" ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"
                           }`}
                         >
                           {r.status === "ACTIVE" ? "Active" : "Suspended"}
                         </span>
                       </td>
-                      <td className="px-5 py-3.5">
+                      <td className="px-6 py-4">
                         <button
                           type="button"
                           onClick={() => togglePaymentStatus(r)}
                           disabled={busyId === r.id}
-                          title="Click to change payment status"
-                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-all hover:scale-105 disabled:opacity-50 ${
+                          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-all disabled:opacity-50 cursor-pointer ${
                             isDone
-                              ? "bg-veg-tint text-veg border border-veg/20"
-                              : "bg-gold/10 text-gold border border-gold/20"
+                              ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
+                              : "bg-amber-50 text-amber-600 border border-amber-200"
                           }`}
                         >
-                          <span className={`h-1.5 w-1.5 rounded-full ${isDone ? "bg-veg" : "bg-gold"}`} />
-                          {isDone ? "Done" : "Pending"}
+                          <span className={`h-1.5 w-1.5 rounded-full ${isDone ? "bg-emerald-600" : "bg-amber-600"}`} />
+                          {isDone ? "Settled ✓" : "Pending"}
                         </button>
                       </td>
-                      <td className="px-5 py-3.5 text-right">
+                      <td className="px-6 py-4 text-right">
                         <div className="flex justify-end gap-2 items-center">
                           <button
                             type="button"
                             onClick={() => togglePaymentStatus(r)}
                             disabled={busyId === r.id}
-                            className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
-                              isDone
-                                ? "bg-gold/10 text-gold hover:bg-gold/20"
-                                : "bg-veg-tint text-veg hover:bg-veg/20"
-                            }`}
+                            className="rounded-xl bg-slate-100 dark:bg-zinc-800 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-zinc-300 hover:bg-slate-200"
                           >
-                            {isDone ? "Mark Pending" : "Mark Done"}
+                            {isDone ? "Mark Pending" : "Mark Settled"}
                           </button>
                           <button
                             type="button"
                             onClick={() => sendReminder(r)}
                             disabled={busyId === r.id}
-                            className="rounded-full bg-purple-50 px-3 py-1.5 text-xs font-semibold text-purple disabled:opacity-50 hover:bg-purple/10"
+                            className="rounded-xl bg-indigo-50 dark:bg-zinc-800 px-3 py-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100"
                           >
                             Send Reminder
                           </button>
@@ -148,11 +216,7 @@ export default function AdminTransactionsPage() {
                             type="button"
                             onClick={() => toggleRestaurantStatus(r)}
                             disabled={busyId === r.id}
-                            className={`rounded-full px-3 py-1.5 text-xs font-semibold disabled:opacity-50 ${
-                              r.status === "ACTIVE"
-                                ? "bg-nonveg-tint text-nonveg hover:bg-nonveg/20"
-                                : "bg-veg-tint text-veg hover:bg-veg/20"
-                            }`}
+                            className="rounded-xl bg-red-50 dark:bg-red-950/40 px-3 py-1.5 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-100"
                           >
                             {r.status === "ACTIVE" ? "Suspend" : "Reactivate"}
                           </button>
@@ -169,4 +233,3 @@ export default function AdminTransactionsPage() {
     </>
   );
 }
-

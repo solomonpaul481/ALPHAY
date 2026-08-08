@@ -24,12 +24,17 @@ function verifyAdminToken(token) {
   }
 }
 
+const ALLOWED_ADMIN_EMAIL = "solomonpaul481@gmail.com";
+
 async function getAdminSession() {
   const token = cookies().get(ADMIN_COOKIE)?.value;
   if (!token) return null;
   const payload = verifyAdminToken(token);
   if (!payload) return null;
   const admin = await db.adminUser.findUnique({ where: { id: payload.adminId } });
+  if (!admin || admin.email.toLowerCase() !== ALLOWED_ADMIN_EMAIL) {
+    return null;
+  }
   return admin;
 }
 
