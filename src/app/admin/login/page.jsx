@@ -3,10 +3,11 @@
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
+import { IconBuilding } from "@/components/Icons";
 
 const ERROR_MESSAGES = {
   invalid_state: "Your sign-in session expired. Please try again.",
-  not_allowed: "That Google account isn't authorized for the ALPHAY admin portal.",
+  not_allowed: "That Google account isn't authorized for the ALPHAX admin portal.",
   oauth_failed: "Google sign-in failed. Please try again.",
 };
 
@@ -15,15 +16,15 @@ function AdminLoginContent() {
   const error = searchParams.get("error");
 
   return (
-    <div className="mt-8 rounded-card bg-white p-6 shadow-lift">
+    <div className="mt-8 rounded-3xl bg-white dark:bg-slate-900 p-7 shadow-2xl border border-purple-100 dark:border-slate-800">
       {error && (
-        <p className="mb-4 rounded-lg bg-nonveg-tint px-3 py-2 text-sm text-nonveg">
+        <p className="mb-4 rounded-xl bg-nonveg-tint p-3 text-xs font-bold text-nonveg">
           {ERROR_MESSAGES[error] || "Something went wrong. Please try again."}
         </p>
       )}
       <a
         href="/api/admin/auth/google"
-        className="flex w-full items-center justify-center gap-3 rounded-xl border border-ink/10 bg-white py-3.5 text-sm font-semibold text-ink shadow-soft transition-transform active:scale-[0.98]"
+        className="flex w-full items-center justify-center gap-3 rounded-2xl border border-purple-100 dark:border-slate-700 bg-white dark:bg-slate-800 py-4 text-xs font-bold text-ink shadow-soft transition-all hover:bg-purple-50 dark:hover:bg-slate-700 cursor-pointer"
       >
         <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden>
           <path
@@ -43,11 +44,10 @@ function AdminLoginContent() {
             d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .9 4.97l3.05 2.33C4.66 5.17 6.65 3.58 9 3.58z"
           />
         </svg>
-        Sign in with Google
+        Sign in with Google Account
       </a>
-      <p className="mt-4 text-xs text-ink2">
-        Needs <code className="rounded bg-cream px-1 py-0.5">GOOGLE_CLIENT_ID</code> /{" "}
-        <code className="rounded bg-cream px-1 py-0.5">GOOGLE_CLIENT_SECRET</code> configured — see README.
+      <p className="mt-4 text-[11px] text-ink2">
+        Requires <code className="rounded bg-purple-50 dark:bg-slate-800 px-1 py-0.5">GOOGLE_CLIENT_ID</code> configured in environment.
       </p>
     </div>
   );
@@ -55,24 +55,24 @@ function AdminLoginContent() {
 
 export default function AdminLoginPage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-purple-deep to-ink px-6">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-purple-950 via-slate-900 to-black px-6">
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-sm text-center"
       >
-        <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-3xl shadow-lift">
-          🅰️
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-purple text-3xl text-white shadow-xl">
+          <IconBuilding className="h-8 w-8 text-white" />
         </div>
-        <p className="font-mono text-xs font-semibold uppercase tracking-[0.25em] text-purple-tint">
-          ALPHAY
+        <p className="font-mono text-xs font-bold uppercase tracking-[0.25em] text-purple-tint">
+          ALPHAX
         </p>
-        <h1 className="mt-1 font-display text-3xl font-medium text-white">Admin Portal</h1>
-        <p className="mt-2 text-sm text-white/60">
-          Sign in with the Google account authorized to manage ALPHAY restaurants.
+        <h1 className="mt-1 font-display text-3xl font-bold text-white">Platform Admin</h1>
+        <p className="mt-2 text-xs font-semibold text-white/60">
+          Sign in with authorized Google credentials to manage platform venues.
         </p>
 
-        <Suspense fallback={<div className="mt-8 rounded-card bg-white p-6 text-sm text-ink2">Loading…</div>}>
+        <Suspense fallback={<div className="mt-8 rounded-3xl bg-white p-6 text-xs text-ink2">Loading...</div>}>
           <AdminLoginContent />
         </Suspense>
       </motion.div>

@@ -2,13 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
 import { createApiClient } from "@/lib/api-client";
 import FoodCard from "@/components/FoodCard";
 import FloatingCart from "@/components/FloatingCart";
 import SearchBar from "@/components/SearchBar";
 import CallStaffButton from "@/components/CallStaffButton";
 import { useCart } from "@/lib/cart-context";
+import { IconUtensils, IconCart, IconSparkles } from "@/components/Icons";
 
 export default function MenuPage() {
   const { restaurantId } = useParams();
@@ -18,7 +18,7 @@ export default function MenuPage() {
 
   const [menu, setMenu] = useState(null);
   const [loadError, setLoadError] = useState(false);
-  const [activeTab, setActiveTab] = useState("ALL"); // ALL | VEG | NON_VEG
+  const [activeTab, setActiveTab] = useState("ALL");
   const [selectedCategory, setSelectedCategory] = useState("All");
 
   useEffect(() => {
@@ -37,7 +37,6 @@ export default function MenuPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Consolidate veg and non-veg groups
   const vegGroups = menu?.veg || {};
   const nonVegGroups = menu?.nonVeg || {};
 
@@ -45,7 +44,6 @@ export default function MenuPage() {
   const allNonVegItems = useMemo(() => Object.values(nonVegGroups).flat(), [nonVegGroups]);
   const allItems = useMemo(() => [...allVegItems, ...allNonVegItems], [allVegItems, allNonVegItems]);
 
-  // Unique categories for navigation
   const categories = useMemo(() => {
     const set = new Set(["All"]);
     Object.keys(vegGroups).forEach((c) => set.add(c));
@@ -53,7 +51,6 @@ export default function MenuPage() {
     return Array.from(set);
   }, [vegGroups, nonVegGroups]);
 
-  // Today's special items
   const todaysSpecials = useMemo(() => {
     const list = [...(menu?.todaysSpecial || []), ...(menu?.recommended || [])];
     const uniqueMap = new Map();
@@ -67,15 +64,15 @@ export default function MenuPage() {
   if (loadError) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center px-6 text-center bg-cream">
-        <p className="text-4xl">🍽️</p>
-        <h2 className="mt-3 font-display text-xl font-bold text-ink">Unable to load menu</h2>
-        <p className="mt-1 text-sm text-ink2">
-          We couldn't retrieve the menu right now. Please refresh or enter your table number again.
+        <IconUtensils className="h-12 w-12 text-purple mb-3" />
+        <h2 className="font-display text-xl font-bold text-ink">Unable to load menu</h2>
+        <p className="mt-1 text-xs text-ink2">
+          We couldn't retrieve the menu right now. Please refresh or re-enter your table number.
         </p>
         <button
           type="button"
           onClick={() => router.push(`/r/${restaurantId}`)}
-          className="mt-6 rounded-2xl bg-purple px-6 py-3 text-sm font-semibold text-white shadow-soft"
+          className="mt-6 rounded-2xl bg-purple px-6 py-3 text-xs font-bold text-white shadow-soft"
         >
           Re-enter Table Number
         </button>
@@ -90,7 +87,6 @@ export default function MenuPage() {
           <div className="h-12 w-full rounded-2xl bg-purple-50" />
           <div className="h-12 w-full rounded-2xl bg-purple-50" />
           <div className="h-44 w-full rounded-2xl bg-purple-50" />
-          <div className="h-64 w-full rounded-2xl bg-purple-50" />
         </div>
       </main>
     );
@@ -98,22 +94,22 @@ export default function MenuPage() {
 
   return (
     <main className="min-h-screen bg-cream pb-32">
-      {/* Sticky Header */}
-      <header className="sticky top-0 z-30 border-b border-purple-50/80 bg-white/95 px-4 py-3.5 backdrop-blur-md">
+      {/* Sticky Header with Theme Support */}
+      <header className="sticky top-0 z-30 border-b border-purple-50 bg-white/95 dark:bg-slate-900/95 px-4 py-3.5 backdrop-blur-md">
         <div className="mx-auto flex max-w-2xl items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-purple text-xl text-white shadow-soft">
               {menu.restaurantLogo ? (
                 <img src={menu.restaurantLogo} alt={menu.restaurantName} className="h-6 w-6 object-contain" />
               ) : (
-                "🍽️"
+                <IconUtensils className="h-5 w-5 text-white" />
               )}
             </div>
             <div>
               <h1 className="font-display text-base font-bold leading-none text-ink">
                 {menu.restaurantName}
               </h1>
-              <p className="mt-1 font-mono text-xs font-semibold text-purple">
+              <p className="mt-1 font-mono text-xs font-bold text-purple">
                 Table #{menu.tableNumber}
               </p>
             </div>
@@ -122,10 +118,10 @@ export default function MenuPage() {
           <button
             type="button"
             onClick={() => router.push(`/r/${restaurantId}/cart`)}
-            className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-purple-50 text-xl shadow-soft hover:bg-purple-100 transition-colors"
+            className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-purple-50 text-purple shadow-soft hover:bg-purple-100 transition-colors"
             aria-label="View Cart"
           >
-            🛒
+            <IconCart className="h-5 w-5" />
             {totalItems > 0 && (
               <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-purple text-[11px] font-bold text-white shadow-sm">
                 {totalItems}
@@ -136,11 +132,10 @@ export default function MenuPage() {
       </header>
 
       <div className="mx-auto max-w-2xl px-4 pt-4">
-        {/* Prominent Search Bar */}
         <SearchBar allItems={allItems} restaurantId={restaurantId} />
 
         {/* VEG / NON-VEG Main Filter Tabs */}
-        <div className="mt-5 flex rounded-2xl bg-white p-1.5 shadow-soft border border-purple-50">
+        <div className="mt-5 flex rounded-2xl bg-white dark:bg-slate-800 p-1.5 shadow-soft border border-purple-50">
           <button
             type="button"
             onClick={() => setActiveTab("ALL")}
@@ -150,7 +145,7 @@ export default function MenuPage() {
                 : "text-ink2 hover:text-ink"
             }`}
           >
-            🍽️ ALL ITEMS
+            ALL ITEMS
           </button>
           <button
             type="button"
@@ -187,8 +182,8 @@ export default function MenuPage() {
                 onClick={() => setSelectedCategory(cat)}
                 className={`whitespace-nowrap rounded-full px-4 py-2 text-xs font-bold transition-all ${
                   isSelected
-                    ? "bg-ink text-white shadow-soft"
-                    : "bg-white text-ink2 border border-purple-50 hover:bg-purple-50 hover:text-ink"
+                    ? "bg-purple text-white shadow-soft"
+                    : "bg-white dark:bg-slate-800 text-ink2 border border-purple-50 hover:bg-purple-50 hover:text-ink"
                 }`}
               >
                 {cat}
@@ -202,7 +197,7 @@ export default function MenuPage() {
           <section className="mt-6">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <span className="text-xl">✨</span>
+                <IconSparkles className="h-5 w-5 text-amber-500" />
                 <h2 className="font-display text-lg font-bold text-ink">Today's Special</h2>
               </div>
               <span className="font-mono text-xs text-purple font-semibold">Chef's Choice</span>
@@ -289,10 +284,7 @@ export default function MenuPage() {
         </div>
       </div>
 
-      {/* Floating Sticky Cart Indicator */}
       <FloatingCart restaurantId={restaurantId} />
-
-      {/* Call Waiter Helper */}
       <CallStaffButton restaurantId={restaurantId} />
     </main>
   );
