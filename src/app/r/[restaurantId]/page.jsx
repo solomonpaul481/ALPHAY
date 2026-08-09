@@ -26,6 +26,33 @@ function LandingFormInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restaurantId]);
 
+  const [geoState, setGeoState] = useState({ status: "idle", message: "" });
+
+  const getCoordinates = () => {
+    return new Promise((resolve, reject) => {
+      if (!("geolocation" in navigator)) {
+        reject(new Error("Geolocation is not supported by your browser."));
+        return;
+      }
+      setGeoState({ status: "locating", message: "Acquiring GPS location..." });
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setGeoState({ status: "success", message: "Location verified" });
+          resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+        },
+        (err) => {
+          let msg = "Location permission is required to verify you are physically inside the restaurant's ordering radius.";
+          if (err.code === err.PERMISSION_DENIED) {
+            msg = "Location access was denied. Please allow location access in your browser settings to continue.";
+          }
+          setGeoState({ status: "error", message: msg });
+          reject(new Error(msg));
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    });
+  };
+
   const handleContinue = async (e) => {
     if (e) e.preventDefault();
     const cleanTable = tableNumber.trim();
@@ -37,7 +64,12 @@ function LandingFormInner() {
     setSubmitting(true);
 
     try {
-      await api.startSession({ tableNumber: cleanTable });
+      const coords = await getCoordinates();
+      await api.startSession({
+        tableNumber: cleanTable,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+      });
       router.push(`/r/${restaurantId}/menu`);
     } catch (err) {
       setError(err.message || "Table not found. Please check your table number.");
@@ -67,7 +99,7 @@ function LandingFormInner() {
           </h1>
 
           <p className="mt-1.5 text-xs font-medium text-slate-500 dark:text-zinc-400">
-            Enter your dining table number to view our digital menu and place your order.
+            Enter your dining table number to verify location & view digital menu.
           </p>
         </div>
 
@@ -113,7 +145,7 @@ function LandingFormInner() {
             {submitting ? (
               <span className="flex items-center gap-2">
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                Validating Table...
+                {geoState.status === "locating" ? "Verifying GPS Location..." : "Validating Table..."}
               </span>
             ) : (
               <>
@@ -125,7 +157,7 @@ function LandingFormInner() {
         </form>
 
         <p className="mt-4 text-center text-[11px] text-slate-400 dark:text-zinc-500 font-medium">
-          Simple touchless dining. No location permission required.
+          📍 GPS location verification required within restaurant radius.
         </p>
       </div>
     </div>

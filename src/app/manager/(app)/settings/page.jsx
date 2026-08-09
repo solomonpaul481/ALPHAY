@@ -42,7 +42,15 @@ export default function ManagerSettingsPage() {
             <div className="space-y-1">
               <label className="text-xs font-bold uppercase text-ink2">Standard GST Rate</label>
               <div className="mt-1 rounded-2xl bg-purple-50 p-3 text-xs font-bold text-ink border border-purple-100">
-                5% GST Applicable
+                {data?.gstPercent ?? 5}% GST Applicable
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold uppercase text-ink2">Geofence Ordering Radius</label>
+              <div className="mt-1 rounded-2xl bg-purple-50 p-3 text-xs font-bold text-ink border border-purple-100 flex items-center gap-2">
+                <span>📍</span>
+                <span>{data?.geofenceRadiusMeters ?? 150} Meters GPS Radius</span>
               </div>
             </div>
 
@@ -67,3 +75,4 @@ export default function ManagerSettingsPage() {
     </>
   );
 }
+

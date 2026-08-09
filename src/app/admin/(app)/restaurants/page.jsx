@@ -239,10 +239,179 @@ function AddRestaurantPanel({ onCreated, onClose }) {
   );
 }
 
+function EditRestaurantModal({ restaurant, onUpdated, onClose }) {
+  const [form, setForm] = useState({
+    name: restaurant?.name || "",
+    latitude: String(restaurant?.latitude || ""),
+    longitude: String(restaurant?.longitude || ""),
+    geofenceRadiusMeters: String(restaurant?.geofenceRadiusMeters || "150"),
+    gstPercent: String(restaurant?.gstPercent || "5"),
+    commissionPercent: String(restaurant?.commissionPercent || "5"),
+  });
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const useMyLocation = () => {
+    if (!("geolocation" in navigator)) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setForm((f) => ({
+          ...f,
+          latitude: String(pos.coords.latitude),
+          longitude: String(pos.coords.longitude),
+        }));
+      },
+      () => {
+        setError("Could not get location from device. Please enter coordinates manually.");
+      },
+      { enableHighAccuracy: true }
+    );
+  };
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setError("");
+    if (!form.name || !form.latitude || !form.longitude) {
+      setError("Restaurant name and GPS location coordinates are required.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/restaurants/${restaurant.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          latitude: parseFloat(form.latitude),
+          longitude: parseFloat(form.longitude),
+          geofenceRadiusMeters: parseInt(form.geofenceRadiusMeters, 10),
+          gstPercent: parseFloat(form.gstPercent),
+          commissionPercent: parseFloat(form.commissionPercent),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      await onUpdated();
+      onClose();
+    } catch (err) {
+      setError(err.message || "Couldn't update restaurant venue.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+      <div className="w-full max-w-xl rounded-3xl bg-white dark:bg-slate-800 p-6 shadow-2xl border border-purple-50 text-ink">
+        <div className="flex items-center justify-between border-b border-purple-50 pb-3">
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-purple">Edit Restaurant Details</span>
+            <h2 className="font-display text-xl font-bold text-ink">{restaurant.name}</h2>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-full bg-purple-50 px-3 py-1 text-xs font-bold text-ink2 cursor-pointer">
+            ✕
+          </button>
+        </div>
+
+        <form onSubmit={submit} className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div className="sm:col-span-2">
+            <label className="text-xs font-bold uppercase text-ink2">Restaurant Venue Name</label>
+            <input
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              className="mt-1.5 w-full rounded-2xl border border-purple/20 bg-purple-50/40 px-4 py-3 text-xs font-bold text-ink focus:border-purple focus:outline-none"
+              placeholder="e.g. Paradise Biryani"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold uppercase text-ink2">GPS Latitude</label>
+            <input
+              value={form.latitude}
+              onChange={(e) => setForm({ ...form, latitude: e.target.value })}
+              className="mt-1.5 w-full rounded-2xl border border-purple/20 bg-purple-50/40 px-4 py-3 text-xs font-bold text-ink focus:border-purple focus:outline-none"
+              placeholder="17.4239"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold uppercase text-ink2">GPS Longitude</label>
+            <input
+              value={form.longitude}
+              onChange={(e) => setForm({ ...form, longitude: e.target.value })}
+              className="mt-1.5 w-full rounded-2xl border border-purple/20 bg-purple-50/40 px-4 py-3 text-xs font-bold text-ink focus:border-purple focus:outline-none"
+              placeholder="78.4738"
+            />
+          </div>
+
+          <div className="sm:col-span-2">
+            <button
+              type="button"
+              onClick={useMyLocation}
+              className="rounded-full bg-purple-50 px-4 py-2 text-xs font-bold text-purple hover:bg-purple-100 cursor-pointer"
+            >
+              📍 Use Current Device GPS
+            </button>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold uppercase text-ink2">Geofence Radius (meters)</label>
+            <input
+              value={form.geofenceRadiusMeters}
+              onChange={(e) => setForm({ ...form, geofenceRadiusMeters: e.target.value })}
+              type="number"
+              className="mt-1.5 w-full rounded-2xl border border-purple/20 bg-purple-50/40 px-4 py-3 text-xs font-bold text-ink focus:border-purple focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold uppercase text-ink2">GST Rate %</label>
+            <input
+              value={form.gstPercent}
+              onChange={(e) => setForm({ ...form, gstPercent: e.target.value })}
+              type="number"
+              className="mt-1.5 w-full rounded-2xl border border-purple/20 bg-purple-50/40 px-4 py-3 text-xs font-bold text-ink focus:border-purple focus:outline-none"
+            />
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="text-xs font-bold uppercase text-ink2">ALPHAX Platform Commission %</label>
+            <input
+              value={form.commissionPercent}
+              onChange={(e) => setForm({ ...form, commissionPercent: e.target.value })}
+              type="number"
+              className="mt-1.5 w-full rounded-2xl border border-purple/20 bg-purple-50/40 px-4 py-3 text-xs font-bold text-ink focus:border-purple focus:outline-none"
+            />
+          </div>
+
+          {error && <div className="sm:col-span-2 rounded-xl bg-nonveg-tint p-3 text-xs font-bold text-nonveg">{error}</div>}
+
+          <div className="sm:col-span-2 mt-4 flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-2xl bg-purple-50 px-5 py-3 text-xs font-bold text-ink2 hover:bg-purple-100 cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="rounded-2xl bg-purple px-6 py-3 text-xs font-bold text-white shadow-lift disabled:opacity-50 cursor-pointer"
+            >
+              {saving ? "Saving Changes..." : "Save Changes"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminRestaurantsPage() {
   const [restaurants, setRestaurants] = useState(null);
   const [busyId, setBusyId] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingRestaurant, setEditingRestaurant] = useState(null);
 
   const load = async () => {
     const res = await fetch("/api/admin/restaurants");
@@ -341,9 +510,17 @@ export default function AdminRestaurantsPage() {
                       <div className="flex justify-end gap-2">
                         <button
                           type="button"
+                          onClick={() => setEditingRestaurant(r)}
+                          disabled={busyId === r.id}
+                          className="rounded-2xl bg-purple-50 px-3.5 py-1.5 text-xs font-bold text-purple hover:bg-purple hover:text-white transition-all disabled:opacity-50 cursor-pointer"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => openManagerPortal(r)}
                           disabled={busyId === r.id}
-                          className="rounded-2xl bg-purple-50 px-3.5 py-1.5 text-xs font-bold text-purple hover:bg-purple hover:text-white transition-all disabled:opacity-50"
+                          className="rounded-2xl bg-purple-50 px-3.5 py-1.5 text-xs font-bold text-purple hover:bg-purple hover:text-white transition-all disabled:opacity-50 cursor-pointer"
                         >
                           Launch Portal
                         </button>
@@ -351,7 +528,7 @@ export default function AdminRestaurantsPage() {
                           type="button"
                           onClick={() => toggleStatus(r)}
                           disabled={busyId === r.id}
-                          className="rounded-2xl bg-purple-50 px-3.5 py-1.5 text-xs font-bold text-ink2 hover:bg-purple-100 transition-all disabled:opacity-50"
+                          className="rounded-2xl bg-purple-50 px-3.5 py-1.5 text-xs font-bold text-ink2 hover:bg-purple-100 transition-all disabled:opacity-50 cursor-pointer"
                         >
                           {r.status === "ACTIVE" ? "Suspend" : "Reactivate"}
                         </button>
@@ -364,6 +541,15 @@ export default function AdminRestaurantsPage() {
           </table>
         </div>
       </div>
+
+      {editingRestaurant && (
+        <EditRestaurantModal
+          restaurant={editingRestaurant}
+          onUpdated={load}
+          onClose={() => setEditingRestaurant(null)}
+        />
+      )}
     </>
   );
 }
+

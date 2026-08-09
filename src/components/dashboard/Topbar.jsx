@@ -1,8 +1,68 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
-import { IconUser, IconBuilding, IconSettings, IconSparkles } from "@/components/Icons";
+import { IconUser, IconSparkles } from "@/components/Icons";
+
+function AdminProfileModal({ data, onClose }) {
+  if (!data) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+      <div className="w-full max-w-md rounded-3xl bg-white dark:bg-zinc-900 p-6 shadow-2xl border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-4">
+          <div className="flex items-center gap-3">
+            {data.avatarUrl ? (
+              <img src={data.avatarUrl} alt={data.name} className="h-12 w-12 rounded-2xl object-cover shadow-md" />
+            ) : (
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple text-white font-bold text-xl shadow-md">
+                <IconUser className="h-6 w-6" />
+              </div>
+            )}
+            <div>
+              <h3 className="text-lg font-extrabold">{data.name || "Platform Admin"}</h3>
+              <p className="text-xs font-bold text-purple">{data.email}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full bg-slate-100 dark:bg-zinc-800 p-2 text-xs font-bold text-slate-500 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="mt-4 space-y-3 font-mono text-xs">
+          <div className="rounded-2xl bg-slate-50 dark:bg-zinc-800/60 p-4 border border-slate-200 dark:border-zinc-800 space-y-2">
+            <p className="text-[11px] font-black text-slate-400 uppercase tracking-wider">Admin Account Information</p>
+            <div className="flex justify-between">
+              <span className="text-slate-500 font-sans">Role:</span>
+              <span className="font-bold text-purple">Platform Administrator</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500 font-sans">Email:</span>
+              <span className="font-bold text-slate-900 dark:text-white">{data.email}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500 font-sans">Access Scope:</span>
+              <span className="font-bold text-emerald-600">Full System Overview</span>
+            </div>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-6 w-full rounded-2xl bg-purple hover:bg-purple-deep py-3 text-xs font-bold text-white shadow-md cursor-pointer"
+        >
+          Close Profile
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function ManagerProfileModal({ data, onClose }) {
   if (!data) return null;
@@ -23,7 +83,7 @@ function ManagerProfileModal({ data, onClose }) {
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full bg-slate-100 dark:bg-zinc-800 p-2 text-xs font-bold text-slate-500 hover:bg-slate-200 dark:hover:bg-zinc-700"
+            className="rounded-full bg-slate-100 dark:bg-zinc-800 p-2 text-xs font-bold text-slate-500 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer"
           >
             ✕
           </button>
@@ -82,27 +142,46 @@ function ManagerProfileModal({ data, onClose }) {
 }
 
 export default function Topbar({ title, right }) {
+  const pathname = usePathname() || "";
+  const isAdmin = pathname.startsWith("/admin");
+
+  const [adminData, setAdminData] = useState(null);
   const [managerData, setManagerData] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
 
   useEffect(() => {
-    fetch("/api/manager/dashboard")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data) setManagerData(data);
-      })
-      .catch(() => {});
-  }, []);
+    if (isAdmin) {
+      fetch("/api/admin/me")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.admin) setAdminData(data.admin);
+        })
+        .catch(() => {});
+    } else {
+      fetch("/api/manager/dashboard")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data) setManagerData(data);
+        })
+        .catch(() => {});
+    }
+  }, [isAdmin]);
 
   return (
     <>
       <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between border-b border-slate-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 px-6 py-3.5 backdrop-blur-md transition-colors shadow-xs">
         <div>
           <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">{title}</h1>
-          {managerData?.restaurantName && (
-            <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
-              {managerData.restaurantName}
+          {isAdmin ? (
+            <p className="text-xs font-bold text-purple">
+              Platform Admin Portal
             </p>
+          ) : (
+            managerData?.restaurantName && (
+              <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                {managerData.restaurantName}
+              </p>
+            )
           )}
         </div>
 
@@ -113,16 +192,20 @@ export default function Topbar({ title, right }) {
             <span>ONLINE</span>
           </div>
 
-          {/* Interactive Manager Avatar Badge */}
+          {/* Interactive User Avatar Badge */}
           <button
             type="button"
             onClick={() => setShowProfile(true)}
             className="flex items-center gap-2 rounded-xl bg-slate-100 dark:bg-zinc-800 px-3 py-1.5 border border-slate-200 dark:border-zinc-700 hover:border-indigo-500 transition-all cursor-pointer"
-            title="Click to view Manager & Venue Profile"
+            title={isAdmin ? "Click to view Admin Profile" : "Click to view Manager & Venue Profile"}
           >
-            <IconUser className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+            {isAdmin && adminData?.avatarUrl ? (
+              <img src={adminData.avatarUrl} alt="Admin" className="h-5 w-5 rounded-full object-cover" />
+            ) : (
+              <IconUser className={`h-4 w-4 ${isAdmin ? "text-purple" : "text-indigo-600 dark:text-indigo-400"}`} />
+            )}
             <span className="text-xs font-extrabold text-slate-900 dark:text-white hidden sm:inline">
-              {managerData?.managerName || "Manager"}
+              {isAdmin ? adminData?.name || "Admin" : managerData?.managerName || "Manager"}
             </span>
           </button>
 
@@ -132,8 +215,13 @@ export default function Topbar({ title, right }) {
       </header>
 
       {showProfile && (
-        <ManagerProfileModal data={managerData} onClose={() => setShowProfile(false)} />
+        isAdmin ? (
+          <AdminProfileModal data={adminData} onClose={() => setShowProfile(false)} />
+        ) : (
+          <ManagerProfileModal data={managerData} onClose={() => setShowProfile(false)} />
+        )
       )}
     </>
   );
 }
+

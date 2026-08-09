@@ -41,14 +41,27 @@ async function POST(request, { params }) {
     );
   }
 
-  // Fallback to restaurant coordinates if client coordinates are not provided or invalid
+  // Require valid GPS coordinates from the customer device
   if (!isValidCoordinate(latitude, longitude)) {
-    latitude = restaurant.latitude;
-    longitude = restaurant.longitude;
+    return NextResponse.json(
+      { error: "Location permission is required to verify you are within the restaurant's ordering radius." },
+      { status: 400 }
+    );
   }
 
   const geoResult = isWithinGeofence(latitude, longitude, restaurant);
-  // Calculate distance for session logging
+
+  if (!geoResult.withinRange) {
+    return NextResponse.json(
+      {
+        error: `You are too far from ${restaurant.name}. You are currently ${geoResult.formattedDistance} away, but ordering is only permitted within ${geoResult.formattedAllowedRadius} (${geoResult.allowedRadiusMeters}m).`,
+        distanceMeters: geoResult.distanceMeters,
+        allowedRadiusMeters: geoResult.allowedRadiusMeters,
+      },
+      { status: 403 }
+    );
+  }
+
   const distanceMeters = geoResult.distanceMeters ?? 0;
 
   const sessionToken = crypto.randomUUID();
