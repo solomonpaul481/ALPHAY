@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import ThemeSwitcher from "@/components/ThemeSwitcher";
 import {
   IconUtensils,
   IconDashboard,
@@ -42,14 +41,9 @@ export default function Sidebar({ brand, subtitle, items, logoutHref }) {
 
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-purple-50 bg-white dark:bg-slate-900 px-4 py-6 md:flex shadow-soft">
-      <div className="flex items-center gap-3 px-2 pb-4 border-b border-purple-50">
-        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-purple text-xl text-white shadow-soft">
-          <IconUtensils className="h-5 w-5 text-white" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-display text-base font-bold leading-tight text-ink">{brand}</p>
-          <p className="mt-0.5 text-xs font-semibold text-purple">{subtitle}</p>
-        </div>
+      <div className="px-2 pb-4 border-b border-purple-50">
+        <p className="truncate font-display text-base font-bold leading-tight text-ink">{brand}</p>
+        <p className="mt-0.5 text-xs font-semibold text-purple">{subtitle}</p>
       </div>
 
       <nav className="mt-6 flex flex-1 flex-col gap-1 overflow-y-auto scrollbar-none">
@@ -74,11 +68,7 @@ export default function Sidebar({ brand, subtitle, items, logoutHref }) {
         })}
       </nav>
 
-      <div className="mt-auto pt-4 border-t border-purple-50 space-y-3">
-        <div className="px-2">
-          <ThemeSwitcher />
-        </div>
-
+      <div className="mt-auto pt-4 border-t border-purple-50">
         <button
           type="button"
           onClick={logout}
@@ -91,3 +81,4 @@ export default function Sidebar({ brand, subtitle, items, logoutHref }) {
     </aside>
   );
 }
+

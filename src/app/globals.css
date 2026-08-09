@@ -22,13 +22,14 @@
   --color-primary-50: #EEF2FF;
 }
 
-[data-theme="dark"] {
-  /* Sleek Dark Mode Color Scheme - Black & Charcoal Grey */
+[data-theme="dark"],
+.dark {
+  /* Sleek Dark Mode Color Scheme - Pure White Text & Crisp Dark Background */
   --bg-main: #09090B;
   --bg-card: #18181B;
   --bg-cream: #09090B;
-  --text-ink: #F8FAFC;
-  --text-ink2: #A1A1AA;
+  --text-ink: #FFFFFF;
+  --text-ink2: #94A3B8;
   --border-subtle: #27272A;
 
   --color-primary: #818CF8;
@@ -48,38 +49,50 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Dark Mode Universal Overrides for Crisp High-Contrast Black/Grey Theme */
-[data-theme="dark"] body {
+/* Dark Mode Universal Overrides for High-Contrast Text */
+[data-theme="dark"] body,
+.dark body {
   background-color: #09090B !important;
-  color: #F8FAFC !important;
+  color: #FFFFFF !important;
 }
 
 [data-theme="dark"] header,
+.dark header,
 [data-theme="dark"] nav,
+.dark nav,
 [data-theme="dark"] aside,
+.dark aside,
 [data-theme="dark"] [class*="bg-white"],
-[data-theme="dark"] [class*="bg-cream"] {
+.dark [class*="bg-white"],
+[data-theme="dark"] [class*="bg-cream"],
+.dark [class*="bg-cream"] {
   background-color: #18181B !important;
-  color: #F8FAFC !important;
+  color: #FFFFFF !important;
   border-color: #27272A !important;
 }
 
 [data-theme="dark"] [class*="bg-purple-50"],
-[data-theme="dark"] [class*="bg-indigo-50"] {
+.dark [class*="bg-purple-50"],
+[data-theme="dark"] [class*="bg-indigo-50"],
+.dark [class*="bg-indigo-50"] {
   background-color: #27272A !important;
   color: #E0E7FF !important;
 }
 
-[data-theme="dark"] .text-ink {
-  color: #F8FAFC !important;
+[data-theme="dark"] .text-ink,
+.dark .text-ink {
+  color: #FFFFFF !important;
 }
 
-[data-theme="dark"] .text-ink2 {
-  color: #A1A1AA !important;
+[data-theme="dark"] .text-ink2,
+.dark .text-ink2 {
+  color: #94A3B8 !important;
 }
 
 [data-theme="dark"] [class*="border-purple"],
-[data-theme="dark"] [class*="border-indigo"] {
+.dark [class*="border-purple"],
+[data-theme="dark"] [class*="border-indigo"],
+.dark [class*="border-indigo"] {
   border-color: #27272A !important;
 }
 

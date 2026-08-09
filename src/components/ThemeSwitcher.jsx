@@ -12,9 +12,11 @@ export default function ThemeSwitcher() {
     if (saved === "dark") {
       setIsDark(true);
       document.documentElement.setAttribute("data-theme", "dark");
+      document.documentElement.classList.add("dark");
     } else {
       setIsDark(false);
       document.documentElement.removeAttribute("data-theme");
+      document.documentElement.classList.remove("dark");
     }
   }, []);
 
@@ -22,10 +24,12 @@ export default function ThemeSwitcher() {
     if (isDark) {
       setIsDark(false);
       document.documentElement.removeAttribute("data-theme");
+      document.documentElement.classList.remove("dark");
       localStorage.setItem("alphay_theme_mode", "light");
     } else {
       setIsDark(true);
       document.documentElement.setAttribute("data-theme", "dark");
+      document.documentElement.classList.add("dark");
       localStorage.setItem("alphay_theme_mode", "dark");
     }
   };

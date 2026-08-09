@@ -4,9 +4,9 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        cream: "#FDFCFF",
-        ink: "#1C1524",
-        ink2: "#5B5468",
+        cream: "var(--bg-cream, #FDFCFF)",
+        ink: "var(--text-ink, #1C1524)",
+        ink2: "var(--text-ink2, #5B5468)",
         purple: {
           DEFAULT: "var(--color-primary, #6D28D9)",
           deep: "var(--color-primary-deep, #2E1065)",
