@@ -43,6 +43,20 @@ export default function MenuPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restaurantId]);
 
+  // Intercept browser back button when inside an expanded category view to return to Categories Menu Home
+  useEffect(() => {
+    if (expandedCategory) {
+      window.history.pushState({ category: expandedCategory }, "");
+      const handlePopState = () => {
+        setExpandedCategory(null);
+      };
+      window.addEventListener("popstate", handlePopState);
+      return () => {
+        window.removeEventListener("popstate", handlePopState);
+      };
+    }
+  }, [expandedCategory]);
+
   const vegGroups = menu?.veg || {};
   const nonVegGroups = menu?.nonVeg || {};
 
@@ -169,7 +183,7 @@ export default function MenuPage() {
         </div>
       </header>
 
-      {/* MAIN CONTENT AREA */}
+      {/* MAIN CATEGORIES HOME VIEW */}
       <div className="mx-auto max-w-2xl px-3 sm:px-4 pt-3">
         <SearchBar allItems={allItems} restaurantId={restaurantId} />
 
@@ -237,14 +251,14 @@ export default function MenuPage() {
             {/* EXPANDED VIEW APP BAR AT TOP OF SCREEN */}
             <header className="sticky top-0 z-40 border-b border-slate-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 px-4 py-3 shadow-md backdrop-blur-md">
               <div className="mx-auto flex max-w-2xl items-center justify-between">
-                {/* Back Button */}
+                {/* Back Button: Returns user to Categories Menu Home screen */}
                 <button
                   type="button"
                   onClick={() => setExpandedCategory(null)}
-                  className="flex items-center gap-2 rounded-2xl bg-slate-100 dark:bg-zinc-800 px-3 py-2 text-xs font-black text-slate-800 dark:text-zinc-200 border border-slate-200 dark:border-zinc-700 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-all cursor-pointer"
+                  className="flex items-center gap-2 rounded-2xl bg-indigo-50 dark:bg-zinc-800 px-3.5 py-2 text-xs font-black text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-zinc-700 hover:bg-indigo-100 dark:hover:bg-zinc-700 transition-all cursor-pointer shadow-xs"
                 >
                   <IconArrowLeft className="h-4 w-4" />
-                  <span>Categories</span>
+                  <span>Categories Menu</span>
                 </button>
 
                 {/* Category Name in Top Center of App Bar */}
@@ -302,10 +316,14 @@ export default function MenuPage() {
                 </div>
               )}
             </div>
+
+            {/* PERSISTENT FLOATING CART OPTION INSIDE EXPANDED CATEGORY PAGE */}
+            <FloatingCart restaurantId={restaurantId} />
           </motion.div>
         )}
       </AnimatePresence>
 
+      {/* PERSISTENT FLOATING CART OPTION ON CATEGORIES MENU PAGE */}
       <FloatingCart restaurantId={restaurantId} />
       <CallStaffButton restaurantId={restaurantId} />
     </main>
