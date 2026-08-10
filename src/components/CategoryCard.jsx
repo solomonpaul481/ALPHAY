@@ -31,38 +31,38 @@ export default function CategoryCard({ categoryName, items = [], isVegOnly = tru
       onClick={onClick}
       whileHover={{ y: -4, scale: 1.02 }}
       whileTap={{ scale: 0.97 }}
-      className="group relative flex h-32 w-full overflow-hidden rounded-3xl bg-white dark:bg-zinc-900 p-3.5 shadow-lg border-b-4 border-r-2 border-indigo-600/30 dark:border-indigo-500/40 hover:shadow-2xl hover:border-indigo-600 transition-all duration-300 cursor-pointer select-none"
+      className="group relative flex h-32 w-full overflow-hidden rounded-3xl bg-slate-900 p-3.5 shadow-xl border-b-4 border-r-2 border-amber-500/30 hover:border-amber-400 hover:shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all duration-300 cursor-pointer select-none"
     >
-      {/* 3D Depth Top-Right Ambient Glow */}
-      <div className="absolute -top-12 -right-12 h-28 w-28 rounded-full bg-indigo-500/10 dark:bg-indigo-500/20 blur-xl group-hover:scale-150 transition-transform duration-500 pointer-events-none" />
+      {/* 3D Depth Top-Right Gold Glow */}
+      <div className="absolute -top-12 -right-12 h-28 w-28 rounded-full bg-amber-500/15 blur-xl group-hover:scale-150 transition-transform duration-500 pointer-events-none" />
 
       {/* Left Side: Category Name, Item Count & Badge */}
       <div className="relative z-10 flex h-full flex-1 flex-col justify-between pr-2">
         <div>
-          <span className="inline-block rounded-md bg-indigo-50 dark:bg-zinc-800 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-zinc-700">
+          <span className="inline-block rounded-md bg-amber-500/15 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-300 border border-amber-500/30">
             {itemCount} {itemCount === 1 ? "Item" : "Items"}
           </span>
-          <h3 className="mt-1.5 text-sm sm:text-base font-black text-slate-900 dark:text-white leading-tight line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+          <h3 className="mt-1.5 text-sm sm:text-base font-black text-white leading-tight line-clamp-2 group-hover:text-amber-400 transition-colors font-['Cinzel']">
             {categoryName}
           </h3>
         </div>
 
-        <div className="flex items-center gap-1 text-[10px] font-black text-slate-500 dark:text-zinc-400">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+        <div className="flex items-center gap-1 text-[10px] font-bold text-amber-300/80">
+          <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
           <span>Tap to Expand</span>
         </div>
       </div>
 
       {/* Right Side: Category Image with Fading Gradient at Bottom */}
-      <div className="relative h-full w-20 sm:w-24 flex-shrink-0 overflow-hidden rounded-2xl bg-slate-100 dark:bg-zinc-800">
+      <div className="relative h-full w-20 sm:w-24 flex-shrink-0 overflow-hidden rounded-2xl bg-slate-850 border border-slate-800">
         <img
           src={imageUrl}
           alt={categoryName}
           className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-110"
         />
         {/* Bottom Fade Gradient Mask */}
-        <div className="absolute inset-0 bg-gradient-to-t from-white via-white/20 to-transparent dark:from-zinc-900 dark:via-zinc-900/20 pointer-events-none" />
-        <div className="absolute inset-0 bg-gradient-to-l from-transparent via-transparent to-white dark:to-zinc-900 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/30 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-l from-transparent via-transparent to-slate-900 pointer-events-none" />
       </div>
     </motion.div>
   );

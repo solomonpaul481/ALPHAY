@@ -1,9 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { IconArrowRight } from "./Icons";
+import { IconArrowRight, IconBook } from "./Icons";
 
-export default function LuxuryLandingShowcase({ onProceed, restaurantName }) {
+export default function LuxuryLandingShowcase({ onProceed, restaurantName, submitting }) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.98 }}
@@ -16,18 +16,20 @@ export default function LuxuryLandingShowcase({ onProceed, restaurantName }) {
       <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-amber-600/15 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-0 inset-x-0 h-96 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent z-10 pointer-events-none" />
 
-      {/* TOP BRANDING: LOGO & TAGLINE */}
+      {/* TOP BRANDING: EXACT GOLDEN LOGO IMAGE & TAGLINE */}
       <div className="relative z-20 flex flex-col items-center text-center mt-2">
-        {/* Golden Crest Logo Icon */}
+        {/* Exact Golden Logo Image */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.2 }}
-          className="mb-2"
+          className="mb-1"
         >
-          <svg className="h-16 w-16 text-amber-400 drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="6">
-            <path d="M50 15 C 30 15, 20 40, 45 65 C 60 80, 75 50, 50 30 C 35 15, 65 15, 50 85" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <img
+            src="/logo-gold.png"
+            alt="ALPHAY Logo"
+            className="h-28 sm:h-32 w-auto object-contain drop-shadow-[0_0_25px_rgba(245,158,11,0.6)]"
+          />
         </motion.div>
 
         {/* Brand Name ALPHAY */}
@@ -59,10 +61,10 @@ export default function LuxuryLandingShowcase({ onProceed, restaurantName }) {
         transition={{ duration: 0.9, delay: 0.3 }}
         className="relative z-10 my-auto w-full max-w-lg flex flex-col items-center justify-center"
       >
-        {/* Main Gourmet Biryani & Drink Feast Illustration / Graphic Container */}
-        <div className="relative w-full aspect-[4/4.8] max-h-[460px] rounded-3xl overflow-hidden shadow-2xl border border-amber-500/20 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center">
+        {/* Main Gourmet Biryani & Drink Feast Illustration Container */}
+        <div className="relative w-full aspect-[4/4.8] max-h-[440px] rounded-3xl overflow-hidden shadow-2xl border border-amber-500/30 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center">
           <img
-            src="https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=1000&q=85"
+            src="/landing-bg.jpg"
             alt="Royal Gourmet Feast"
             className="h-full w-full object-cover object-center transform hover:scale-105 transition-transform duration-700"
           />
@@ -116,7 +118,7 @@ export default function LuxuryLandingShowcase({ onProceed, restaurantName }) {
         </div>
       </motion.div>
 
-      {/* BOTTOM ACTION BUTTON: EXPLORE MENU */}
+      {/* BOTTOM ACTION BUTTON: EXPLORE MENU (DIRECT MENU ACCESS) */}
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
@@ -126,22 +128,30 @@ export default function LuxuryLandingShowcase({ onProceed, restaurantName }) {
         <button
           type="button"
           onClick={onProceed}
-          className="group relative w-full flex items-center justify-center gap-3 rounded-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 active:scale-95 px-8 py-4 text-sm sm:text-base font-black text-slate-950 shadow-[0_0_30px_rgba(245,158,11,0.4)] border border-amber-200/60 transition-all duration-300 cursor-pointer"
+          disabled={submitting}
+          className="group relative w-full flex items-center justify-center gap-3 rounded-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 active:scale-95 px-8 py-4 text-sm sm:text-base font-black text-slate-950 shadow-[0_0_30px_rgba(245,158,11,0.4)] border border-amber-200/60 transition-all duration-300 cursor-pointer disabled:opacity-75"
         >
-          {/* Dish Cloche Dome Icon */}
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-950/15 text-slate-950 group-hover:scale-110 transition-transform">
-            <svg className="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M12 4V2M4 18h16M4 18c0-4.418 3.582-8 8-8s8 3.582 8 8M12 10a2 2 0 100-4 2 2 0 000 4z" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </span>
+          {submitting ? (
+            <span className="flex items-center gap-2 font-['Cinzel'] tracking-widest">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-950 border-t-transparent" />
+              OPENING MENU...
+            </span>
+          ) : (
+            <>
+              {/* Menu Book Icon */}
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-950/15 text-slate-950 group-hover:scale-110 transition-transform">
+                <IconBook className="h-4.5 w-4.5 text-slate-950" />
+              </span>
 
-          <span className="font-['Cinzel'] tracking-[0.2em] font-extrabold">EXPLORE MENU</span>
+              <span className="font-['Cinzel'] tracking-[0.2em] font-extrabold">EXPLORE MENU</span>
 
-          <IconArrowRight className="h-5 w-5 text-slate-950 group-hover:translate-x-1 transition-transform" />
+              <IconArrowRight className="h-5 w-5 text-slate-950 group-hover:translate-x-1 transition-transform" />
+            </>
+          )}
         </button>
 
-        <p className="mt-3 text-[10px] font-medium tracking-widest text-slate-400 uppercase">
-          Touch to enter table number & unlock digital ordering
+        <p className="mt-3 text-[10px] font-semibold tracking-widest text-amber-300/80 uppercase">
+          Table Auto-Detected · Instant Digital Ordering
         </p>
       </motion.div>
     </motion.div>

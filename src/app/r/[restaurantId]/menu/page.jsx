@@ -10,7 +10,7 @@ import FloatingCart from "@/components/FloatingCart";
 import SearchBar from "@/components/SearchBar";
 import CallStaffButton from "@/components/CallStaffButton";
 import { useCart } from "@/lib/cart-context";
-import { IconUtensils, IconCart, IconSparkles, IconArrowLeft, IconSearch } from "@/components/Icons";
+import { IconCart, IconSparkles, IconArrowLeft, IconSearch, IconBook } from "@/components/Icons";
 
 export default function MenuPage() {
   const { restaurantId } = useParams();
@@ -80,18 +80,18 @@ export default function MenuPage() {
 
   if (loadError) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center px-6 text-center bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-white">
-        <IconUtensils className="h-12 w-12 text-indigo-600 mb-3" />
-        <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">Unable to load menu</h2>
-        <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
-          Session expired or table not found. Please re-enter your table number.
+      <main className="flex min-h-screen flex-col items-center justify-center px-6 text-center bg-slate-950 text-white">
+        <IconBook className="h-12 w-12 text-amber-400 mb-3" />
+        <h2 className="text-xl font-extrabold text-white font-['Cinzel']">Unable to load menu</h2>
+        <p className="mt-1 text-xs text-slate-400">
+          Session expired or table not found. Please rescan QR code.
         </p>
         <button
           type="button"
           onClick={() => router.push(`/r/${restaurantId}`)}
-          className="mt-6 rounded-2xl bg-indigo-600 px-6 py-3 text-xs font-bold text-white shadow-md hover:bg-indigo-700"
+          className="mt-6 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 px-6 py-3 text-xs font-bold text-slate-950 shadow-md hover:from-amber-400 hover:to-amber-500"
         >
-          Re-enter Table Number
+          Return to Landing Page
         </button>
       </main>
     );
@@ -99,15 +99,15 @@ export default function MenuPage() {
 
   if (!menu) {
     return (
-      <main className="min-h-screen bg-slate-50 dark:bg-zinc-950 px-4 pt-6 text-slate-900 dark:text-white">
+      <main className="min-h-screen bg-slate-950 px-4 pt-6 text-white">
         <div className="animate-pulse space-y-4 max-w-2xl mx-auto">
-          <div className="h-14 w-full rounded-2xl bg-slate-200 dark:bg-zinc-800" />
-          <div className="h-12 w-full rounded-2xl bg-slate-200 dark:bg-zinc-800" />
+          <div className="h-14 w-full rounded-2xl bg-slate-900 border border-slate-800" />
+          <div className="h-12 w-full rounded-2xl bg-slate-900 border border-slate-800" />
           <div className="grid grid-cols-2 gap-4">
-            <div className="h-32 w-full rounded-3xl bg-slate-200 dark:bg-zinc-800" />
-            <div className="h-32 w-full rounded-3xl bg-slate-200 dark:bg-zinc-800" />
-            <div className="h-32 w-full rounded-3xl bg-slate-200 dark:bg-zinc-800" />
-            <div className="h-32 w-full rounded-3xl bg-slate-200 dark:bg-zinc-800" />
+            <div className="h-32 w-full rounded-3xl bg-slate-900 border border-slate-800" />
+            <div className="h-32 w-full rounded-3xl bg-slate-900 border border-slate-800" />
+            <div className="h-32 w-full rounded-3xl bg-slate-900 border border-slate-800" />
+            <div className="h-32 w-full rounded-3xl bg-slate-900 border border-slate-800" />
           </div>
         </div>
       </main>
@@ -120,33 +120,30 @@ export default function MenuPage() {
     : currentCategoryItems;
 
   return (
-    <main className="min-h-screen bg-slate-50 dark:bg-zinc-950 pb-36 text-slate-900 dark:text-white transition-colors">
-      {/* Light Customer Sticky Header */}
-      <header className="sticky top-0 z-30 border-b border-slate-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 px-4 py-3 shadow-xs backdrop-blur-md">
+    <main className="min-h-screen bg-slate-950 pb-36 text-white transition-colors">
+      {/* Luxury Dark Gold Customer Sticky Header */}
+      <header className="sticky top-0 z-30 border-b border-amber-500/20 bg-slate-900/95 px-4 py-3 shadow-md backdrop-blur-md">
         <div className="mx-auto flex max-w-2xl items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-md">
-              {menu.restaurantLogo ? (
-                <img src={menu.restaurantLogo} alt={menu.restaurantName} className="h-6 w-6 object-contain" />
-              ) : (
-                <IconUtensils className="h-5 w-5 text-white" />
-              )}
+          <div className="flex items-center gap-3">
+            {/* Exact Golden Logo Image */}
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-950 p-1 border border-amber-500/40 shadow-md">
+              <img src="/logo-gold.png" alt="ALPHAY" className="h-7 w-7 object-contain" />
             </div>
             <div>
-              <h1 className="text-sm sm:text-base font-extrabold leading-tight text-slate-900 dark:text-white">
+              <h1 className="text-sm sm:text-base font-extrabold leading-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-100 font-['Cinzel'] tracking-wider">
                 {menu.restaurantName}
               </h1>
               {/* TABLE NUMBER BADGE */}
-              <div className="mt-0.5 inline-flex items-center gap-1 rounded-md bg-indigo-600 px-2 py-0.5 text-[10px] font-black text-white shadow-xs">
-                <span>TABLE #{menu.tableNumber || "12"}</span>
+              <div className="mt-0.5 inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-amber-500 to-amber-600 px-2 py-0.5 text-[10px] font-black text-slate-950 shadow-xs">
+                <span>TABLE #{menu.tableNumber || "1"}</span>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             {/* TOP RIGHT VEG / NON-VEG SWITCH TOGGLE */}
-            <div className="flex items-center gap-1.5 rounded-2xl bg-slate-100 dark:bg-zinc-800 p-1 border border-slate-200 dark:border-zinc-700">
-              <span className={`text-[10px] font-black px-1 ${isVegOnly ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+            <div className="flex items-center gap-1.5 rounded-2xl bg-slate-950 p-1 border border-amber-500/30">
+              <span className={`text-[10px] font-black px-1 ${isVegOnly ? "text-emerald-400" : "text-rose-400"}`}>
                 {isVegOnly ? "🟢 VEG" : "🔴 NON-VEG"}
               </span>
               <button
@@ -169,12 +166,12 @@ export default function MenuPage() {
             <button
               type="button"
               onClick={() => router.push(`/r/${restaurantId}/cart`)}
-              className="relative flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 border border-slate-200 dark:border-zinc-700 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-all cursor-pointer"
+              className="relative flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-500 text-slate-950 shadow-md hover:bg-amber-400 transition-all cursor-pointer"
               aria-label="View Cart"
             >
-              <IconCart className="h-4 w-4" />
+              <IconCart className="h-4 w-4 text-slate-950" />
               {totalItems > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-black text-white shadow-md animate-bounce">
+                <span className="absolute -right-1 -top-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-slate-950 text-[10px] font-black text-amber-400 border border-amber-400 shadow-md animate-bounce">
                   {totalItems}
                 </span>
               )}
@@ -192,10 +189,10 @@ export default function MenuPage() {
           <section className="mt-5">
             <div className="flex items-center justify-between mb-2.5">
               <div className="flex items-center gap-1.5">
-                <IconSparkles className="h-4 w-4 text-amber-500" />
-                <h2 className="text-base font-extrabold text-slate-900 dark:text-white">Chef's Specials</h2>
+                <IconSparkles className="h-4 w-4 text-amber-400" />
+                <h2 className="text-base font-extrabold text-white font-['Cinzel'] tracking-wider">Chef's Specials</h2>
               </div>
-              <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400">Today's Special</span>
+              <span className="text-[11px] font-bold text-amber-400 uppercase tracking-widest font-['Cinzel']">Today's Special</span>
             </div>
             <div className="scrollbar-none -mx-3 flex gap-3 overflow-x-auto px-3 pb-2">
               {todaysSpecials.map((item) => (
@@ -208,16 +205,16 @@ export default function MenuPage() {
         {/* CATEGORIES GRID: TWO CATEGORIES IN A ROW WITH 3D ELEVATED CARDS */}
         <section className="mt-6">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-              <span className={`inline-block h-3 w-3 rounded-full ${isVegOnly ? "bg-emerald-500" : "bg-rose-500"}`} />
+            <h2 className="text-base font-extrabold text-white tracking-tight flex items-center gap-2 font-['Cinzel']">
+              <span className={`inline-block h-3 w-3 rounded-full ${isVegOnly ? "bg-emerald-400" : "bg-rose-400"}`} />
               {isVegOnly ? "Vegetarian Categories" : "Non-Vegetarian Categories"}
             </h2>
-            <span className="text-xs font-semibold text-slate-400 dark:text-zinc-500">2 per row · 3D Cards</span>
+            <span className="text-xs font-semibold text-amber-300/70">2 per row · Luxury Cards</span>
           </div>
 
           <div className="grid grid-cols-2 gap-3.5 sm:gap-4">
             {categoryNames.length === 0 ? (
-              <p className="col-span-2 py-6 text-center text-xs font-bold text-slate-500 dark:text-zinc-400">
+              <p className="col-span-2 py-6 text-center text-xs font-bold text-slate-400">
                 No categories available in this mode.
               </p>
             ) : (
@@ -246,27 +243,27 @@ export default function MenuPage() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.96 }}
             transition={{ duration: 0.25, ease: "easeOut" }}
-            className="fixed inset-0 z-50 flex flex-col bg-slate-50 dark:bg-zinc-950 overflow-y-auto"
+            className="fixed inset-0 z-50 flex flex-col bg-slate-950 overflow-y-auto"
           >
             {/* EXPANDED VIEW APP BAR AT TOP OF SCREEN */}
-            <header className="sticky top-0 z-40 border-b border-slate-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 px-4 py-3 shadow-md backdrop-blur-md">
+            <header className="sticky top-0 z-40 border-b border-amber-500/20 bg-slate-900/95 px-4 py-3 shadow-md backdrop-blur-md">
               <div className="mx-auto flex max-w-2xl items-center justify-between">
                 {/* Back Button: Returns user to Categories Menu Home screen */}
                 <button
                   type="button"
                   onClick={() => setExpandedCategory(null)}
-                  className="flex items-center gap-2 rounded-2xl bg-indigo-50 dark:bg-zinc-800 px-3.5 py-2 text-xs font-black text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-zinc-700 hover:bg-indigo-100 dark:hover:bg-zinc-700 transition-all cursor-pointer shadow-xs"
+                  className="flex items-center gap-2 rounded-2xl bg-amber-500/15 px-3.5 py-2 text-xs font-black text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 transition-all cursor-pointer shadow-xs"
                 >
                   <IconArrowLeft className="h-4 w-4" />
-                  <span>Categories Menu</span>
+                  <span className="font-['Cinzel'] tracking-wider">Categories Menu</span>
                 </button>
 
                 {/* Category Name in Top Center of App Bar */}
                 <div className="text-center">
-                  <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+                  <h2 className="text-base sm:text-lg font-black text-white tracking-tight leading-tight font-['Cinzel']">
                     {expandedCategory}
                   </h2>
-                  <p className="text-[10px] font-bold text-slate-500 dark:text-zinc-400">
+                  <p className="text-[10px] font-bold text-amber-300/80">
                     {filteredCategoryItems.length} {filteredCategoryItems.length === 1 ? "Dish" : "Dishes"} Available
                   </p>
                 </div>
@@ -275,11 +272,11 @@ export default function MenuPage() {
                 <button
                   type="button"
                   onClick={() => router.push(`/r/${restaurantId}/cart`)}
-                  className="relative flex h-9 w-9 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-md hover:bg-indigo-700 transition-all cursor-pointer"
+                  className="relative flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-500 text-slate-950 shadow-md hover:bg-amber-400 transition-all cursor-pointer"
                 >
-                  <IconCart className="h-4 w-4" />
+                  <IconCart className="h-4 w-4 text-slate-950" />
                   {totalItems > 0 && (
-                    <span className="absolute -right-1 -top-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-amber-500 text-[10px] font-black text-slate-900 shadow-sm">
+                    <span className="absolute -right-1 -top-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-slate-950 text-[10px] font-black text-amber-400 border border-amber-400 shadow-sm">
                       {totalItems}
                     </span>
                   )}
@@ -291,20 +288,20 @@ export default function MenuPage() {
             <div className="mx-auto w-full max-w-2xl flex-1 px-3 sm:px-4 py-4 pb-36">
               {/* Optional Search filter inside category */}
               <div className="mb-4 relative">
-                <IconSearch className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400 dark:text-zinc-500" />
+                <IconSearch className="absolute left-3.5 top-3.5 h-4 w-4 text-amber-400" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={`Search dishes in ${expandedCategory}...`}
-                  className="w-full rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 pl-10 pr-4 py-3 text-xs font-extrabold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600 shadow-sm"
+                  className="w-full rounded-2xl border border-amber-500/20 bg-slate-900 pl-10 pr-4 py-3 text-xs font-extrabold text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 shadow-sm"
                 />
               </div>
 
               {/* ITEMS GRID: TWO ITEMS IN A ROW WITH ELEVATED FOOD CARDS */}
               {filteredCategoryItems.length === 0 ? (
-                <div className="rounded-3xl bg-white dark:bg-zinc-900 p-8 text-center border border-slate-200 dark:border-zinc-800 mt-4">
-                  <p className="text-xs font-bold text-slate-500 dark:text-zinc-400">
+                <div className="rounded-3xl bg-slate-900 p-8 text-center border border-amber-500/20 mt-4">
+                  <p className="text-xs font-bold text-slate-400">
                     No items found matching your search.
                   </p>
                 </div>
