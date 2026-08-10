@@ -16,7 +16,7 @@ async function GET() {
   }
   const restaurantId = manager.restaurantId;
 
-  const [summary, liveOrders, completedToday, staffCalls, restaurant] = await Promise.all([
+  const [summary, liveOrders, completedToday, staffCalls, restaurant, activeSessions] = await Promise.all([
     getRevenueSummary(restaurantId),
     db.order.findMany({
       where: { restaurantId, status: { in: ["PAID", "CONFIRMED", "PREPARING", "READY"] } },
@@ -32,10 +32,57 @@ async function GET() {
       orderBy: { createdAt: "asc" },
     }),
     db.restaurant.findUnique({ where: { id: restaurantId } }),
+    db.customerSession.findMany({
+      where: {
+        restaurantId,
+        endedAt: null,
+        status: { in: ["ACTIVE", "BILL_REQUESTED", "BILL_SENT"] },
+      },
+      include: {
+        table: true,
+        orders: {
+          include: { items: true },
+          orderBy: { createdAt: "asc" },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
   ]);
 
   const activeCount = liveOrders.filter((o) => o.status === "CONFIRMED" || o.status === "PREPARING" || o.status === "PAID").length;
   const readyCount = liveOrders.filter((o) => o.status === "READY").length;
+
+  // Aggregate active sessions data
+  const formattedActiveSessions = activeSessions.map((sess) => {
+    let sessionTotal = 0;
+    const allItems = [];
+    sess.orders.forEach((ord) => {
+      sessionTotal += ord.total;
+      ord.items.forEach((it) => {
+        allItems.push({
+          id: it.id,
+          name: it.name,
+          quantity: it.quantity,
+          price: it.price,
+          notes: it.notes,
+        });
+      });
+    });
+
+    return {
+      id: sess.id,
+      tableNumber: sess.table ? sess.table.number : "12",
+      status: sess.status,
+      paymentStatus: sess.paymentStatus,
+      paymentMethod: sess.paymentMethod,
+      billRequestedAt: sess.billRequestedAt,
+      billSentAt: sess.billSentAt,
+      createdAt: sess.createdAt,
+      ordersCount: sess.orders.length,
+      totalAmount: Math.round(sessionTotal * 100) / 100,
+      items: allItems,
+    };
+  });
 
   return NextResponse.json({
     restaurantId: restaurant.id,
@@ -56,6 +103,7 @@ async function GET() {
     ready: readyCount,
     completedToday,
     allToday: summary.today.count,
+    activeSessions: formattedActiveSessions,
     liveOrders: liveOrders.map((o) => ({
       id: o.id,
       status: o.status === "PAID" ? "CONFIRMED" : o.status,

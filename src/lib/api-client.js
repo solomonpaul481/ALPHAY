@@ -18,8 +18,19 @@ export function createApiClient(restaurantId) {
   const base = `/api/r/${restaurantId}`;
   return {
     getInfo: () => request(`${base}/info`),
+    checkSession: (tableNumber) =>
+      request(`${base}/session/check`, { method: "POST", body: JSON.stringify({ tableNumber }) }),
     startSession: (payload) =>
       request(`${base}/session`, { method: "POST", body: JSON.stringify(payload) }),
+    getActiveSession: () => request(`${base}/session/active`),
+    requestBill: () => request(`${base}/session/request-bill`, { method: "POST" }),
+    paySessionOnline: () => request(`${base}/session/pay-online`, { method: "POST" }),
+    verifySessionPayment: (payload) =>
+      request(`${base}/session/verify-payment`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    paySessionCash: () => request(`${base}/session/pay-cash`, { method: "POST" }),
     getMenu: () => request(`${base}/menu`),
     createOrder: (payload) =>
       request(`${base}/orders`, { method: "POST", body: JSON.stringify(payload) }),

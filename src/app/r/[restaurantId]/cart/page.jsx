@@ -52,8 +52,31 @@ export default function CartPage() {
 
   const activeNotes = specialInstructions.split(",").map((s) => s.trim());
 
-  const proceedToPayment = () => {
-    router.push(`/r/${restaurantId}/payment`);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const handlePlaceOrder = async () => {
+    if (submitting || items.length === 0) return;
+    setSubmitting(true);
+    setError("");
+
+    try {
+      await api.createOrder({
+        items: items.map((i) => ({ menuItemId: i.menuItemId, quantity: i.quantity, notes: i.notes })),
+        specialInstructions,
+      });
+      // Clear cart after placing order
+      clearCart();
+      // Route to session order tracking & bill page
+      router.push(`/r/${restaurantId}/track`);
+    } catch (err) {
+      setSubmitting(false);
+      if (err.status === 401) {
+        router.replace(`/r/${restaurantId}`);
+        return;
+      }
+      setError(err.message || "Could not place order. Please try again.");
+    }
   };
 
   if (hydrated && items.length === 0) {
@@ -154,7 +177,7 @@ export default function CartPage() {
         {/* Bill Summary */}
         <section className="mt-6 rounded-2xl bg-slate-900 p-5 shadow-sm border border-amber-500/20">
           <h2 className="text-xs font-extrabold uppercase tracking-wider text-amber-400 mb-3 font-['Cinzel']">
-            Payment Summary
+            Current Order Summary
           </h2>
           <div className="flex justify-between text-xs font-bold text-slate-400">
             <span>Item Subtotal</span>
@@ -165,12 +188,18 @@ export default function CartPage() {
             <span className="font-mono tabular-nums text-white">₹{gstAmount.toFixed(2)}</span>
           </div>
           <div className="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center text-base font-extrabold text-white">
-            <span className="font-['Cinzel']">Grand Total</span>
+            <span className="font-['Cinzel']">Order Total</span>
             <span className="font-mono text-lg font-black text-amber-400 tabular-nums">
               ₹{grandTotal.toFixed(2)}
             </span>
           </div>
         </section>
+
+        {error && (
+          <p className="mt-4 rounded-xl bg-rose-500/20 border border-rose-500/40 p-3 text-xs font-bold text-rose-300 text-center">
+            {error}
+          </p>
+        )}
       </div>
 
       {/* Sticky Proceed Button */}
@@ -178,11 +207,11 @@ export default function CartPage() {
         <div className="mx-auto max-w-lg">
           <button
             type="button"
-            onClick={proceedToPayment}
-            disabled={items.length === 0}
+            onClick={handlePlaceOrder}
+            disabled={items.length === 0 || submitting}
             className="flex w-full items-center justify-between rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 px-6 py-4 text-sm font-extrabold text-slate-950 shadow-lg shadow-amber-500/25 transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer font-['Cinzel'] tracking-wider"
           >
-            <span>Proceed to Payment</span>
+            <span>{submitting ? "Sending to Kitchen..." : "Place Order & Send to Kitchen"}</span>
             <span className="font-mono text-base font-black flex items-center gap-1">
               ₹{grandTotal.toFixed(2)} <IconArrowRight className="h-4 w-4 text-slate-950" />
             </span>

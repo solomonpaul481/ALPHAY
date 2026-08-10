@@ -22,6 +22,7 @@ async function getSession(restaurantId) {
   });
   if (!session) return null;
   if (session.expiresAt < new Date()) return null;
+  if (session.endedAt || session.status === "COMPLETED" || session.status === "CLOSED") return null;
 
   return session;
 }

@@ -1,7 +1,6 @@
 const { NextResponse } = require("next/server");
 const { db } = require("@/lib/db");
 const { getSession } = require("@/lib/get-session");
-const { createRazorpayOrder } = require("@/lib/razorpay");
 
 async function POST(request, { params }) {
   const { restaurantId } = params;
@@ -54,12 +53,13 @@ async function POST(request, { params }) {
   const gstAmount = Math.round(subtotal * (restaurant.gstPercent / 100) * 100) / 100;
   const total = Math.round((subtotal + gstAmount) * 100) / 100;
 
+  // Create order with status CONFIRMED directly under the active customer session
   const order = await db.order.create({
     data: {
       restaurantId,
       tableId: session.tableId,
       sessionId: session.id,
-      status: "PENDING_PAYMENT",
+      status: "CONFIRMED",
       subtotal,
       gstAmount,
       total,
@@ -69,42 +69,14 @@ async function POST(request, { params }) {
     include: { items: true },
   });
 
-  try {
-    const razorpayOrder = await createRazorpayOrder({
-      amountInPaise: Math.round(total * 100),
-      receipt: order.id,
-      notes: { restaurantId, tableNumber: session.table.number, orderId: order.id },
-    });
-
-    await db.order.update({
-      where: { id: order.id },
-      data: { razorpayOrderId: razorpayOrder.id },
-    });
-    await db.payment.create({
-      data: {
-        orderId: order.id,
-        razorpayOrderId: razorpayOrder.id,
-        status: "created",
-        amount: total,
-      },
-    });
-
-    return NextResponse.json({
-      orderId: order.id,
-      razorpayOrderId: razorpayOrder.id,
-      amount: total,
-      amountInPaise: Math.round(total * 100),
-      keyId: process.env.RAZORPAY_KEY_ID,
-      restaurantName: restaurant.name,
-      tableNumber: session.table.number,
-    });
-  } catch (err) {
-    console.error("Failed to create Razorpay order:", err?.message || err);
-    return NextResponse.json(
-      { error: err?.message || "Could not start payment. Please check your Razorpay API keys." },
-      { status: 502 }
-    );
-  }
+  return NextResponse.json({
+    ok: true,
+    orderId: order.id,
+    amount: total,
+    restaurantName: restaurant.name,
+    tableNumber: session.table.number,
+    message: "Order placed successfully! It has been sent to the kitchen.",
+  });
 }
 
 module.exports = { POST };

@@ -100,17 +100,26 @@ model MenuItem {
 }
 
 model CustomerSession {
-  id           String   @id @default(cuid())
-  restaurantId String
-  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
-  tableId      String
-  table        DiningTable @relation(fields: [tableId], references: [id])
-  token        String   @unique
-  latitude     Float
-  longitude    Float
-  distanceMeters Float
-  createdAt    DateTime @default(now())
-  expiresAt    DateTime
+  id                String   @id @default(cuid())
+  restaurantId      String
+  restaurant        Restaurant @relation(fields: [restaurantId], references: [id])
+  tableId           String
+  table             DiningTable @relation(fields: [tableId], references: [id])
+  token             String   @unique
+  latitude          Float
+  longitude         Float
+  distanceMeters    Float
+  status            String   @default("ACTIVE") // ACTIVE | BILL_REQUESTED | BILL_SENT | COMPLETED | CLOSED
+  billRequestedAt   DateTime?
+  billSentAt        DateTime?
+  endedAt           DateTime?
+  paymentMethod     String?  // ONLINE | CASH
+  paymentStatus     String   @default("UNPAID") // UNPAID | PAID
+  billTotal         Float?
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  createdAt         DateTime @default(now())
+  expiresAt         DateTime
 
   orders Order[]
 }

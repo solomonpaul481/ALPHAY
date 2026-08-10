@@ -141,6 +141,17 @@ export default function MenuPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* ACTIVE SESSION ORDERS & BILL BUTTON */}
+            <button
+              type="button"
+              onClick={() => router.push(`/r/${restaurantId}/track`)}
+              className="flex h-9 items-center gap-1.5 rounded-2xl bg-slate-950 px-2.5 py-1 border border-amber-500/30 text-amber-400 text-xs font-bold hover:bg-slate-900 transition-all cursor-pointer"
+              title="View Active Orders & Bill"
+            >
+              <span>📋</span>
+              <span className="hidden sm:inline">My Session</span>
+            </button>
+
             {/* TOP RIGHT VEG / NON-VEG SWITCH TOGGLE */}
             <div className="flex items-center gap-1.5 rounded-2xl bg-slate-950 p-1 border border-amber-500/30">
               <span className={`text-[10px] font-black px-1 ${isVegOnly ? "text-emerald-400" : "text-rose-400"}`}>

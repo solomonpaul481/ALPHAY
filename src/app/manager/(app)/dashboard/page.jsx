@@ -6,9 +6,10 @@ import StatCard from "@/components/dashboard/StatCard";
 
 const STATUS_LABEL = { CONFIRMED: "CONFIRMED", PREPARING: "PREPARING", READY: "READY" };
 const NEXT_ACTION_LABEL = { CONFIRMED: "Mark Preparing", PREPARING: "Mark Ready", READY: "Mark Served" };
-const CALL_LABEL = { WAITER: "🙋 Call Waiter", WATER: "💧 Request Water", HELP: "🆘 Need Help" };
+const CALL_LABEL = { WAITER: "🙋 Call Waiter", WATER: "💧 Request Water", HELP: "🆘 Need Help", BILL: "🧾 Bill Requested", CASH_BILL: "💵 Cash Payment" };
 
 function timeAgo(iso) {
+  if (!iso) return "just now";
   const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
   if (mins < 1) return "just now";
   if (mins === 1) return "1 min ago";
@@ -78,7 +79,7 @@ function KotModal({ order, restaurantName, onClose }) {
           </div>
 
           <div className="text-center pt-2 text-[10px] text-ink2 font-semibold">
-            PAID VIA RAZORPAY VERIFIED ✓
+            TABLE SESSION KOT ✓
           </div>
         </div>
 
@@ -115,7 +116,7 @@ export default function ManagerDashboardPage() {
 
   useEffect(() => {
     load();
-    const interval = setInterval(load, 5000);
+    const interval = setInterval(load, 3000);
     return () => clearInterval(interval);
   }, [load]);
 
@@ -139,6 +140,30 @@ export default function ManagerDashboardPage() {
     }
   };
 
+  const sendBill = async (sessionId) => {
+    setBusyId(sessionId);
+    try {
+      await fetch(`/api/manager/sessions/${sessionId}/send-bill`, { method: "POST" });
+      await load();
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const markPaid = async (sessionId, paymentMethod = "CASH") => {
+    setBusyId(sessionId);
+    try {
+      await fetch(`/api/manager/sessions/${sessionId}/mark-paid`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentMethod }),
+      });
+      await load();
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   return (
     <>
       <Topbar title="Manager Dashboard" />
@@ -154,16 +179,16 @@ export default function ManagerDashboardPage() {
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
               <StatCard label="Today's Sales" value={`₹${data.todayEarnings.toFixed(0)}`} accent="gold" />
               <StatCard label="Today's Orders" value={data.todayOrders} />
-              <StatCard label="Pending Orders" value={data.active} accent="purple" />
+              <StatCard label="Active Sessions" value={data.activeSessions?.length || 0} accent="purple" />
               <StatCard label="Completed Orders" value={data.completedToday} accent="veg" />
             </div>
 
-            {/* ASSISTANCE REQUESTS */}
+            {/* ASSISTANCE & BILL REQUEST NOTIFICATIONS */}
             {data.staffCalls.length > 0 && (
               <section>
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-xl">🔔</span>
-                  <h2 className="font-display text-lg font-bold text-ink">Assistance Requests</h2>
+                  <h2 className="font-display text-lg font-bold text-ink">Customer Requests & Alerts</h2>
                 </div>
                 <div className="flex flex-wrap gap-3">
                   {data.staffCalls.map((c) => (
@@ -191,26 +216,140 @@ export default function ManagerDashboardPage() {
               </section>
             )}
 
+            {/* ACTIVE DINING SESSIONS & BILL MANAGEMENT */}
+            <section>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="font-display text-xl font-bold text-ink">
+                    Active Dining Tables & Sessions ({data.activeSessions?.length || 0})
+                  </h2>
+                  <p className="text-xs font-semibold text-ink2">Review session bills, send bills to customer, and confirm payments.</p>
+                </div>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-50 px-3 py-1 text-xs font-bold text-purple">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
+                  Live Tables
+                </span>
+              </div>
+
+              {(!data.activeSessions || data.activeSessions.length === 0) ? (
+                <div className="rounded-3xl bg-white p-8 text-center shadow-soft border border-purple-50">
+                  <p className="text-3xl mb-2">🍽️</p>
+                  <p className="font-display text-base font-bold text-ink">No Active Table Sessions</p>
+                  <p className="text-xs text-ink2 mt-1">When customers scan table QR codes, active sessions will appear here.</p>
+                </div>
+              ) : (
+                <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+                  {data.activeSessions.map((sess) => {
+                    const isBillRequested = sess.status === "BILL_REQUESTED";
+                    const isBillSent = sess.status === "BILL_SENT";
+                    const isOnlinePaid = sess.paymentStatus === "PAID" && sess.paymentMethod === "ONLINE";
+
+                    return (
+                      <div key={sess.id} className="rounded-3xl bg-white p-6 shadow-soft border border-purple-50 flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-start justify-between border-b border-purple-50 pb-3">
+                            <div>
+                              <span className="font-mono text-xs font-bold text-purple">
+                                TABLE #{sess.tableNumber}
+                              </span>
+                              <h3 className="font-display text-lg font-bold text-ink">
+                                Session #{sess.id.slice(-6).toUpperCase()}
+                              </h3>
+                              <p className="text-[11px] font-semibold text-ink2 mt-0.5">
+                                Started {timeAgo(sess.createdAt)} · {sess.ordersCount} Order{sess.ordersCount === 1 ? "" : "s"}
+                              </p>
+                            </div>
+
+                            {/* SESSION STATUS BADGE */}
+                            {isOnlinePaid ? (
+                              <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-800 border border-emerald-300">
+                                PAID (ONLINE) ✓
+                              </span>
+                            ) : isBillSent ? (
+                              <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-800 border border-amber-300">
+                                BILL SENT 🧾
+                              </span>
+                            ) : isBillRequested ? (
+                              <span className="rounded-full bg-rose-100 px-3 py-1 text-xs font-black text-rose-800 border border-rose-300 animate-pulse">
+                                BILL REQUESTED ⏳
+                              </span>
+                            ) : (
+                              <span className="rounded-full bg-purple-50 px-3 py-1 text-xs font-bold text-purple">
+                                DINING 🟢
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Itemized Order List */}
+                          <div className="mt-3">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-ink2 mb-1">Session Dishes</p>
+                            <ul className="space-y-1.5 text-xs font-semibold text-ink divide-y divide-purple-50/50 max-h-36 overflow-y-auto pr-1">
+                              {sess.items.map((it, idx) => (
+                                <li key={idx} className="pt-1.5 flex justify-between">
+                                  <span><strong className="text-purple">{it.quantity}x</strong> {it.name}</span>
+                                  <span className="font-mono text-ink2">₹{(it.price * it.quantity).toFixed(0)}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+
+                        {/* Footer Total & Actions */}
+                        <div className="mt-5 pt-3 border-t border-purple-50 space-y-3">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <p className="text-[10px] font-bold uppercase text-ink2">Total Session Bill</p>
+                              <p className="font-mono text-lg font-black text-purple tabular-nums">
+                                ₹{sess.totalAmount.toFixed(2)}
+                              </p>
+                            </div>
+
+                            {/* MANUAL PAID BUTTON OR AUTOMATIC ONLINE PAID */}
+                            <button
+                              type="button"
+                              onClick={() => markPaid(sess.id, sess.paymentMethod || "CASH")}
+                              disabled={busyId === sess.id}
+                              className="rounded-2xl bg-emerald-600 px-4 py-2.5 text-xs font-extrabold text-white shadow-soft hover:bg-emerald-700 transition-all cursor-pointer disabled:opacity-50"
+                              title="Mark session as Paid and clear active table session"
+                            >
+                              {busyId === sess.id ? "Processing..." : "✓ Paid"}
+                            </button>
+                          </div>
+
+                          {/* SEND BILL BUTTON IF REQUESTED */}
+                          {isBillRequested && (
+                            <button
+                              type="button"
+                              onClick={() => sendBill(sess.id)}
+                              disabled={busyId === sess.id}
+                              className="w-full rounded-2xl bg-amber-500 hover:bg-amber-400 py-2 text-xs font-extrabold text-slate-950 transition-all cursor-pointer shadow-soft"
+                            >
+                              🧾 Send Bill to Customer Device
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+
             {/* LIVE ORDERS */}
             <section>
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h2 className="font-display text-xl font-bold text-ink">
-                    Live Restaurant Orders ({data.liveOrders.length})
+                    Kitchen Live Orders ({data.liveOrders.length})
                   </h2>
-                  <p className="text-xs font-semibold text-ink2">Only verified paid orders are shown.</p>
+                  <p className="text-xs font-semibold text-ink2">All kitchen items across dining sessions.</p>
                 </div>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-50 px-3 py-1 text-xs font-bold text-purple">
-                  <span className="h-2 w-2 rounded-full bg-purple animate-ping" />
-                  Auto-refreshing Live
-                </span>
               </div>
 
               {data.liveOrders.length === 0 ? (
                 <div className="rounded-3xl bg-white p-8 text-center shadow-soft border border-purple-50">
-                  <p className="text-3xl mb-2">🍽️</p>
-                  <p className="font-display text-base font-bold text-ink">No Active Live Orders</p>
-                  <p className="text-xs text-ink2 mt-1">New customer orders will appear here automatically.</p>
+                  <p className="text-3xl mb-2">👨‍🍳</p>
+                  <p className="font-display text-base font-bold text-ink">No Kitchen Orders Pending</p>
                 </div>
               ) : (
                 <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
@@ -238,13 +377,10 @@ export default function ManagerDashboardPage() {
                           </button>
                         </div>
 
-                        {/* Status & Payment badges */}
+                        {/* Status badge */}
                         <div className="mt-3 flex items-center gap-2">
-                          <span className="rounded-full bg-veg-tint px-2.5 py-0.5 text-xs font-bold text-veg border border-veg/20">
-                            PAID ✓
-                          </span>
                           <span className="rounded-full bg-purple-50 px-2.5 py-0.5 text-xs font-bold text-purple">
-                            {STATUS_LABEL[order.status]}
+                            {STATUS_LABEL[order.status] || order.status}
                           </span>
                         </div>
 
@@ -265,7 +401,7 @@ export default function ManagerDashboardPage() {
                       {/* Footer Actions */}
                       <div className="mt-6 pt-3 border-t border-purple-50 flex items-center justify-between">
                         <div>
-                          <p className="text-[10px] font-bold uppercase text-ink2">Total Bill</p>
+                          <p className="text-[10px] font-bold uppercase text-ink2">Order Amount</p>
                           <p className="font-mono text-base font-bold text-purple tabular-nums">
                             ₹{order.total.toFixed(0)}
                           </p>
@@ -276,7 +412,7 @@ export default function ManagerDashboardPage() {
                           disabled={busyId === order.id}
                           className="rounded-2xl bg-purple px-5 py-2.5 text-xs font-bold text-white shadow-lift hover:bg-purple-deep transition-all active:scale-95 disabled:opacity-50"
                         >
-                          {NEXT_ACTION_LABEL[order.status]}
+                          {NEXT_ACTION_LABEL[order.status] || "Advance"}
                         </button>
                       </div>
                     </div>

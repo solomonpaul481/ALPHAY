@@ -2,14 +2,6 @@ const { NextResponse } = require("next/server");
 const { db } = require("@/lib/db");
 const { verifyWebhookSignature } = require("@/lib/razorpay");
 
-/**
- * Razorpay calls this endpoint directly from its own servers whenever a
- * payment event happens. This is the ONLY place an order is marked PAID —
- * never the browser. Configure this URL (https://yourdomain.com/api/webhooks/razorpay)
- * in the Razorpay Dashboard under Settings -> Webhooks, with events
- * "payment.captured" and "payment.failed", and put the webhook secret you
- * choose there into RAZORPAY_WEBHOOK_SECRET in .env.
- */
 async function POST(request) {
   const rawBody = await request.text();
   const signature = request.headers.get("x-razorpay-signature");
@@ -26,31 +18,49 @@ async function POST(request) {
     const payment = event.payload.payment.entity;
     const razorpayOrderId = payment.order_id;
 
-    const order = await db.order.findUnique({ where: { razorpayOrderId } });
-    if (!order) {
-      console.warn(`Webhook: no order found for Razorpay order ${razorpayOrderId}`);
-      return NextResponse.json({ ok: true }); // ack anyway — nothing to retry
+    // Check if webhook is for a CustomerSession payment
+    const session = await db.customerSession.findFirst({ where: { razorpayOrderId } });
+    if (session) {
+      if (session.status !== "COMPLETED") {
+        await db.customerSession.update({
+          where: { id: session.id },
+          data: {
+            status: "COMPLETED",
+            paymentStatus: "PAID",
+            paymentMethod: "ONLINE",
+            razorpayPaymentId: payment.id,
+            endedAt: new Date(),
+          },
+        });
+        await db.order.updateMany({
+          where: { sessionId: session.id },
+          data: { status: "PAID" },
+        });
+        console.log(`Session ${session.id} marked COMPLETED & PAID via Razorpay webhook.`);
+      }
+      return NextResponse.json({ ok: true });
     }
 
-    // Idempotent: if we've already confirmed this order, do nothing further.
-    if (order.status === "PENDING_PAYMENT" || order.status === "PAYMENT_FAILED") {
-      await db.$transaction([
-        db.order.update({
-          where: { id: order.id },
-          data: { status: "CONFIRMED", razorpayPaymentId: payment.id },
-        }),
-        db.payment.update({
-          where: { orderId: order.id },
-          data: {
-            status: "verified",
-            razorpayPaymentId: payment.id,
-            verifiedAt: new Date(),
-          },
-        }),
-      ]);
-      // This is where kitchen/manager notification would be dispatched
-      // (push notification, websocket event, or dashboard poll picks it up).
-      console.log(`Order ${order.id} confirmed for table via payment ${payment.id}`);
+    // Otherwise check for single Order payment fallback
+    const order = await db.order.findUnique({ where: { razorpayOrderId } });
+    if (order) {
+      if (order.status === "PENDING_PAYMENT" || order.status === "PAYMENT_FAILED") {
+        await db.$transaction([
+          db.order.update({
+            where: { id: order.id },
+            data: { status: "CONFIRMED", razorpayPaymentId: payment.id },
+          }),
+          db.payment.update({
+            where: { orderId: order.id },
+            data: {
+              status: "verified",
+              razorpayPaymentId: payment.id,
+              verifiedAt: new Date(),
+            },
+          }),
+        ]);
+        console.log(`Order ${order.id} confirmed via payment ${payment.id}`);
+      }
     }
   }
 
