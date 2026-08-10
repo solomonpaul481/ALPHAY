@@ -19,11 +19,8 @@ const DEFAULT_CATEGORY_IMAGES = {
 };
 
 export default function CategoryCard({ categoryName, items = [], isVegOnly = true, onClick }) {
-  // Find first available item image or fallback image for this category
   const firstItemWithImg = items.find((i) => i.imageUrl)?.imageUrl;
   const imageUrl = firstItemWithImg || DEFAULT_CATEGORY_IMAGES[categoryName] || "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=400&q=80";
-
-  const itemCount = items.length;
 
   return (
     <motion.div
@@ -31,29 +28,19 @@ export default function CategoryCard({ categoryName, items = [], isVegOnly = tru
       onClick={onClick}
       whileHover={{ y: -4, scale: 1.02 }}
       whileTap={{ scale: 0.97 }}
-      className="group relative flex h-32 w-full overflow-hidden rounded-3xl bg-slate-900 p-3.5 shadow-xl border-b-4 border-r-2 border-amber-500/30 hover:border-amber-400 hover:shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all duration-300 cursor-pointer select-none"
+      className="group relative flex h-28 w-full overflow-hidden rounded-3xl bg-slate-900 p-3.5 shadow-xl border-b-4 border-r-2 border-amber-500/30 hover:border-amber-400 hover:shadow-[0_0_20px_rgba(245,158,11,0.25)] transition-all duration-300 cursor-pointer select-none"
     >
       {/* 3D Depth Top-Right Gold Glow */}
       <div className="absolute -top-12 -right-12 h-28 w-28 rounded-full bg-amber-500/15 blur-xl group-hover:scale-150 transition-transform duration-500 pointer-events-none" />
 
-      {/* Left Side: Category Name, Item Count & Badge */}
-      <div className="relative z-10 flex h-full flex-1 flex-col justify-between pr-2">
-        <div>
-          <span className="inline-block rounded-md bg-amber-500/15 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-300 border border-amber-500/30">
-            {itemCount} {itemCount === 1 ? "Item" : "Items"}
-          </span>
-          <h3 className="mt-1.5 text-sm sm:text-base font-black text-white leading-tight line-clamp-2 group-hover:text-amber-400 transition-colors font-['Cinzel']">
-            {categoryName}
-          </h3>
-        </div>
-
-        <div className="flex items-center gap-1 text-[10px] font-bold text-amber-300/80">
-          <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
-          <span>Tap to Expand</span>
-        </div>
+      {/* Left Side: Category Name ONLY */}
+      <div className="relative z-10 flex h-full flex-1 items-center pr-2">
+        <h3 className="text-sm sm:text-base font-extrabold text-white leading-snug line-clamp-2 group-hover:text-amber-400 transition-colors font-['Cinzel'] tracking-wide">
+          {categoryName}
+        </h3>
       </div>
 
-      {/* Right Side: Category Image with Fading Gradient at Bottom */}
+      {/* Right Side: Category Image */}
       <div className="relative h-full w-20 sm:w-24 flex-shrink-0 overflow-hidden rounded-2xl bg-slate-850 border border-slate-800">
         <img
           src={imageUrl}

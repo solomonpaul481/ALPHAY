@@ -202,14 +202,13 @@ export default function MenuPage() {
           </section>
         )}
 
-        {/* CATEGORIES GRID: TWO CATEGORIES IN A ROW WITH 3D ELEVATED CARDS */}
+        {/* CATEGORIES GRID: TWO CATEGORIES IN A ROW WITH SIMPLIFIED CARDS */}
         <section className="mt-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-extrabold text-white tracking-tight flex items-center gap-2 font-['Cinzel']">
               <span className={`inline-block h-3 w-3 rounded-full ${isVegOnly ? "bg-emerald-400" : "bg-rose-400"}`} />
               {isVegOnly ? "Vegetarian Categories" : "Non-Vegetarian Categories"}
             </h2>
-            <span className="text-xs font-semibold text-amber-300/70">2 per row · Luxury Cards</span>
           </div>
 
           <div className="grid grid-cols-2 gap-3.5 sm:gap-4">
@@ -248,14 +247,14 @@ export default function MenuPage() {
             {/* EXPANDED VIEW APP BAR AT TOP OF SCREEN */}
             <header className="sticky top-0 z-40 border-b border-amber-500/20 bg-slate-900/95 px-4 py-3 shadow-md backdrop-blur-md">
               <div className="mx-auto flex max-w-2xl items-center justify-between">
-                {/* Back Button: Returns user to Categories Menu Home screen */}
+                {/* Back Button: Just an arrow icon (←) */}
                 <button
                   type="button"
                   onClick={() => setExpandedCategory(null)}
-                  className="flex items-center gap-2 rounded-2xl bg-amber-500/15 px-3.5 py-2 text-xs font-black text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 transition-all cursor-pointer shadow-xs"
+                  className="flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 transition-all cursor-pointer shadow-xs"
+                  aria-label="Back"
                 >
-                  <IconArrowLeft className="h-4 w-4" />
-                  <span className="font-['Cinzel'] tracking-wider">Categories Menu</span>
+                  <IconArrowLeft className="h-5 w-5" />
                 </button>
 
                 {/* Category Name in Top Center of App Bar */}
