@@ -19,7 +19,14 @@ async function GET() {
   const [summary, liveOrders, completedToday, staffCalls, restaurant, activeSessions] = await Promise.all([
     getRevenueSummary(restaurantId),
     db.order.findMany({
-      where: { restaurantId, status: { in: ["PAID", "CONFIRMED", "PREPARING", "READY"] } },
+      where: {
+        restaurantId,
+        status: { in: ["PAID", "CONFIRMED", "PREPARING", "READY"] },
+        session: {
+          endedAt: null,
+          status: { in: ["ACTIVE", "BILL_REQUESTED", "BILL_SENT"] },
+        },
+      },
       include: { items: true, table: true },
       orderBy: { createdAt: "asc" },
     }),

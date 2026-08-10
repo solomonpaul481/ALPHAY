@@ -30,11 +30,15 @@ async function GET(request) {
     return NextResponse.json({ error: "Restaurant not found" }, { status: 404 });
   }
 
-  // Include PAID and CONFIRMED as new orders for kitchen display
+  // Only query orders for sessions that are STILL ACTIVE (not ended or completed or closed)
   const activeOrders = await db.order.findMany({
     where: {
       restaurantId,
       status: { in: ["PAID", "CONFIRMED", "PREPARING", "READY"] },
+      session: {
+        endedAt: null,
+        status: { in: ["ACTIVE", "BILL_REQUESTED", "BILL_SENT"] },
+      },
     },
     include: {
       items: true,

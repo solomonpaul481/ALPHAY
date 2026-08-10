@@ -312,7 +312,7 @@ export default function ManagerDashboardPage() {
                               className="rounded-2xl bg-emerald-600 px-4 py-2.5 text-xs font-extrabold text-white shadow-soft hover:bg-emerald-700 transition-all cursor-pointer disabled:opacity-50"
                               title="Mark session as Paid and clear active table session"
                             >
-                              {busyId === sess.id ? "Processing..." : "✓ Paid"}
+                              {busyId === sess.id ? "Processing..." : "Paid"}
                             </button>
                           </div>
 
