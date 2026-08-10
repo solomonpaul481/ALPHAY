@@ -29,6 +29,10 @@ export function createApiClient(restaurantId) {
         method: "POST",
         body: JSON.stringify(payload),
       }),
+    payCash: (orderId) =>
+      request(`${base}/orders/${orderId}/cash`, {
+        method: "POST",
+      }),
     cancelOrder: (orderId) => request(`${base}/orders/${orderId}/cancel`, { method: "POST" }),
     callStaff: (type) =>
       request(`${base}/staff-call`, { method: "POST", body: JSON.stringify({ type }) }),

@@ -3,7 +3,8 @@
 import { Suspense, useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { createApiClient } from "@/lib/api-client";
-import { IconUtensils, IconArrowRight, IconSparkles, IconClock, IconQrCode } from "@/components/Icons";
+import ThreeDTableShowcase from "@/components/ThreeDTableShowcase";
+import { IconUtensils, IconArrowRight, IconSparkles, IconClock, IconQrCode, IconArrowLeft } from "@/components/Icons";
 
 function LandingFormInner() {
   const { restaurantId } = useParams();
@@ -16,6 +17,9 @@ function LandingFormInner() {
   const [tableNumber, setTableNumber] = useState(initialTable);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  
+  // Show 3D showcase by default; user can toggle or click to enter table number form
+  const [showTableForm, setShowTableForm] = useState(false);
 
   useEffect(() => {
     if (!restaurantId) return;
@@ -77,11 +81,32 @@ function LandingFormInner() {
     }
   };
 
+  if (!showTableForm) {
+    return (
+      <div className="w-full max-w-xl space-y-4">
+        {/* 3D Dishes Popping & Rotating Table Showcase */}
+        <ThreeDTableShowcase
+          restaurantName={restaurant?.name}
+          onProceed={() => setShowTableForm(true)}
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="w-full max-w-md">
-      <div className="rounded-3xl bg-white dark:bg-zinc-900 p-8 shadow-xl border border-slate-200 dark:border-zinc-800 transition-colors">
+    <div className="w-full max-w-md animate-in fade-in zoom-in-95 duration-300">
+      <div className="rounded-3xl bg-white dark:bg-zinc-900 p-8 shadow-xl border border-slate-200 dark:border-zinc-800 transition-colors relative">
+        {/* Back Button to 3D Showcase */}
+        <button
+          type="button"
+          onClick={() => setShowTableForm(false)}
+          className="absolute left-6 top-6 flex items-center gap-1.5 text-xs font-extrabold text-slate-500 hover:text-indigo-600 dark:text-zinc-400 dark:hover:text-indigo-400 transition-colors cursor-pointer"
+        >
+          <IconArrowLeft className="h-4 w-4" /> 3D Table View
+        </button>
+
         {/* Header Icon & Brand */}
-        <div className="text-center">
+        <div className="text-center pt-2">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-md">
             {restaurant?.logoUrl ? (
               <img src={restaurant.logoUrl} alt={restaurant.name} className="h-10 w-10 object-contain" />
@@ -166,10 +191,10 @@ function LandingFormInner() {
 
 export default function CustomerLandingPage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-slate-50 dark:bg-zinc-950 px-4 py-12 transition-colors">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-slate-50 dark:bg-zinc-950 px-4 py-8 transition-colors">
       <Suspense fallback={
         <div className="w-full max-w-md rounded-3xl bg-white dark:bg-zinc-900 p-8 text-center text-sm font-bold text-slate-500 shadow-xl border border-slate-200 dark:border-zinc-800">
-          Loading Restaurant Menu...
+          Loading Restaurant 3D Showcase...
         </div>
       }>
         <LandingFormInner />
@@ -177,3 +202,4 @@ export default function CustomerLandingPage() {
     </main>
   );
 }
+

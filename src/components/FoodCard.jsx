@@ -3,8 +3,7 @@
 import { useCart } from "@/lib/cart-context";
 import Badge from "./Badge";
 import VegDot from "./VegDot";
-import QuantitySelector from "./QuantitySelector";
-import { IconPlus, IconMinus, IconClock } from "./Icons";
+import { IconPlus, IconMinus } from "./Icons";
 
 export default function FoodCard({ item, layout = "grid" }) {
   const { addItem, setQuantity, quantityOf } = useCart();
@@ -17,20 +16,23 @@ export default function FoodCard({ item, layout = "grid" }) {
 
   return (
     <div
-      className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md transition-all duration-200 ${
+      className={`group relative flex flex-col justify-between overflow-hidden rounded-3xl bg-white dark:bg-zinc-900 border-b-4 border-r-2 border-slate-200 dark:border-zinc-800 shadow-md hover:shadow-xl hover:border-indigo-500/50 hover:-translate-y-1 transition-all duration-300 ${
         isWide ? "w-[220px] flex-shrink-0" : "w-full"
       } ${!item.isAvailable ? "opacity-60" : ""}`}
     >
-      {/* Photo Container with Bottom Right Swiggy ADD Button */}
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100">
+      {/* 3D Glass Accent Glow */}
+      <div className="absolute -top-8 -right-8 h-20 w-20 rounded-full bg-indigo-500/10 blur-lg pointer-events-none group-hover:scale-125 transition-transform" />
+
+      {/* Photo Container with Bottom Right ADD Button */}
+      <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 dark:bg-zinc-800">
         {item.imageUrl ? (
           <img
             src={item.imageUrl}
             alt={item.name}
-            className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+            className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-108"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-[10px] font-black text-slate-400 bg-slate-100">
+          <div className="flex h-full w-full items-center justify-center text-[10px] font-black text-slate-400 dark:text-zinc-500 bg-slate-100 dark:bg-zinc-800">
             ALPHAX DISH
           </div>
         )}
@@ -48,41 +50,41 @@ export default function FoodCard({ item, layout = "grid" }) {
         )}
 
         {!item.isAvailable && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center bg-slate-900/70 text-[11px] font-black text-white backdrop-blur-xs">
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-slate-900/75 text-[11px] font-black text-white backdrop-blur-xs">
             OUT OF STOCK
           </div>
         )}
       </div>
 
       {/* Item Details Body */}
-      <div className="flex flex-1 flex-col justify-between p-3">
+      <div className="flex flex-1 flex-col justify-between p-3.5">
         <div>
-          <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 leading-snug line-clamp-1 group-hover:text-indigo-600 transition-colors">
+          <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white leading-snug line-clamp-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
             {item.name}
           </h3>
-          <p className="mt-0.5 line-clamp-1 text-[11px] font-medium text-slate-500">
+          <p className="mt-0.5 line-clamp-1 text-[11px] font-medium text-slate-500 dark:text-zinc-400">
             {item.description || "Fresh chef's special dish."}
           </p>
         </div>
 
-        {/* Price & Swiggy-Style ADD Button at Bottom Right */}
-        <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between gap-1">
+        {/* Price & 3D ADD Button at Bottom Right */}
+        <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between gap-1">
           <div>
-            <span className="font-mono text-sm sm:text-base font-black text-slate-900 tabular-nums">
+            <span className="font-mono text-sm sm:text-base font-black text-slate-900 dark:text-white tabular-nums">
               ₹{item.price}
             </span>
             {item.prepTimeMinutes && (
-              <span className="block text-[10px] font-bold text-slate-400">
+              <span className="block text-[10px] font-bold text-slate-400 dark:text-zinc-500">
                 ~{item.prepTimeMinutes}m
               </span>
             )}
           </div>
 
-          {/* Interactive Bottom Right ADD / Quantity Button */}
+          {/* Interactive Bottom Right 3D Elevated ADD / Quantity Button */}
           {item.isAvailable && (
             <div>
               {quantity > 0 ? (
-                <div className="flex items-center rounded-xl bg-indigo-600 text-white font-mono text-xs font-black shadow-sm overflow-hidden">
+                <div className="flex items-center rounded-2xl bg-indigo-600 text-white font-mono text-xs font-black shadow-md border-b-2 border-indigo-800 overflow-hidden">
                   <button
                     type="button"
                     onClick={() => setQuantity(item.id, quantity - 1)}
@@ -103,7 +105,7 @@ export default function FoodCard({ item, layout = "grid" }) {
                 <button
                   type="button"
                   onClick={() => addItem(item, 1)}
-                  className="flex items-center gap-1 rounded-xl border-2 border-emerald-600 bg-emerald-50 hover:bg-emerald-600 hover:text-white px-3 py-1.5 text-xs font-black text-emerald-700 shadow-xs transition-all active:scale-95 cursor-pointer"
+                  className="flex items-center gap-1 rounded-2xl border-2 border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-600 hover:text-white px-3 py-1.5 text-xs font-black text-emerald-700 dark:text-emerald-300 shadow-sm border-b-4 border-b-emerald-700 transition-all active:translate-y-0.5 cursor-pointer"
                 >
                   <span>ADD</span>
                   <IconPlus className="h-3 w-3" />

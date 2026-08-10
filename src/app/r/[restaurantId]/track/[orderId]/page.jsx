@@ -93,10 +93,16 @@ export default function TrackOrderPage() {
             </div>
           </div>
 
-          <div className="mt-4 flex items-center justify-between text-xs font-bold">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
-              <IconCheck className="h-3.5 w-3.5" /> Payment Verified
-            </span>
+          <div className="mt-4 flex items-center justify-between text-xs font-bold flex-wrap gap-2">
+            {order.payment?.status === "CASH_PENDING" || order.paymentMethod === "CASH" ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 dark:bg-amber-950/40 px-3 py-1 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                💵 Pay Cash at Counter
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                <IconCheck className="h-3.5 w-3.5" /> Payment Verified
+              </span>
+            )}
             <span className="font-mono text-slate-900 dark:text-white">
               Total: ₹{order.total?.toFixed(2) || "0.00"}
             </span>
