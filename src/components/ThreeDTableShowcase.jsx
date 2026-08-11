@@ -271,7 +271,7 @@ export default function ThreeDTableShowcase({ onProceed, restaurantName }) {
         <div>
           <h2 className="text-sm font-extrabold text-white tracking-tight flex items-center gap-2">
             <IconUtensils className="h-4 w-4 text-indigo-400" />
-            {restaurantName || "ALPHAX Dining"}
+            {restaurantName || "ALPHAY Dining"}
           </h2>
           <p className="text-[11px] font-medium text-slate-400">
             Ready to order? Enter table number to unlock full menu & instant checkout.

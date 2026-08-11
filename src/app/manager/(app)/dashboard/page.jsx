@@ -29,9 +29,9 @@ function KotModal({ order, restaurantName, onClose }) {
         <div className="flex items-center justify-between border-b border-purple-50 pb-3">
           <div>
             <span className="font-mono text-xs font-bold uppercase tracking-wider text-purple">
-              ALPHAX THERMAL KOT TOKEN
+              ALPHAY THERMAL KOT TOKEN
             </span>
-            <h3 className="font-display text-xl font-bold text-ink">{restaurantName || "ALPHAX Restaurant"}</h3>
+            <h3 className="font-display text-xl font-bold text-ink">{restaurantName || "ALPHAY Restaurant"}</h3>
           </div>
           <button type="button" onClick={onClose} className="rounded-full bg-purple-50 px-3 py-1 text-xs font-bold text-ink2 hover:bg-purple-100">✕</button>
         </div>
@@ -39,7 +39,7 @@ function KotModal({ order, restaurantName, onClose }) {
         {/* Thermal Slip View */}
         <div className="printable-kot mt-4 rounded-2xl border border-purple-100 bg-purple-50/30 p-5 font-mono text-xs text-ink space-y-3">
           <div className="text-center pb-2 border-b border-dashed border-purple-200">
-            <p className="font-bold text-base">ALPHAX KITCHEN TICKET</p>
+            <p className="font-bold text-base">ALPHAY KITCHEN TICKET</p>
             <p className="text-[11px] text-ink2">{restaurantName}</p>
           </div>
 

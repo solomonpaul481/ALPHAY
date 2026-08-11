@@ -4,12 +4,216 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 
+function ForgotPasswordModal({ onClose, onSuccessEmail }) {
+  const [step, setStep] = useState("REQUEST"); // REQUEST | VERIFY | RESET
+  const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [demoCodeMsg, setDemoCodeMsg] = useState("");
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleRequestCode = async (e) => {
+    e.preventDefault();
+    setError("");
+    setMessage("");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/manager/auth/forgot-password/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to request reset code.");
+      setMessage(data.message);
+      if (data.verificationCode) {
+        setDemoCodeMsg(`Your 6-digit code: ${data.verificationCode}`);
+        setCode(data.verificationCode);
+      }
+      setStep("VERIFY");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyCode = async (e) => {
+    e.preventDefault();
+    setError("");
+    setMessage("");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/manager/auth/forgot-password/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Invalid verification code.");
+      setMessage("Code verified! Please enter your new password below.");
+      setStep("RESET");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setError("");
+    setMessage("");
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch("/api/manager/auth/forgot-password/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code, newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to reset password.");
+      onSuccessEmail(email);
+      alert("Password updated successfully! Please sign in with your new password.");
+      onClose();
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+      <div className="w-full max-w-md rounded-3xl bg-slate-900 border border-amber-500/40 p-6 shadow-2xl text-white">
+        <div className="flex items-center justify-between border-b border-amber-500/20 pb-3">
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 font-['Cinzel']">
+              ALPHAY Security
+            </span>
+            <h3 className="font-['Cinzel'] text-lg font-extrabold text-white">Reset Manager Password</h3>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-full bg-slate-800 p-2 text-xs font-bold text-slate-400 hover:text-white">✕</button>
+        </div>
+
+        {step === "REQUEST" && (
+          <form onSubmit={handleRequestCode} className="mt-4 space-y-4">
+            <p className="text-xs text-slate-300">
+              Enter the manager email address created by Admin during venue onboarding. A 6-digit verification code will be sent to reset your password.
+            </p>
+            <div>
+              <label className="text-[11px] font-black uppercase text-amber-400 font-['Cinzel']">Manager Email Address</label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="manager@yourrestaurant.com"
+                className="mt-1 w-full rounded-2xl border border-amber-500/30 bg-slate-950 px-4 py-3 text-xs font-bold text-white focus:border-amber-400 focus:outline-none"
+              />
+            </div>
+            {error && <p className="rounded-xl bg-rose-950/80 border border-rose-500/40 p-2.5 text-xs font-bold text-rose-300">{error}</p>}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-3.5 text-xs font-black text-slate-950 font-['Cinzel'] shadow-md cursor-pointer disabled:opacity-50"
+            >
+              {loading ? "Sending Code..." : "Send Verification Code"}
+            </button>
+          </form>
+        )}
+
+        {step === "VERIFY" && (
+          <form onSubmit={handleVerifyCode} className="mt-4 space-y-4">
+            {message && <p className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-2.5 text-xs font-bold text-amber-300">{message}</p>}
+            {demoCodeMsg && <p className="rounded-xl bg-emerald-950/80 border border-emerald-500/40 p-2.5 text-xs font-mono font-bold text-emerald-400">{demoCodeMsg}</p>}
+            <div>
+              <label className="text-[11px] font-black uppercase text-amber-400 font-['Cinzel']">6-Digit Verification Code</label>
+              <input
+                type="text"
+                required
+                maxLength={6}
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="123456"
+                className="mt-1 w-full rounded-2xl border border-amber-500/30 bg-slate-950 px-4 py-3 text-center font-mono text-lg font-black tracking-widest text-amber-300 focus:border-amber-400 focus:outline-none"
+              />
+            </div>
+            {error && <p className="rounded-xl bg-rose-950/80 border border-rose-500/40 p-2.5 text-xs font-bold text-rose-300">{error}</p>}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setStep("REQUEST")}
+                className="flex-1 rounded-2xl bg-slate-800 py-3 text-xs font-bold text-slate-300"
+              >
+                Back
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex-1 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-3 text-xs font-black text-slate-950 font-['Cinzel'] shadow-md disabled:opacity-50"
+              >
+                {loading ? "Verifying..." : "Verify Code"}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {step === "RESET" && (
+          <form onSubmit={handleResetPassword} className="mt-4 space-y-4">
+            <p className="text-xs text-emerald-400 font-bold">Code verified! Set your new manager password below.</p>
+            <div>
+              <label className="text-[11px] font-black uppercase text-amber-400 font-['Cinzel']">New Password</label>
+              <input
+                type="password"
+                required
+                minLength={4}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="••••••••"
+                className="mt-1 w-full rounded-2xl border border-amber-500/30 bg-slate-950 px-4 py-3 text-xs font-bold text-white focus:border-amber-400 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-[11px] font-black uppercase text-amber-400 font-['Cinzel']">Confirm New Password</label>
+              <input
+                type="password"
+                required
+                minLength={4}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+                className="mt-1 w-full rounded-2xl border border-amber-500/30 bg-slate-950 px-4 py-3 text-xs font-bold text-white focus:border-amber-400 focus:outline-none"
+              />
+            </div>
+            {error && <p className="rounded-xl bg-rose-950/80 border border-rose-500/40 p-2.5 text-xs font-bold text-rose-300">{error}</p>}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-3.5 text-xs font-black text-slate-950 font-['Cinzel'] shadow-md cursor-pointer disabled:opacity-50"
+            >
+              {loading ? "Updating..." : "Update Password & Return"}
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function ManagerLoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showForgotModal, setShowForgotModal] = useState(false);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -51,7 +255,7 @@ export default function ManagerLoginPage() {
             </div>
             <div>
               <p className="font-['Cinzel'] text-xs font-black uppercase tracking-[0.25em] text-amber-400">
-                ALPHAX PLATFORM
+                ALPHAY PLATFORM
               </p>
               <h2 className="text-xl font-extrabold font-['Cinzel'] text-white tracking-wider">
                 Manager Portal
@@ -115,9 +319,18 @@ export default function ManagerLoginPage() {
             </div>
 
             <div>
-              <label className="text-[11px] font-black uppercase tracking-wider text-amber-300 font-['Cinzel']">
-                Password
-              </label>
+              <div className="flex justify-between items-center">
+                <label className="text-[11px] font-black uppercase tracking-wider text-amber-300 font-['Cinzel']">
+                  Password
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowForgotModal(true)}
+                  className="text-[11px] font-bold text-amber-400 hover:underline cursor-pointer font-['Cinzel']"
+                >
+                  Forgot Password?
+                </button>
+              </div>
               <input
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -150,6 +363,13 @@ export default function ManagerLoginPage() {
           </div>
         </div>
       </motion.div>
+
+      {showForgotModal && (
+        <ForgotPasswordModal
+          onClose={() => setShowForgotModal(false)}
+          onSuccessEmail={(e) => setEmail(e)}
+        />
+      )}
     </main>
   );
 }

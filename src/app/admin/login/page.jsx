@@ -7,7 +7,7 @@ import { IconBuilding } from "@/components/Icons";
 
 const ERROR_MESSAGES = {
   invalid_state: "Your sign-in session expired. Please try again.",
-  not_allowed: "That Google account isn't authorized for the ALPHAX admin portal.",
+  not_allowed: "That Google account isn't authorized for the ALPHAY admin portal.",
   oauth_failed: "Google sign-in failed. Please try again.",
 };
 
@@ -77,7 +77,7 @@ export default function AdminLoginPage() {
           <IconBuilding className="h-8 w-8 text-white" />
         </div>
         <p className="font-mono text-xs font-bold uppercase tracking-[0.25em] text-purple-tint">
-          ALPHAX
+          ALPHAY
         </p>
         <h1 className="mt-1 font-display text-3xl font-bold text-white">Platform Admin</h1>
         <p className="mt-2 text-xs font-semibold text-white/60">

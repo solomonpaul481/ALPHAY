@@ -54,7 +54,7 @@ export default function SearchBar({ allItems, restaurantId }) {
                   <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover" />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-xs font-bold text-purple">
-                    ALPHAX
+                    ALPHAY
                   </div>
                 )}
               </div>

@@ -186,7 +186,7 @@ function AddRestaurantPanel({ onCreated, onClose }) {
           />
         </div>
         <div className="sm:col-span-2">
-          <label className="text-xs font-bold uppercase text-ink2">ALPHAX Platform Commission %</label>
+          <label className="text-xs font-bold uppercase text-ink2">ALPHAY Platform Commission %</label>
           <input
             value={form.commissionPercent}
             onChange={(e) => setForm({ ...form, commissionPercent: e.target.value })}
@@ -374,7 +374,7 @@ function EditRestaurantModal({ restaurant, onUpdated, onClose }) {
           </div>
 
           <div className="sm:col-span-2">
-            <label className="text-xs font-bold uppercase text-ink2">ALPHAX Platform Commission %</label>
+            <label className="text-xs font-bold uppercase text-ink2">ALPHAY Platform Commission %</label>
             <input
               value={form.commissionPercent}
               onChange={(e) => setForm({ ...form, commissionPercent: e.target.value })}

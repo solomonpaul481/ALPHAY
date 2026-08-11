@@ -20,7 +20,7 @@ export default async function AdminAppLayout({ children }) {
   return (
     <div className="min-h-screen bg-cream text-ink">
       <Sidebar
-        brand="ALPHAX"
+        brand="ALPHAY"
         subtitle="Platform Admin"
         items={NAV_ITEMS}
         logoutHref="/api/admin/auth/logout"

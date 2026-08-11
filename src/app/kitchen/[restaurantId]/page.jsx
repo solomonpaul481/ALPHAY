@@ -143,7 +143,7 @@ export default function KitchenDisplayPage() {
           </div>
           <div>
             <h1 className="text-2xl font-black uppercase tracking-wide text-white">
-              {data?.restaurant?.name || "ALPHAX"} — KITCHEN DISPLAY SYSTEM
+              {data?.restaurant?.name || "ALPHAY"} — KITCHEN DISPLAY SYSTEM
             </h1>
             <p className="text-xs font-mono font-bold text-emerald-400">
               ● REAL-TIME LIVE SYNC ACTIVE

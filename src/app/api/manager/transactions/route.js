@@ -66,31 +66,40 @@ async function GET(request) {
     include: {
       table: true,
       payment: true,
+      session: true,
     },
     orderBy: { createdAt: "desc" },
   });
 
   const transactions = orders
     .filter((o) => {
-      if (o.status === "PENDING_PAYMENT") return false;
+      if (o.status === "PENDING_PAYMENT" && !o.session?.paymentStatus === "PAID") return false;
       if (!query) return true;
       const q = query.toLowerCase();
       const orderNo = o.id.slice(-6).toLowerCase();
+      const orderSeqStr = o.orderSeq ? String(o.orderSeq) : "";
       const tableNo = o.table?.number.toLowerCase() || "";
       const pId = (o.razorpayPaymentId || "").toLowerCase();
-      return orderNo.includes(q) || tableNo.includes(q) || pId.includes(q);
+      const pMethod = (o.session?.paymentMethod || "").toLowerCase();
+      return orderNo.includes(q) || orderSeqStr.includes(q) || tableNo.includes(q) || pId.includes(q) || pMethod.includes(q);
     })
-    .map((o) => ({
-      id: o.payment?.id || `txn_${o.id}`,
-      orderId: o.id,
-      orderNumber: o.id.slice(-6).toUpperCase(),
-      tableNumber: o.table.number,
-      amount: o.total,
-      paymentMethod: "Razorpay / Online UPI",
-      paymentStatus: o.payment?.status === "verified" ? "PAID" : o.status === "CONFIRMED" || o.status === "PREPARING" || o.status === "READY" || o.status === "SERVED" ? "PAID" : o.status,
-      razorpayPaymentId: o.razorpayPaymentId || o.payment?.razorpayPaymentId || "—",
-      createdAt: o.createdAt,
-    }));
+    .map((o) => {
+      const isCash = o.session?.paymentMethod === "CASH" || (!o.razorpayPaymentId && !o.payment?.razorpayPaymentId);
+      const methodLabel = isCash ? "Cash Payment 💵" : "Razorpay / Online UPI 💳";
+      const statusLabel = isCash ? "PAID (CASH)" : "PAID (ONLINE)";
+
+      return {
+        id: o.payment?.id || `txn_${o.id}`,
+        orderId: o.id,
+        orderNumber: o.orderSeq ? `#${o.orderSeq}` : `#${o.id.slice(-4).toUpperCase()}`,
+        tableNumber: o.table ? o.table.number : "1",
+        amount: o.total,
+        paymentMethod: methodLabel,
+        paymentStatus: statusLabel,
+        razorpayPaymentId: isCash ? "CASH_PAYMENT" : (o.razorpayPaymentId || o.payment?.razorpayPaymentId || "—"),
+        createdAt: o.createdAt,
+      };
+    });
 
   return NextResponse.json({ transactions });
 }

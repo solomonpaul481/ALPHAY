@@ -54,6 +54,7 @@ export default function CartPage() {
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [orderSuccess, setOrderSuccess] = useState(false);
 
   const handlePlaceOrder = async () => {
     if (submitting || items.length === 0) return;
@@ -67,8 +68,8 @@ export default function CartPage() {
       });
       // Clear cart after placing order
       clearCart();
-      // Route to session order tracking & bill page
-      router.push(`/r/${restaurantId}/track`);
+      setSubmitting(false);
+      setOrderSuccess(true);
     } catch (err) {
       setSubmitting(false);
       if (err.status === 401) {
@@ -78,6 +79,50 @@ export default function CartPage() {
       setError(err.message || "Could not place order. Please try again.");
     }
   };
+
+  if (orderSuccess) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center bg-slate-950 px-4 py-8 text-white relative overflow-hidden">
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 h-72 w-72 rounded-full bg-amber-500/15 blur-3xl pointer-events-none animate-pulse" />
+
+        <div className="w-full max-w-md rounded-3xl bg-slate-900 border border-amber-500/40 p-7 text-center shadow-2xl relative z-10 space-y-6">
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-amber-500/20 text-amber-400 border border-amber-500/40 text-4xl shadow-lg animate-bounce">
+            👨‍🍳
+          </div>
+
+          <div>
+            <span className="inline-block rounded-full bg-emerald-950/80 px-3.5 py-1 text-xs font-black uppercase tracking-widest text-emerald-400 border border-emerald-500/40 font-['Cinzel']">
+              Order Placed ✓
+            </span>
+            <h1 className="mt-3 text-2xl font-extrabold text-white font-['Cinzel'] tracking-wider">
+              Order Sent to Kitchen!
+            </h1>
+            <p className="mt-2 text-xs font-medium text-slate-300">
+              Your delicious items have been placed and the kitchen team is preparing them now.
+            </p>
+          </div>
+
+          <div className="pt-2 space-y-3">
+            <button
+              type="button"
+              onClick={() => router.push(`/r/${restaurantId}/menu`)}
+              className="w-full rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-4 text-xs font-extrabold text-slate-950 shadow-lg shadow-amber-500/25 font-['Cinzel'] tracking-wider cursor-pointer transition-all active:scale-[0.98]"
+            >
+              ➕ Continue Ordering
+            </button>
+
+            <button
+              type="button"
+              onClick={() => router.push(`/r/${restaurantId}/track`)}
+              className="w-full rounded-2xl bg-slate-800 border border-amber-500/30 py-3.5 text-xs font-extrabold text-amber-300 hover:bg-slate-700 font-['Cinzel'] cursor-pointer transition-all"
+            >
+              📋 View Order Status & Bill
+            </button>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   if (hydrated && items.length === 0) {
     return (

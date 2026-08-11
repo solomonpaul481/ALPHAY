@@ -206,13 +206,15 @@ model Rating {
 }
 
 model Manager {
-  id           String   @id @default(cuid())
-  restaurantId String
-  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
-  name         String
-  email        String   @unique
-  passwordHash String
-  createdAt    DateTime @default(now())
+  id                 String    @id @default(cuid())
+  restaurantId       String
+  restaurant         Restaurant @relation(fields: [restaurantId], references: [id])
+  name               String
+  email              String    @unique
+  passwordHash       String
+  resetCode          String?
+  resetCodeExpiresAt DateTime?
+  createdAt          DateTime  @default(now())
 }
 
 model StaffMember {

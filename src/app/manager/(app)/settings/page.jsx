@@ -24,7 +24,7 @@ export default function ManagerSettingsPage() {
             </div>
             <div>
               <h2 className="font-display text-xl font-bold text-ink">
-                {data?.restaurantName || "ALPHAX Restaurant"}
+                {data?.restaurantName || "ALPHAY Restaurant"}
               </h2>
               <p className="text-xs font-semibold text-purple">Commercial SaaS Restaurant Account</p>
             </div>
