@@ -15,12 +15,22 @@ async function POST(request, { params }) {
     return NextResponse.json({ error: "Order not found." }, { status: 404 });
   }
 
-  // Only ever cancel our own still-pending order — never touch a paid one.
-  if (order.status === "PENDING_PAYMENT") {
-    await db.order.update({ where: { id: order.id }, data: { status: "PAYMENT_FAILED" } });
+  if (order.status === "SERVED" || order.status === "PAID") {
+    return NextResponse.json({ error: "Cannot cancel a served or settled order." }, { status: 400 });
   }
 
-  return NextResponse.json({ ok: true });
+  // Cancel order and mark all items as cancelled
+  await db.order.update({
+    where: { id: order.id },
+    data: { status: "CANCELLED", subtotal: 0, gstAmount: 0, total: 0 },
+  });
+
+  await db.orderItem.updateMany({
+    where: { orderId: order.id },
+    data: { isCancelled: true },
+  });
+
+  return NextResponse.json({ ok: true, message: "Order cancelled successfully." });
 }
 
 module.exports = { POST };

@@ -46,12 +46,41 @@ function timeAgo(iso) {
   return `${mins}m ago`;
 }
 
+function playCancellationWarningSound() {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(350, ctx.currentTime);
+    osc.frequency.setValueAtTime(180, ctx.currentTime + 0.15);
+    osc.frequency.setValueAtTime(350, ctx.currentTime + 0.3);
+
+    gain.gain.setValueAtTime(0.5, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start();
+    osc.stop(ctx.currentTime + 0.6);
+  } catch (err) {
+    // Audio context may require click
+  }
+}
+
 export default function KitchenDisplayPage() {
   const { restaurantId } = useParams();
   const [data, setData] = useState(null);
   const [newOrderAlert, setNewOrderAlert] = useState(null);
+  const [cancelAlert, setCancelAlert] = useState(null);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const knownOrderIds = useRef(new Set());
+  const knownCancelledIds = useRef(new Set());
   const isInitialLoad = useRef(true);
 
   const fetchOrders = useCallback(async () => {
@@ -63,8 +92,9 @@ export default function KitchenDisplayPage() {
       if (!res.ok) return;
       const json = await res.json();
       const currentOrders = json.orders || [];
+      const cancelledItems = json.cancelledItems || [];
 
-      // Check for new orders
+      // Check for new incoming orders
       const newIds = new Set(currentOrders.map((o) => o.id));
       let brandNewOrder = null;
 
@@ -81,6 +111,25 @@ export default function KitchenDisplayPage() {
         if (audioEnabled) playOrderSound();
         setNewOrderAlert(brandNewOrder);
         setTimeout(() => setNewOrderAlert(null), 6000);
+      }
+
+      // Check for newly cancelled items / orders
+      const newCancelledIds = new Set(cancelledItems.map((c) => c.id));
+      let newlyCancelled = null;
+
+      for (const item of cancelledItems) {
+        if (!knownCancelledIds.current.has(item.id)) {
+          newlyCancelled = item;
+          break;
+        }
+      }
+
+      knownCancelledIds.current = newCancelledIds;
+
+      if (newlyCancelled && !isInitialLoad.current) {
+        if (audioEnabled) playCancellationWarningSound();
+        setCancelAlert(newlyCancelled);
+        setTimeout(() => setCancelAlert(null), 7000);
       }
 
       isInitialLoad.current = false;
@@ -112,10 +161,11 @@ export default function KitchenDisplayPage() {
   const newOrders = (data?.orders || []).filter((o) => o.status === "CONFIRMED");
   const preparingOrders = (data?.orders || []).filter((o) => o.status === "PREPARING");
   const readyOrders = (data?.orders || []).filter((o) => o.status === "READY");
+  const cancelledItems = data?.cancelledItems || [];
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans select-none">
-      {/* Sound enablement / user interaction trigger overlay if browser audio blocked */}
+      {/* Sound enablement / alerts overlay */}
       <AnimatePresence>
         {newOrderAlert && (
           <motion.div
@@ -129,6 +179,23 @@ export default function KitchenDisplayPage() {
               <p className="text-lg uppercase tracking-wider">NEW ORDER ARRIVED!</p>
               <p className="text-sm font-mono">
                 ORDER #{newOrderAlert.orderNumber} · TABLE {newOrderAlert.tableNumber}
+              </p>
+            </div>
+          </motion.div>
+        )}
+
+        {cancelAlert && (
+          <motion.div
+            initial={{ opacity: 0, y: -40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -40 }}
+            className="fixed top-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-2xl bg-rose-600 text-white px-6 py-4 shadow-2xl border-2 border-rose-300 font-bold animate-pulse"
+          >
+            <span className="text-3xl">⚠️</span>
+            <div>
+              <p className="text-lg uppercase tracking-wider">ITEM CANCELLED BY CUSTOMER!</p>
+              <p className="text-sm font-mono">
+                TABLE #{cancelAlert.tableNumber} · {cancelAlert.quantity}x {cancelAlert.name} ({cancelAlert.orderNumber})
               </p>
             </div>
           </motion.div>
@@ -180,8 +247,8 @@ export default function KitchenDisplayPage() {
         </div>
       </header>
 
-      {/* Main 3 Column KDS Layout */}
-      <main className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 p-6 overflow-hidden">
+      {/* Main 4 Column KDS Layout */}
+      <main className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-6 overflow-hidden">
         {/* COLUMN 1: NEW */}
         <section className="flex flex-col rounded-3xl bg-slate-900/80 border-2 border-red-500/40 p-4 shadow-xl">
           <div className="flex items-center justify-between border-b border-red-500/30 pb-3 mb-4">
@@ -383,6 +450,51 @@ export default function KitchenDisplayPage() {
                   >
                     🍽️ MARK SERVED
                   </button>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+
+        {/* COLUMN 4: CANCELLED ITEMS TABLE */}
+        <section className="flex flex-col rounded-3xl bg-slate-900/80 border-2 border-rose-500/40 p-4 shadow-xl">
+          <div className="flex items-center justify-between border-b border-rose-500/30 pb-3 mb-4">
+            <h2 className="text-xl font-black text-rose-400 tracking-wider flex items-center gap-2">
+              <span className="h-3.5 w-3.5 rounded-full bg-rose-500 animate-pulse" />
+              CANCELLED ITEMS ({cancelledItems.length})
+            </h2>
+            <span className="text-xs font-mono font-bold bg-rose-950/80 text-rose-300 px-3 py-1 rounded-full border border-rose-800">
+              DO NOT PREPARE
+            </span>
+          </div>
+
+          <div className="flex-1 overflow-y-auto space-y-3 pr-1 scrollbar-thin">
+            {cancelledItems.length === 0 ? (
+              <div className="flex h-40 items-center justify-center text-slate-600 font-bold text-sm">
+                No cancelled items
+              </div>
+            ) : (
+              cancelledItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="rounded-2xl bg-rose-950/40 p-4 border border-rose-500/50 shadow-md space-y-2"
+                >
+                  <div className="flex justify-between items-start border-b border-rose-900/60 pb-2">
+                    <div>
+                      <span className="font-mono text-[11px] font-bold text-rose-300">
+                        TABLE #{item.tableNumber} · {item.orderNumber}
+                      </span>
+                      <p className="text-base font-black text-rose-200">
+                        {item.quantity}x {item.name}
+                      </p>
+                    </div>
+                    <span className="font-mono text-[10px] font-bold text-rose-400 bg-rose-950 px-2 py-0.5 rounded-md border border-rose-800">
+                      {timeAgo(item.cancelledAt)}
+                    </span>
+                  </div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-rose-400 font-mono">
+                    ⚠️ CANCELLED BY GUEST — REMOVED FROM ORDER
+                  </div>
                 </div>
               ))
             )}

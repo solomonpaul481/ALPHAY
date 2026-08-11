@@ -161,15 +161,16 @@ model Order {
 }
 
 model OrderItem {
-  id         String @id @default(cuid())
-  orderId    String
-  order      Order  @relation(fields: [orderId], references: [id])
-  menuItemId String
-  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
-  name       String
-  price      Float
-  quantity   Int
-  notes      String?
+  id          String   @id @default(cuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id])
+  menuItemId  String
+  menuItem    MenuItem @relation(fields: [menuItemId], references: [id])
+  name        String
+  price       Float
+  quantity    Int
+  notes       String?
+  isCancelled Boolean  @default(false)
 }
 
 model Payment {

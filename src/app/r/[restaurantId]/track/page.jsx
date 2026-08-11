@@ -228,6 +228,36 @@ export default function SessionTrackPage() {
     );
   }
 
+  const handleCancelItem = async (orderId, itemId) => {
+    if (!confirm("Are you sure you want to cancel this item?")) return;
+    try {
+      const res = await fetch(`/api/r/${restaurantId}/orders/${orderId}/cancel-item`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ itemId }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Could not cancel item.");
+      await fetchSession();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleCancelOrder = async (orderId) => {
+    if (!confirm("Are you sure you want to cancel this entire order?")) return;
+    try {
+      const res = await fetch(`/api/r/${restaurantId}/orders/${orderId}/cancel`, {
+        method: "POST",
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Could not cancel order.");
+      await fetchSession();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-slate-950 text-white pb-36 pt-5 px-4">
       <div className="mx-auto max-w-lg">
@@ -247,16 +277,16 @@ export default function SessionTrackPage() {
               {sessionData?.restaurantName || "ALPHAY"}
             </h1>
             <span className="inline-block rounded-md bg-gradient-to-r from-amber-500 to-amber-600 px-2 py-0.5 text-[10px] font-black text-slate-950">
-              TABLE #{sessionData?.tableNumber || "12"}
+              TABLE #{sessionData?.tableNumber || "1"}
             </span>
           </div>
 
           <button
             type="button"
             onClick={() => router.push(`/r/${restaurantId}/menu`)}
-            className="flex items-center gap-1.5 rounded-2xl bg-amber-500/15 border border-amber-500/30 px-3 py-2 text-xs font-extrabold text-amber-400 hover:bg-amber-500/30 transition-all cursor-pointer"
+            className="flex items-center gap-1.5 rounded-2xl bg-amber-500/15 border border-amber-500/30 px-3 py-2 text-xs font-extrabold text-amber-400 hover:bg-amber-500/30 transition-all cursor-pointer font-['Cinzel']"
           >
-            <span>➕</span> Order More
+            <span>➕</span> Continue Ordering
           </button>
         </div>
 
@@ -294,10 +324,10 @@ export default function SessionTrackPage() {
                 🍽️
               </div>
               <h2 className="text-lg font-black text-white font-['Cinzel']">
-                Ongoing Dining Session
+                Order Confirmed & Kitchen Preparing!
               </h2>
               <p className="mt-1 text-xs text-slate-400">
-                Feel free to order more dishes or request your bill when finished dining.
+                Your order is confirmed. You can order more dishes anytime or cancel items if needed.
               </p>
             </div>
           )}
@@ -306,7 +336,7 @@ export default function SessionTrackPage() {
         {/* SESSION PREVIOUS ORDERS DATA */}
         <section className="mb-6">
           <h2 className="text-xs font-extrabold uppercase tracking-wider text-amber-400 mb-3 font-['Cinzel'] flex items-center justify-between">
-            <span>Orders Placed in this Session ({sessionData?.orders?.length || 0})</span>
+            <span>Orders Placed ({sessionData?.orders?.length || 0})</span>
             <span className="text-[10px] text-slate-400 font-mono">{sessionData?.totalItemsCount || 0} items</span>
           </h2>
 
@@ -316,38 +346,72 @@ export default function SessionTrackPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {sessionData?.orders?.map((ord, idx) => (
-                <div key={ord.id} className="rounded-2xl bg-slate-900 p-4 border border-amber-500/20 shadow-md">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
-                    <span className="font-mono text-xs font-bold text-amber-400">
-                      Order #{idx + 1} · {new Date(ord.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                    <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-black text-amber-400 border border-amber-500/30">
-                      {ord.status}
-                    </span>
-                  </div>
+              {sessionData?.orders?.map((ord, idx) => {
+                const canCancelOrder = ord.status !== "SERVED" && ord.status !== "PAID" && ord.status !== "CANCELLED";
 
-                  <ul className="space-y-2 text-xs font-semibold text-slate-200">
-                    {ord.items.map((it) => (
-                      <li key={it.id} className="flex justify-between items-center">
-                        <div>
-                          <span className="font-extrabold text-amber-400 mr-2">{it.quantity}×</span>
-                          <span>{it.name}</span>
-                          {it.notes && (
-                            <p className="text-[10px] font-medium text-slate-400 pl-5">Note: {it.notes}</p>
-                          )}
-                        </div>
-                        <span className="font-mono text-slate-300">₹{(it.price * it.quantity).toFixed(2)}</span>
-                      </li>
-                    ))}
-                  </ul>
+                return (
+                  <div key={ord.id} className="rounded-2xl bg-slate-900 p-4 border border-amber-500/20 shadow-md">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
+                      <span className="font-mono text-xs font-bold text-amber-400">
+                        Order #{ord.orderSeq ? ord.orderSeq : idx + 1} · {new Date(ord.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-full bg-emerald-950/80 px-2.5 py-0.5 text-[10px] font-black text-emerald-400 border border-emerald-500/40 font-['Cinzel']">
+                          Order Confirmed ✓
+                        </span>
+                        {canCancelOrder && (
+                          <button
+                            type="button"
+                            onClick={() => handleCancelOrder(ord.id)}
+                            className="rounded-full bg-rose-950/80 px-2 py-0.5 text-[10px] font-bold text-rose-300 border border-rose-500/40 hover:bg-rose-900 cursor-pointer font-['Cinzel']"
+                          >
+                            Cancel Order ✕
+                          </button>
+                        )}
+                      </div>
+                    </div>
 
-                  <div className="mt-3 pt-2 border-t border-slate-800/80 flex justify-between text-xs font-bold text-slate-400">
-                    <span>Order Subtotal</span>
-                    <span className="font-mono text-white">₹{ord.total.toFixed(2)}</span>
+                    <ul className="space-y-2 text-xs font-semibold text-slate-200">
+                      {ord.items.map((it) => (
+                        <li key={it.id} className="flex justify-between items-center py-1">
+                          <div>
+                            <span className="font-extrabold text-amber-400 mr-2 font-mono">{it.quantity}×</span>
+                            <span className={it.isCancelled ? "line-through text-slate-500" : "text-white font-['Cinzel']"}>
+                              {it.name}
+                            </span>
+                            {it.notes && (
+                              <p className="text-[10px] font-medium text-slate-400 pl-5">Note: {it.notes}</p>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-slate-300">₹{(it.price * it.quantity).toFixed(2)}</span>
+                            {it.isCancelled ? (
+                              <span className="rounded-full bg-rose-950/80 px-2 py-0.5 text-[9px] font-black text-rose-400 border border-rose-500/40 font-['Cinzel']">
+                                CANCELLED ✕
+                              </span>
+                            ) : canCancelOrder ? (
+                              <button
+                                type="button"
+                                onClick={() => handleCancelItem(ord.id, it.id)}
+                                className="rounded-full bg-rose-950/60 px-2 py-0.5 text-[9px] font-bold text-rose-300 border border-rose-500/30 hover:bg-rose-900 cursor-pointer font-['Cinzel']"
+                                title="Cancel this specific item"
+                              >
+                                Cancel Item
+                              </button>
+                            ) : null}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div className="mt-3 pt-2 border-t border-slate-800/80 flex justify-between text-xs font-bold text-slate-400">
+                      <span>Order Subtotal</span>
+                      <span className="font-mono text-white">₹{ord.total.toFixed(2)}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </section>
