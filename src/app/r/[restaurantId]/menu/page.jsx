@@ -10,7 +10,7 @@ import FloatingCart from "@/components/FloatingCart";
 import SearchBar from "@/components/SearchBar";
 import CallStaffButton from "@/components/CallStaffButton";
 import { useCart } from "@/lib/cart-context";
-import { IconCart, IconSparkles, IconArrowLeft, IconSearch, IconBook } from "@/components/Icons";
+import { IconCart, IconSparkles, IconArrowLeft, IconSearch, IconBook, IconListView, IconCardView } from "@/components/Icons";
 
 export default function MenuPage() {
   const { restaurantId } = useParams();
@@ -21,8 +21,8 @@ export default function MenuPage() {
   const [menu, setMenu] = useState(null);
   const [loadError, setLoadError] = useState(false);
 
-  // Toggle state: true = 🟢 VEG ONLY | false = 🔴 NON-VEG ONLY
-  const [isVegOnly, setIsVegOnly] = useState(true);
+  // Toggle state: false = 🔴 NON-VEG ONLY (default opening page) | true = 🟢 VEG ONLY
+  const [isVegOnly, setIsVegOnly] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   // View option state: "cart" = Constant Card View (default) | "list" = Item Details List View
@@ -59,101 +59,68 @@ export default function MenuPage() {
     }
   }, [expandedCategory]);
 
-  const vegGroups = menu?.veg || {};
-  const nonVegGroups = menu?.nonVeg || {};
-
-  const allVegItems = useMemo(() => Object.values(vegGroups).flat(), [vegGroups]);
-  const allNonVegItems = useMemo(() => Object.values(nonVegGroups).flat(), [nonVegGroups]);
-  const allItems = useMemo(() => [...allVegItems, ...allNonVegItems], [allVegItems, allNonVegItems]);
-
-  const activeGroups = isVegOnly ? vegGroups : nonVegGroups;
-
-  const categoryNames = useMemo(() => Object.keys(activeGroups), [activeGroups]);
+  const categories = menu?.categories || [];
+  const allItems = useMemo(() => {
+    return categories.flatMap((cat) => cat.items || []);
+  }, [categories]);
 
   const todaysSpecials = useMemo(() => {
-    const list = [...(menu?.todaysSpecial || []), ...(menu?.recommended || [])];
-    const uniqueMap = new Map();
-    list.forEach((item) => uniqueMap.set(item.id, item));
-    let result = Array.from(uniqueMap.values());
-    if (isVegOnly) result = result.filter((i) => i.isVeg);
-    else result = result.filter((i) => !i.isVeg);
-    return result;
-  }, [menu, isVegOnly]);
+    return allItems.filter((i) => i.isAvailable && i.isSpecial);
+  }, [allItems]);
 
   if (loadError) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center px-6 text-center bg-slate-950 text-white">
-        <IconBook className="h-12 w-12 text-amber-400 mb-3" />
-        <h2 className="text-xl font-extrabold text-white font-['Cinzel']">Unable to load menu</h2>
-        <p className="mt-1 text-xs text-slate-400">
-          Session expired or table not found. Please rescan QR code.
+      <div className="flex min-h-screen flex-col items-center justify-center p-6 text-center bg-slate-950 text-white">
+        <h1 className="text-xl font-bold font-['Cinzel']">Failed to Load Menu</h1>
+        <p className="mt-2 text-xs text-slate-400">
+          Unable to fetch restaurant details. Please scan table QR again.
         </p>
-        <button
-          type="button"
-          onClick={() => router.push(`/r/${restaurantId}`)}
-          className="mt-6 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 px-6 py-3 text-xs font-bold text-slate-950 shadow-md hover:from-amber-400 hover:to-amber-500"
-        >
-          Return to Landing Page
-        </button>
-      </main>
+      </div>
     );
   }
 
   if (!menu) {
     return (
-      <main className="min-h-screen bg-slate-950 px-4 pt-6 text-white">
-        <div className="animate-pulse space-y-4 max-w-2xl mx-auto">
-          <div className="h-14 w-full rounded-2xl bg-slate-900 border border-slate-800" />
-          <div className="h-12 w-full rounded-2xl bg-slate-900 border border-slate-800" />
-          <div className="grid grid-cols-2 gap-4">
-            <div className="h-32 w-full rounded-3xl bg-slate-900 border border-slate-800" />
-            <div className="h-32 w-full rounded-3xl bg-slate-900 border border-slate-800" />
-            <div className="h-32 w-full rounded-3xl bg-slate-900 border border-slate-800" />
-            <div className="h-32 w-full rounded-3xl bg-slate-900 border border-slate-800" />
-          </div>
-        </div>
-      </main>
+      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-amber-400 text-sm font-bold font-['Cinzel'] tracking-widest">
+        Loading Menu...
+      </div>
     );
   }
 
-  const currentCategoryItems = expandedCategory ? activeGroups[expandedCategory] || [] : [];
+  const currentCategoryItems = expandedCategory ? categories.find(c => c.name === expandedCategory)?.items || [] : [];
   const filteredCategoryItems = searchQuery.trim()
     ? currentCategoryItems.filter((i) => i.name.toLowerCase().includes(searchQuery.toLowerCase()))
     : currentCategoryItems;
 
   return (
-    <main className="min-h-screen bg-slate-950 pb-36 text-white transition-colors">
-      {/* Luxury Dark Gold Customer Sticky Header */}
-      <header className="sticky top-0 z-30 border-b border-amber-500/20 bg-slate-900/95 px-4 py-3 shadow-md backdrop-blur-md">
+    <main className="min-h-screen bg-slate-950 text-white pb-36 font-sans select-none">
+      {/* HIGH CONTRAST TOP APPBAR */}
+      <header className="sticky top-0 z-30 border-b border-amber-500/30 bg-slate-950/95 px-4 py-3 backdrop-blur-md">
         <div className="mx-auto flex max-w-2xl items-center justify-between">
           <div className="flex items-center gap-3">
-            {/* Exact Golden Logo Image */}
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-950 p-1 border border-amber-500/40 shadow-md">
-              <img src="/logo-gold.png" alt="ALPHAY" className="h-7 w-7 object-contain" />
-            </div>
+            {menu.logoUrl ? (
+              <img
+                src={menu.logoUrl}
+                alt={menu.name}
+                className="h-10 w-10 rounded-2xl object-cover border border-amber-500/40 shadow-md"
+              />
+            ) : (
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500 text-slate-950 shadow-md">
+                <IconBook className="h-5 w-5" />
+              </div>
+            )}
             <div>
               <h1 className="text-sm sm:text-base font-extrabold leading-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-100 font-['Cinzel'] tracking-wider">
-                {menu.restaurantName}
+                {menu.name}
               </h1>
-              {/* TABLE NUMBER BADGE */}
-              <div className="mt-0.5 inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-amber-500 to-amber-600 px-2 py-0.5 text-[10px] font-black text-slate-950 shadow-xs">
+              <div className="flex items-center gap-2 text-[11px] font-bold text-amber-400 font-mono">
+                <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
                 <span>TABLE #{menu.tableNumber || "1"}</span>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* ACTIVE SESSION ORDERS & BILL BUTTON */}
-            <button
-              type="button"
-              onClick={() => router.push(`/r/${restaurantId}/track`)}
-              className="flex h-9 items-center gap-1.5 rounded-2xl bg-slate-950 px-2.5 py-1 border border-amber-500/30 text-amber-400 text-xs font-bold hover:bg-slate-900 transition-all cursor-pointer"
-              title="View Active Orders & Bill"
-            >
-              <span>📋</span>
-              <span className="hidden sm:inline">My Session</span>
-            </button>
-
             {/* TOP RIGHT VEG / NON-VEG SWITCH TOGGLE */}
             <div className="flex items-center gap-1.5 rounded-2xl bg-slate-950 p-1 border border-amber-500/30">
               <span className={`text-[10px] font-black px-1 ${isVegOnly ? "text-emerald-400" : "text-rose-400"}`}>
@@ -195,35 +162,37 @@ export default function MenuPage() {
 
       {/* MAIN CATEGORIES HOME VIEW */}
       <div className="mx-auto max-w-2xl px-3 sm:px-4 pt-3">
-        {/* TOP RIGHT VIEW OPTION SWITCHER (BELOW APPBAR) */}
+        {/* TOP RIGHT VIEW OPTION SWITCHER (BELOW APPBAR WITH ONLY SVG ICONS) */}
         <div className="flex items-center justify-between mb-3">
           <span className="text-[11px] font-bold text-slate-400 font-['Cinzel'] tracking-wider">
-            Menu View Mode
+            View Mode
           </span>
           <div className="inline-flex rounded-2xl bg-slate-900 p-1 border border-amber-500/30 shadow-md">
             <button
               type="button"
               onClick={() => setViewMode("list")}
-              className={`flex items-center gap-1.5 rounded-xl px-3 py-1 text-xs font-black transition-all cursor-pointer ${
+              className={`flex h-8 w-10 items-center justify-center rounded-xl transition-all cursor-pointer ${
                 viewMode === "list"
                   ? "bg-amber-500 text-slate-950 shadow-sm"
-                  : "text-slate-300 hover:text-white"
+                  : "text-slate-400 hover:text-white"
               }`}
+              title="List View"
+              aria-label="List View"
             >
-              <span>📋</span>
-              <span>1. List View</span>
+              <IconListView className="h-4 w-4" />
             </button>
             <button
               type="button"
               onClick={() => setViewMode("cart")}
-              className={`flex items-center gap-1.5 rounded-xl px-3 py-1 text-xs font-black transition-all cursor-pointer ${
+              className={`flex h-8 w-10 items-center justify-center rounded-xl transition-all cursor-pointer ${
                 viewMode === "cart"
                   ? "bg-amber-500 text-slate-950 shadow-sm"
-                  : "text-slate-300 hover:text-white"
+                  : "text-slate-400 hover:text-white"
               }`}
+              title="Cart / Card View"
+              aria-label="Cart / Card View"
             >
-              <span>🎴</span>
-              <span>2. Cart View</span>
+              <IconCardView className="h-4 w-4" />
             </button>
           </div>
         </div>

@@ -172,39 +172,6 @@ export default function ManagerDashboardPage() {
               <StatCard label="Completed Orders" value={data.completedToday} accent="veg" />
             </div>
 
-            {/* ASSISTANCE & BILL REQUEST NOTIFICATIONS */}
-            {data.staffCalls.length > 0 && (
-              <section>
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-xl">🔔</span>
-                  <h2 className="font-['Cinzel'] text-lg font-extrabold text-white">Customer Requests & Alerts</h2>
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  {data.staffCalls.map((c) => (
-                    <div
-                      key={c.id}
-                      className="flex items-center gap-3 rounded-2xl bg-slate-900 px-4 py-3 shadow-xl border border-amber-500/30"
-                    >
-                      <div>
-                        <p className="text-xs font-bold text-white">{CALL_LABEL[c.type] || c.type}</p>
-                        <p className="text-[11px] font-semibold text-amber-300">
-                          Table #{c.table} · {timeAgo(c.createdAt)}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => resolveCall(c.id)}
-                        disabled={busyId === c.id}
-                        className="rounded-xl bg-amber-500/20 px-3 py-1.5 text-xs font-bold text-amber-300 border border-amber-500/40 hover:bg-amber-500 hover:text-slate-950 transition-all disabled:opacity-50 cursor-pointer font-['Cinzel']"
-                      >
-                        Resolve
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-
             {/* ACTIVE DINING SESSIONS & BILL MANAGEMENT */}
             <section>
               <div className="flex items-center justify-between mb-4">
@@ -233,8 +200,18 @@ export default function ManagerDashboardPage() {
                     const isBillSent = sess.status === "BILL_SENT";
                     const isOnlinePaid = sess.paymentStatus === "PAID" && sess.paymentMethod === "ONLINE";
 
+                    // Check if customer clicked "Call Waiter" or requested assistance for this table
+                    const pendingCall = data.staffCalls?.find((c) => String(c.table) === String(sess.tableNumber));
+
                     return (
-                      <div key={sess.id} className="rounded-3xl bg-slate-900 p-6 shadow-xl border border-amber-500/30 flex flex-col justify-between">
+                      <div
+                        key={sess.id}
+                        className={`rounded-3xl p-6 shadow-xl flex flex-col justify-between transition-all ${
+                          pendingCall
+                            ? "bg-amber-950/80 border-4 border-amber-400 animate-pulse ring-4 ring-amber-500/30 shadow-2xl shadow-amber-500/40"
+                            : "bg-slate-900 border border-amber-500/30"
+                        }`}
+                      >
                         <div>
                           <div className="flex items-start justify-between border-b border-amber-500/20 pb-3">
                             <div>
@@ -303,6 +280,23 @@ export default function ManagerDashboardPage() {
                               {busyId === sess.id ? "Processing..." : "Paid ✓"}
                             </button>
                           </div>
+
+                          {/* LEFT BOTTOM BLINKING GOLD CALL WAITER BADGE */}
+                          {pendingCall && (
+                            <div className="flex items-center justify-between pt-2 border-t border-amber-400/40">
+                              <span className="flex items-center gap-1.5 rounded-xl bg-amber-400 text-slate-950 px-3 py-1.5 text-xs font-black font-['Cinzel'] shadow-md">
+                                🔔 CALL WAITER
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => resolveCall(pendingCall.id)}
+                                disabled={busyId === pendingCall.id}
+                                className="rounded-xl bg-amber-500/20 px-3 py-1 text-[11px] font-bold text-amber-300 border border-amber-500/40 hover:bg-amber-500 hover:text-slate-950 font-['Cinzel'] cursor-pointer"
+                              >
+                                Resolve ✓
+                              </button>
+                            </div>
+                          )}
 
                           {isBillRequested && (
                             <button
