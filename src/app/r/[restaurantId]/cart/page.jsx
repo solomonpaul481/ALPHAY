@@ -20,6 +20,7 @@ export default function CartPage() {
     subtotal,
     specialInstructions,
     setSpecialInstructions,
+    clearCart,
     hydrated,
   } = useCart();
 
@@ -66,10 +67,9 @@ export default function CartPage() {
         items: items.map((i) => ({ menuItemId: i.menuItemId, quantity: i.quantity, notes: i.notes })),
         specialInstructions,
       });
-      // Clear cart after placing order
-      clearCart();
-      setSubmitting(false);
       setOrderSuccess(true);
+      setSubmitting(false);
+      clearCart();
     } catch (err) {
       setSubmitting(false);
       if (err.status === 401) {
