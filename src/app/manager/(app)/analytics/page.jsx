@@ -25,12 +25,12 @@ export default function ManagerAnalyticsPage() {
   return (
     <>
       <Topbar title="Restaurant Analytics" />
-      <div className="space-y-6 p-6">
+      <div className="space-y-6 p-4 sm:p-6 text-white max-w-7xl mx-auto">
         {!data ? (
-          <div className="animate-pulse text-sm text-ink2">Loading analytics…</div>
+          <div className="animate-pulse text-xs font-bold text-amber-400 p-8 text-center font-['Cinzel']">Loading analytics…</div>
         ) : (
           <>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <StatCard
                 label="Today's Revenue"
                 value={`₹${data.summary.today.total.toFixed(0)}`}
@@ -58,21 +58,21 @@ export default function ManagerAnalyticsPage() {
               <RevenueBarChart range={range} onRangeChange={setRange} series={data.series} />
             </div>
 
-            {/* PROFIT/LOSS COMPARISON LINE BELOW GRAPH */}
-            <div className="rounded-card bg-white p-5 shadow-soft border border-purple-50 flex items-center justify-between">
+            {/* PROFIT/LOSS COMPARISON BANNER BELOW GRAPH */}
+            <div className="rounded-3xl bg-slate-900 p-6 shadow-2xl border border-amber-500/20 flex flex-wrap items-center justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-ink2">
+                <p className="text-xs font-black uppercase tracking-wider text-amber-400 font-['Cinzel']">
                   Monthly Performance Comparison
                 </p>
-                <p className="mt-1 font-display text-base font-medium text-ink flex items-center gap-2">
+                <p className="mt-1 font-['Cinzel'] text-sm sm:text-base font-extrabold text-white flex flex-wrap items-center gap-2">
                   <span>{isProfit ? "📈 Profit Growth:" : "📉 Revenue Change:"}</span>
-                  <span className={isProfit ? "text-veg font-bold" : "text-nonveg font-bold"}>
+                  <span className={isProfit ? "text-emerald-400 font-black font-mono" : "text-rose-400 font-black font-mono"}>
                     {isProfit ? `Up +${percentage}%` : `Down ${percentage}%`} (+₹{Math.abs(diff).toFixed(0)})
                   </span>
-                  <span className="text-sm text-ink2 font-normal">compared to last month</span>
+                  <span className="text-xs text-slate-400 font-sans font-medium">compared to last month</span>
                 </p>
               </div>
-              <span className={`rounded-full px-3 py-1 text-xs font-bold ${isProfit ? "bg-veg-tint text-veg" : "bg-nonveg-tint text-nonveg"}`}>
+              <span className={`rounded-full px-4 py-1.5 text-xs font-black font-['Cinzel'] uppercase shadow-xs ${isProfit ? "bg-emerald-950/80 text-emerald-400 border border-emerald-500/40" : "bg-rose-950/80 text-rose-400 border border-rose-500/40"}`}>
                 {isProfit ? "+PROFITABLE" : "-DEFICIT"}
               </span>
             </div>

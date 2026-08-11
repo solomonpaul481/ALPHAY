@@ -2,18 +2,26 @@ const { NextResponse } = require("next/server");
 const { db } = require("@/lib/db");
 const { getManagerSession } = require("@/lib/manager-auth");
 
-function getStartDate(timeframe) {
+function getDateBounds(range) {
   const now = new Date();
-  if (timeframe === "month") {
-    return new Date(now.getFullYear(), now.getMonth(), 1);
+  if (range === "yesterday") {
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0);
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59, 999);
+    return { gte: start, lte: end };
   }
-  if (timeframe === "year") {
-    return new Date(now.getFullYear(), 0, 1);
+  if (range === "week") {
+    const day = now.getDay();
+    const diffToMon = now.getDate() - day + (day === 0 ? -6 : 1);
+    const start = new Date(now.getFullYear(), now.getMonth(), diffToMon, 0, 0, 0);
+    return { gte: start };
   }
-  // Default to today
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
+  if (range === "month") {
+    const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+    return { gte: start };
+  }
+  // Default to "today"
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+  return { gte: start };
 }
 
 async function GET(request) {
@@ -23,22 +31,15 @@ async function GET(request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const timeframe = searchParams.get("timeframe") || "today"; // today | month | year
-  const statusFilter = searchParams.get("status") || "ALL";
+  const range = searchParams.get("range") || searchParams.get("timeframe") || "today"; // today | yesterday | week | month
 
-  const startDate = getStartDate(timeframe);
-
-  const whereClause = {
-    restaurantId: manager.restaurantId,
-    createdAt: { gte: startDate },
-  };
-
-  if (statusFilter !== "ALL") {
-    whereClause.status = statusFilter;
-  }
+  const dateBounds = getDateBounds(range);
 
   const orders = await db.order.findMany({
-    where: whereClause,
+    where: {
+      restaurantId: manager.restaurantId,
+      createdAt: dateBounds,
+    },
     include: {
       items: true,
       table: true,
@@ -49,8 +50,8 @@ async function GET(request) {
 
   const formattedOrders = orders.map((o) => ({
     id: o.id,
-    orderNumber: o.id.slice(-6).toUpperCase(),
-    tableNumber: o.table ? o.table.number : "12",
+    orderNumber: o.orderSeq ? `#${o.orderSeq}` : `#${o.id.slice(-4).toUpperCase()}`,
+    tableNumber: o.table ? o.table.number : "1",
     status: o.status,
     createdAt: o.createdAt,
     subtotal: o.subtotal,
@@ -58,7 +59,8 @@ async function GET(request) {
     total: o.total,
     specialInstructions: o.specialInstructions,
     razorpayPaymentId: o.razorpayPaymentId,
-    paymentMethod: o.session ? o.session.paymentMethod : "CASH",
+    paymentMethod: o.session ? o.session.paymentMethod || "CASH" : "CASH",
+    paymentStatus: o.session ? o.session.paymentStatus : (o.status === "PAID" ? "PAID" : "UNPAID"),
     items: o.items.map((i) => ({
       id: i.id,
       name: i.name,
@@ -69,7 +71,7 @@ async function GET(request) {
   }));
 
   return NextResponse.json({
-    timeframe,
+    range,
     count: formattedOrders.length,
     orders: formattedOrders,
   });

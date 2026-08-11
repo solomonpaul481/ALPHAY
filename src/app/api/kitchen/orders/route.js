@@ -49,8 +49,8 @@ async function GET(request) {
 
   const formattedOrders = activeOrders.map((order) => ({
     id: order.id,
-    orderNumber: order.id.slice(-6).toUpperCase(),
-    tableNumber: order.table ? order.table.number : "12",
+    orderNumber: order.orderSeq ? `#${order.orderSeq}` : `#${order.id.slice(-4).toUpperCase()}`,
+    tableNumber: order.table ? order.table.number : "1",
     status: order.status === "PAID" ? "CONFIRMED" : order.status,
     createdAt: order.createdAt,
     specialInstructions: order.specialInstructions,

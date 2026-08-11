@@ -18,7 +18,7 @@ async function POST(request) {
   if (!manager) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const body = await request.json().catch(() => ({}));
-  const { empCode, name, department, salary } = body;
+  const { empCode, name, department, salary, gender, phone } = body;
   if (!empCode || !name || !department || !salary) {
     return NextResponse.json({ error: "Employee ID, name, department, and salary are all required." }, { status: 400 });
   }
@@ -31,6 +31,8 @@ async function POST(request) {
         name,
         department,
         salary: parseFloat(salary),
+        gender: gender || null,
+        phone: phone || null,
       },
     });
     return NextResponse.json({ ok: true, member });

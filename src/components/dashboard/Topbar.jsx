@@ -169,16 +169,16 @@ export default function Topbar({ title, right }) {
 
   return (
     <>
-      <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between border-b border-slate-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 px-6 py-3.5 backdrop-blur-md transition-colors shadow-xs">
+      <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between border-b border-amber-500/20 bg-slate-900/95 px-6 py-3.5 backdrop-blur-md transition-colors shadow-md">
         <div>
-          <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">{title}</h1>
+          <h1 className="text-xl font-extrabold text-white tracking-tight font-['Cinzel']">{title}</h1>
           {isAdmin ? (
-            <p className="text-xs font-bold text-purple">
+            <p className="text-xs font-bold text-amber-400 font-['Cinzel']">
               Platform Admin Portal
             </p>
           ) : (
             managerData?.restaurantName && (
-              <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
+              <p className="text-xs font-bold text-amber-400 font-['Cinzel']">
                 {managerData.restaurantName}
               </p>
             )
@@ -186,25 +186,32 @@ export default function Topbar({ title, right }) {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Online Status Badge */}
-          <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 px-3 py-1 text-xs font-extrabold text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>ONLINE</span>
-          </div>
+          {/* Online or Suspended Status Badge */}
+          {managerData?.restaurantStatus === "SUSPENDED" ? (
+            <div className="flex items-center gap-1.5 rounded-full bg-rose-950/80 px-3 py-1 text-xs font-extrabold text-rose-400 border border-rose-500/40 shadow-sm font-['Cinzel']">
+              <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
+              <span>SUSPENDED</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 rounded-full bg-emerald-950/80 px-3 py-1 text-xs font-extrabold text-emerald-400 border border-emerald-500/30 font-['Cinzel']">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>ONLINE</span>
+            </div>
+          )}
 
           {/* Interactive User Avatar Badge */}
           <button
             type="button"
             onClick={() => setShowProfile(true)}
-            className="flex items-center gap-2 rounded-xl bg-slate-100 dark:bg-zinc-800 px-3 py-1.5 border border-slate-200 dark:border-zinc-700 hover:border-indigo-500 transition-all cursor-pointer"
+            className="flex items-center gap-2 rounded-2xl bg-slate-950 px-3.5 py-1.5 border border-amber-500/30 hover:border-amber-400 transition-all cursor-pointer shadow-xs"
             title={isAdmin ? "Click to view Admin Profile" : "Click to view Manager & Venue Profile"}
           >
             {isAdmin && adminData?.avatarUrl ? (
               <img src={adminData.avatarUrl} alt="Admin" className="h-5 w-5 rounded-full object-cover" />
             ) : (
-              <IconUser className={`h-4 w-4 ${isAdmin ? "text-purple" : "text-indigo-600 dark:text-indigo-400"}`} />
+              <IconUser className={`h-4 w-4 ${isAdmin ? "text-amber-400" : "text-amber-400"}`} />
             )}
-            <span className="text-xs font-extrabold text-slate-900 dark:text-white hidden sm:inline">
+            <span className="text-xs font-black text-white hidden sm:inline font-['Cinzel']">
               {isAdmin ? adminData?.name || "Admin" : managerData?.managerName || "Manager"}
             </span>
           </button>

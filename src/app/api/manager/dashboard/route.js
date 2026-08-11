@@ -59,37 +59,39 @@ async function GET() {
   const activeCount = liveOrders.filter((o) => o.status === "CONFIRMED" || o.status === "PREPARING" || o.status === "PAID").length;
   const readyCount = liveOrders.filter((o) => o.status === "READY").length;
 
-  // Aggregate active sessions data
-  const formattedActiveSessions = activeSessions.map((sess) => {
-    let sessionTotal = 0;
-    const allItems = [];
-    sess.orders.forEach((ord) => {
-      sessionTotal += ord.total;
-      ord.items.forEach((it) => {
-        allItems.push({
-          id: it.id,
-          name: it.name,
-          quantity: it.quantity,
-          price: it.price,
-          notes: it.notes,
+  // Aggregate active sessions data (only show when items are selected/ordered)
+  const formattedActiveSessions = activeSessions
+    .map((sess) => {
+      let sessionTotal = 0;
+      const allItems = [];
+      sess.orders.forEach((ord) => {
+        sessionTotal += ord.total;
+        ord.items.forEach((it) => {
+          allItems.push({
+            id: it.id,
+            name: it.name,
+            quantity: it.quantity,
+            price: it.price,
+            notes: it.notes,
+          });
         });
       });
-    });
 
-    return {
-      id: sess.id,
-      tableNumber: sess.table ? sess.table.number : "12",
-      status: sess.status,
-      paymentStatus: sess.paymentStatus,
-      paymentMethod: sess.paymentMethod,
-      billRequestedAt: sess.billRequestedAt,
-      billSentAt: sess.billSentAt,
-      createdAt: sess.createdAt,
-      ordersCount: sess.orders.length,
-      totalAmount: Math.round(sessionTotal * 100) / 100,
-      items: allItems,
-    };
-  });
+      return {
+        id: sess.id,
+        tableNumber: sess.table ? sess.table.number : "1",
+        status: sess.status,
+        paymentStatus: sess.paymentStatus,
+        paymentMethod: sess.paymentMethod,
+        billRequestedAt: sess.billRequestedAt,
+        billSentAt: sess.billSentAt,
+        createdAt: sess.createdAt,
+        ordersCount: sess.orders.length,
+        totalAmount: Math.round(sessionTotal * 100) / 100,
+        items: allItems,
+      };
+    })
+    .filter((sess) => sess.items.length > 0);
 
   return NextResponse.json({
     restaurantId: restaurant.id,

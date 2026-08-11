@@ -6,7 +6,7 @@ import FullscreenButton from "@/components/FullscreenButton";
 
 const NAV_ITEMS = [
   { href: "/manager/dashboard", label: "Dashboard", icon: "📋" },
-  { href: "/manager/orders", label: "Live Orders", icon: "🛎️" },
+  { href: "/manager/orders", label: "Orders", icon: "🛎️" },
   { href: "/kitchen", label: "Kitchen Display", icon: "👨‍🍳" },
   { href: "/manager/transactions", label: "Transactions", icon: "💳" },
   { href: "/manager/menu", label: "Menu Management", icon: "🍽️" },
@@ -23,7 +23,7 @@ export default async function ManagerAppLayout({ children }) {
   }
 
   return (
-    <div className="min-h-screen bg-cream text-ink">
+    <div className="min-h-screen bg-slate-950 text-white selection:bg-amber-500 selection:text-slate-950">
       <Sidebar
         brand={manager.restaurant.name}
         subtitle="ALPHAX Manager Portal"

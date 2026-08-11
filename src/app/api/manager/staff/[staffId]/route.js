@@ -13,12 +13,19 @@ async function PATCH(request, { params }) {
 
   const body = await request.json().catch(() => ({}));
   const data = {};
+  if (body.empCode !== undefined) data.empCode = String(body.empCode).trim();
   if (body.name !== undefined) data.name = body.name;
   if (body.department !== undefined) data.department = body.department;
   if (body.salary !== undefined) data.salary = parseFloat(body.salary);
+  if (body.gender !== undefined) data.gender = body.gender;
+  if (body.phone !== undefined) data.phone = body.phone;
 
   const updated = await db.staffMember.update({ where: { id: member.id }, data });
   return NextResponse.json({ ok: true, member: updated });
+}
+
+async function PUT(request, params) {
+  return PATCH(request, params);
 }
 
 async function DELETE(request, { params }) {

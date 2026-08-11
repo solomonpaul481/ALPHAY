@@ -151,6 +151,7 @@ model Order {
   razorpayOrderId   String?  @unique
   razorpayPaymentId String?
   queuePosition     Int?
+  orderSeq          Int?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -222,6 +223,8 @@ model StaffMember {
   name         String
   department   String   // KITCHEN | CLEANING | SERVICE | MANAGEMENT | ...
   salary       Float
+  gender       String?
+  phone        String?
   createdAt    DateTime @default(now())
 
   @@unique([restaurantId, empCode])

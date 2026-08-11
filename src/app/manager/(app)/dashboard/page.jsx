@@ -107,7 +107,6 @@ function KotModal({ order, restaurantName, onClose }) {
 export default function ManagerDashboardPage() {
   const [data, setData] = useState(null);
   const [busyId, setBusyId] = useState(null);
-  const [printingOrder, setPrintingOrder] = useState(null);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/manager/dashboard");
@@ -119,16 +118,6 @@ export default function ManagerDashboardPage() {
     const interval = setInterval(load, 3000);
     return () => clearInterval(interval);
   }, [load]);
-
-  const advanceOrder = async (orderId) => {
-    setBusyId(orderId);
-    try {
-      await fetch(`/api/manager/orders/${orderId}/advance`, { method: "POST" });
-      await load();
-    } finally {
-      setBusyId(null);
-    }
-  };
 
   const resolveCall = async (id) => {
     setBusyId(id);
@@ -167,11 +156,11 @@ export default function ManagerDashboardPage() {
   return (
     <>
       <Topbar title="Manager Dashboard" />
-      <div className="p-6 max-w-7xl mx-auto space-y-8">
+      <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-8 text-white">
         {!data ? (
           <div className="animate-pulse space-y-4">
-            <div className="h-28 w-full rounded-3xl bg-purple-50" />
-            <div className="h-64 w-full rounded-3xl bg-purple-50" />
+            <div className="h-28 w-full rounded-3xl bg-slate-900 border border-amber-500/20" />
+            <div className="h-64 w-full rounded-3xl bg-slate-900 border border-amber-500/20" />
           </div>
         ) : (
           <>
@@ -179,7 +168,7 @@ export default function ManagerDashboardPage() {
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
               <StatCard label="Today's Sales" value={`₹${data.todayEarnings.toFixed(0)}`} accent="gold" />
               <StatCard label="Today's Orders" value={data.todayOrders} />
-              <StatCard label="Active Sessions" value={data.activeSessions?.length || 0} accent="purple" />
+              <StatCard label="Active Table Sessions" value={data.activeSessions?.length || 0} accent="purple" />
               <StatCard label="Completed Orders" value={data.completedToday} accent="veg" />
             </div>
 
@@ -188,25 +177,25 @@ export default function ManagerDashboardPage() {
               <section>
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-xl">🔔</span>
-                  <h2 className="font-display text-lg font-bold text-ink">Customer Requests & Alerts</h2>
+                  <h2 className="font-['Cinzel'] text-lg font-extrabold text-white">Customer Requests & Alerts</h2>
                 </div>
                 <div className="flex flex-wrap gap-3">
                   {data.staffCalls.map((c) => (
                     <div
                       key={c.id}
-                      className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-soft border border-purple-50"
+                      className="flex items-center gap-3 rounded-2xl bg-slate-900 px-4 py-3 shadow-xl border border-amber-500/30"
                     >
                       <div>
-                        <p className="text-xs font-bold text-ink">{CALL_LABEL[c.type] || c.type}</p>
-                        <p className="text-[11px] font-semibold text-ink2">
-                          Table {c.table} · {timeAgo(c.createdAt)}
+                        <p className="text-xs font-bold text-white">{CALL_LABEL[c.type] || c.type}</p>
+                        <p className="text-[11px] font-semibold text-amber-300">
+                          Table #{c.table} · {timeAgo(c.createdAt)}
                         </p>
                       </div>
                       <button
                         type="button"
                         onClick={() => resolveCall(c.id)}
                         disabled={busyId === c.id}
-                        className="rounded-full bg-purple-50 px-3 py-1.5 text-xs font-bold text-purple hover:bg-purple hover:text-white transition-all disabled:opacity-50"
+                        className="rounded-xl bg-amber-500/20 px-3 py-1.5 text-xs font-bold text-amber-300 border border-amber-500/40 hover:bg-amber-500 hover:text-slate-950 transition-all disabled:opacity-50 cursor-pointer font-['Cinzel']"
                       >
                         Resolve
                       </button>
@@ -220,22 +209,22 @@ export default function ManagerDashboardPage() {
             <section>
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h2 className="font-display text-xl font-bold text-ink">
-                    Active Dining Tables & Sessions ({data.activeSessions?.length || 0})
+                  <h2 className="font-['Cinzel'] text-xl font-extrabold text-white tracking-wide">
+                    Active Table Sessions ({data.activeSessions?.length || 0})
                   </h2>
-                  <p className="text-xs font-semibold text-ink2">Review session bills, send bills to customer, and confirm payments.</p>
+                  <p className="text-xs font-semibold text-slate-400">Tokens & selected items show automatically when customers order.</p>
                 </div>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-50 px-3 py-1 text-xs font-bold text-purple">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-3 py-1 text-xs font-bold text-amber-400 border border-amber-500/30 font-['Cinzel']">
                   <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
-                  Live Tables
+                  Live Table Tokens
                 </span>
               </div>
 
               {(!data.activeSessions || data.activeSessions.length === 0) ? (
-                <div className="rounded-3xl bg-white p-8 text-center shadow-soft border border-purple-50">
+                <div className="rounded-3xl bg-slate-900 p-10 text-center shadow-xl border border-amber-500/20">
                   <p className="text-3xl mb-2">🍽️</p>
-                  <p className="font-display text-base font-bold text-ink">No Active Table Sessions</p>
-                  <p className="text-xs text-ink2 mt-1">When customers scan table QR codes, active sessions will appear here.</p>
+                  <p className="font-['Cinzel'] text-base font-extrabold text-white">No Active Customer Orders</p>
+                  <p className="text-xs text-slate-400 mt-1">Table tokens appear here automatically when guests select and place dishes.</p>
                 </div>
               ) : (
                 <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
@@ -245,36 +234,36 @@ export default function ManagerDashboardPage() {
                     const isOnlinePaid = sess.paymentStatus === "PAID" && sess.paymentMethod === "ONLINE";
 
                     return (
-                      <div key={sess.id} className="rounded-3xl bg-white p-6 shadow-soft border border-purple-50 flex flex-col justify-between">
+                      <div key={sess.id} className="rounded-3xl bg-slate-900 p-6 shadow-xl border border-amber-500/30 flex flex-col justify-between">
                         <div>
-                          <div className="flex items-start justify-between border-b border-purple-50 pb-3">
+                          <div className="flex items-start justify-between border-b border-amber-500/20 pb-3">
                             <div>
-                              <span className="font-mono text-xs font-bold text-purple">
+                              <span className="font-mono text-xs font-black text-amber-400">
                                 TABLE #{sess.tableNumber}
                               </span>
-                              <h3 className="font-display text-lg font-bold text-ink">
-                                Session #{sess.id.slice(-6).toUpperCase()}
+                              <h3 className="font-['Cinzel'] text-base font-extrabold text-white">
+                                Token #{sess.id.slice(-6).toUpperCase()}
                               </h3>
-                              <p className="text-[11px] font-semibold text-ink2 mt-0.5">
-                                Started {timeAgo(sess.createdAt)} · {sess.ordersCount} Order{sess.ordersCount === 1 ? "" : "s"}
+                              <p className="text-[11px] font-medium text-slate-400 mt-0.5">
+                                Started {timeAgo(sess.createdAt)} · {sess.ordersCount} Order List{sess.ordersCount === 1 ? "" : "s"}
                               </p>
                             </div>
 
                             {/* SESSION STATUS BADGE */}
                             {isOnlinePaid ? (
-                              <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-800 border border-emerald-300">
+                              <span className="rounded-full bg-emerald-950/80 px-3 py-1 text-xs font-black text-emerald-400 border border-emerald-500/40">
                                 PAID (ONLINE) ✓
                               </span>
                             ) : isBillSent ? (
-                              <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-800 border border-amber-300">
+                              <span className="rounded-full bg-amber-950/80 px-3 py-1 text-xs font-black text-amber-300 border border-amber-500/40">
                                 BILL SENT 🧾
                               </span>
                             ) : isBillRequested ? (
-                              <span className="rounded-full bg-rose-100 px-3 py-1 text-xs font-black text-rose-800 border border-rose-300 animate-pulse">
+                              <span className="rounded-full bg-rose-950/80 px-3 py-1 text-xs font-black text-rose-300 border border-rose-500/40 animate-pulse">
                                 BILL REQUESTED ⏳
                               </span>
                             ) : (
-                              <span className="rounded-full bg-purple-50 px-3 py-1 text-xs font-bold text-purple">
+                              <span className="rounded-full bg-slate-950 px-3 py-1 text-xs font-bold text-amber-400 border border-amber-500/30 font-['Cinzel']">
                                 DINING 🟢
                               </span>
                             )}
@@ -282,12 +271,12 @@ export default function ManagerDashboardPage() {
 
                           {/* Itemized Order List */}
                           <div className="mt-3">
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-ink2 mb-1">Session Dishes</p>
-                            <ul className="space-y-1.5 text-xs font-semibold text-ink divide-y divide-purple-50/50 max-h-36 overflow-y-auto pr-1">
+                            <p className="text-[10px] font-black uppercase tracking-wider text-amber-400 mb-1.5 font-['Cinzel']">Selected Items</p>
+                            <ul className="space-y-2 text-xs font-semibold text-white divide-y divide-slate-800 max-h-40 overflow-y-auto pr-1">
                               {sess.items.map((it, idx) => (
-                                <li key={idx} className="pt-1.5 flex justify-between">
-                                  <span><strong className="text-purple">{it.quantity}x</strong> {it.name}</span>
-                                  <span className="font-mono text-ink2">₹{(it.price * it.quantity).toFixed(0)}</span>
+                                <li key={idx} className="pt-2 flex justify-between">
+                                  <span className="font-['Cinzel']"><strong className="text-amber-400 font-mono">{it.quantity}x</strong> {it.name}</span>
+                                  <span className="font-mono text-amber-300 font-bold">₹{(it.price * it.quantity).toFixed(0)}</span>
                                 </li>
                               ))}
                             </ul>
@@ -295,34 +284,32 @@ export default function ManagerDashboardPage() {
                         </div>
 
                         {/* Footer Total & Actions */}
-                        <div className="mt-5 pt-3 border-t border-purple-50 space-y-3">
+                        <div className="mt-5 pt-3 border-t border-amber-500/20 space-y-3">
                           <div className="flex justify-between items-center">
                             <div>
-                              <p className="text-[10px] font-bold uppercase text-ink2">Total Session Bill</p>
-                              <p className="font-mono text-lg font-black text-purple tabular-nums">
+                              <p className="text-[10px] font-black uppercase text-slate-400 font-['Cinzel']">Total Session Bill</p>
+                              <p className="font-mono text-lg font-black text-amber-400 tabular-nums">
                                 ₹{sess.totalAmount.toFixed(2)}
                               </p>
                             </div>
 
-                            {/* MANUAL PAID BUTTON OR AUTOMATIC ONLINE PAID */}
                             <button
                               type="button"
                               onClick={() => markPaid(sess.id, sess.paymentMethod || "CASH")}
                               disabled={busyId === sess.id}
-                              className="rounded-2xl bg-emerald-600 px-4 py-2.5 text-xs font-extrabold text-white shadow-soft hover:bg-emerald-700 transition-all cursor-pointer disabled:opacity-50"
+                              className="rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 px-4 py-2.5 text-xs font-black text-slate-950 shadow-md font-['Cinzel'] transition-all cursor-pointer disabled:opacity-50"
                               title="Mark session as Paid and clear active table session"
                             >
-                              {busyId === sess.id ? "Processing..." : "Paid"}
+                              {busyId === sess.id ? "Processing..." : "Paid ✓"}
                             </button>
                           </div>
 
-                          {/* SEND BILL BUTTON IF REQUESTED */}
                           {isBillRequested && (
                             <button
                               type="button"
                               onClick={() => sendBill(sess.id)}
                               disabled={busyId === sess.id}
-                              className="w-full rounded-2xl bg-amber-500 hover:bg-amber-400 py-2 text-xs font-extrabold text-slate-950 transition-all cursor-pointer shadow-soft"
+                              className="w-full rounded-2xl bg-amber-500 hover:bg-amber-400 py-2.5 text-xs font-black text-slate-950 transition-all cursor-pointer shadow-md font-['Cinzel']"
                             >
                               🧾 Send Bill to Customer Device
                             </button>
@@ -334,103 +321,9 @@ export default function ManagerDashboardPage() {
                 </div>
               )}
             </section>
-
-            {/* LIVE ORDERS */}
-            <section>
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h2 className="font-display text-xl font-bold text-ink">
-                    Kitchen Live Orders ({data.liveOrders.length})
-                  </h2>
-                  <p className="text-xs font-semibold text-ink2">All kitchen items across dining sessions.</p>
-                </div>
-              </div>
-
-              {data.liveOrders.length === 0 ? (
-                <div className="rounded-3xl bg-white p-8 text-center shadow-soft border border-purple-50">
-                  <p className="text-3xl mb-2">👨‍🍳</p>
-                  <p className="font-display text-base font-bold text-ink">No Kitchen Orders Pending</p>
-                </div>
-              ) : (
-                <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-                  {data.liveOrders.map((order) => (
-                    <div key={order.id} className="relative rounded-3xl bg-white p-6 shadow-soft border border-purple-50 flex flex-col justify-between">
-                      <div>
-                        {/* Top Bar */}
-                        <div className="flex items-start justify-between border-b border-purple-50 pb-3">
-                          <div>
-                            <span className="font-mono text-xs font-bold text-purple">
-                              ORDER #{order.id.slice(-6).toUpperCase()}
-                            </span>
-                            <h3 className="font-display text-xl font-bold text-ink">Table {order.table}</h3>
-                            <p className="text-[11px] font-semibold text-ink2 mt-0.5">{timeAgo(order.createdAt)}</p>
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => setPrintingOrder(order)}
-                            className="rounded-xl bg-purple-50 px-3 py-1.5 text-xs font-bold text-purple hover:bg-purple hover:text-white transition-all shadow-xs flex items-center gap-1.5"
-                            title="Print KOT Token"
-                          >
-                            <span>🖨</span>
-                            <span>Print Token</span>
-                          </button>
-                        </div>
-
-                        {/* Status badge */}
-                        <div className="mt-3 flex items-center gap-2">
-                          <span className="rounded-full bg-purple-50 px-2.5 py-0.5 text-xs font-bold text-purple">
-                            {STATUS_LABEL[order.status] || order.status}
-                          </span>
-                        </div>
-
-                        {/* Items list */}
-                        <ul className="mt-4 space-y-2 text-xs font-semibold text-ink border-t border-purple-50/60 pt-3">
-                          {order.items.map((it, i) => (
-                            <li key={i} className="flex justify-between items-center">
-                              <span>
-                                <span className="font-bold text-purple mr-1">{it.quantity}×</span>
-                                {it.name}
-                              </span>
-                              <span className="font-mono text-ink2">₹{(it.price * it.quantity).toFixed(0)}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      {/* Footer Actions */}
-                      <div className="mt-6 pt-3 border-t border-purple-50 flex items-center justify-between">
-                        <div>
-                          <p className="text-[10px] font-bold uppercase text-ink2">Order Amount</p>
-                          <p className="font-mono text-base font-bold text-purple tabular-nums">
-                            ₹{order.total.toFixed(0)}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => advanceOrder(order.id)}
-                          disabled={busyId === order.id}
-                          className="rounded-2xl bg-purple px-5 py-2.5 text-xs font-bold text-white shadow-lift hover:bg-purple-deep transition-all active:scale-95 disabled:opacity-50"
-                        >
-                          {NEXT_ACTION_LABEL[order.status] || "Advance"}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
           </>
         )}
       </div>
-
-      {printingOrder && (
-        <KotModal
-          order={printingOrder}
-          restaurantName={data?.restaurantName}
-          onClose={() => setPrintingOrder(null)}
-        />
-      )}
     </>
   );
 }

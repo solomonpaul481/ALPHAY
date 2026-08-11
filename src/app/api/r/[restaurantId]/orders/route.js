@@ -50,32 +50,90 @@ async function POST(request, { params }) {
   }
 
   const restaurant = session.restaurant;
-  const gstAmount = Math.round(subtotal * (restaurant.gstPercent / 100) * 100) / 100;
-  const total = Math.round((subtotal + gstAmount) * 100) / 100;
 
-  // Create order with status CONFIRMED directly under the active customer session
-  const order = await db.order.create({
-    data: {
-      restaurantId,
-      tableId: session.tableId,
+  // Check if an open unpaid order exists for this dining session to aggregate items in ONE order list
+  const existingActiveOrder = await db.order.findFirst({
+    where: {
       sessionId: session.id,
-      status: "CONFIRMED",
-      subtotal,
-      gstAmount,
-      total,
-      specialInstructions,
-      items: { create: orderItemsData },
+      status: { in: ["CONFIRMED", "PREPARING", "PENDING_PAYMENT", "READY", "SERVED"] },
     },
     include: { items: true },
   });
 
+  let order;
+  if (existingActiveOrder) {
+    // Append items to existing order list
+    for (const newItem of orderItemsData) {
+      const existingItem = existingActiveOrder.items.find((i) => i.menuItemId === newItem.menuItemId);
+      if (existingItem) {
+        await db.orderItem.update({
+          where: { id: existingItem.id },
+          data: { quantity: existingItem.quantity + newItem.quantity },
+        });
+      } else {
+        await db.orderItem.create({
+          data: {
+            orderId: existingActiveOrder.id,
+            menuItemId: newItem.menuItemId,
+            name: newItem.name,
+            price: newItem.price,
+            quantity: newItem.quantity,
+            notes: newItem.notes,
+          },
+        });
+      }
+    }
+
+    // Recalculate totals for the unified order list
+    const updatedItems = await db.orderItem.findMany({ where: { orderId: existingActiveOrder.id } });
+    const newSubtotal = updatedItems.reduce((acc, i) => acc + i.price * i.quantity, 0);
+    const newGst = Math.round(newSubtotal * (restaurant.gstPercent / 100) * 100) / 100;
+    const newTotal = Math.round((newSubtotal + newGst) * 100) / 100;
+
+    order = await db.order.update({
+      where: { id: existingActiveOrder.id },
+      data: {
+        subtotal: newSubtotal,
+        gstAmount: newGst,
+        total: newTotal,
+        specialInstructions: specialInstructions || existingActiveOrder.specialInstructions,
+        status: "CONFIRMED",
+      },
+      include: { items: true },
+    });
+  } else {
+    // Calculate next sequential order number
+    const totalOrderCount = await db.order.count({ where: { restaurantId } });
+    const orderSeq = 1001 + totalOrderCount;
+
+    const gstAmount = Math.round(subtotal * (restaurant.gstPercent / 100) * 100) / 100;
+    const total = Math.round((subtotal + gstAmount) * 100) / 100;
+
+    order = await db.order.create({
+      data: {
+        restaurantId,
+        tableId: session.tableId,
+        sessionId: session.id,
+        status: "CONFIRMED",
+        subtotal,
+        gstAmount,
+        total,
+        specialInstructions,
+        orderSeq,
+        items: { create: orderItemsData },
+      },
+      include: { items: true },
+    });
+  }
+
   return NextResponse.json({
     ok: true,
     orderId: order.id,
-    amount: total,
+    orderSeq: order.orderSeq || 1001,
+    amount: order.total,
     restaurantName: restaurant.name,
     tableNumber: session.table.number,
-    message: "Order placed successfully! It has been sent to the kitchen.",
+    message: "Order placed successfully! Added to your table session.",
   });
 }
 

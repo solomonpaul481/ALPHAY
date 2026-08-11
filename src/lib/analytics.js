@@ -1,8 +1,8 @@
 const { db } = require("./db");
 
-// Orders only count as revenue once payment is verified — i.e. everything
+// Orders count as revenue when placed or completed/paid — i.e. everything
 // past PENDING_PAYMENT that didn't fail or get cancelled.
-const REVENUE_STATUSES = ["CONFIRMED", "PREPARING", "READY", "SERVED"];
+const REVENUE_STATUSES = ["PAID", "CONFIRMED", "PREPARING", "READY", "SERVED"];
 
 function startOfDay(date) {
   const d = new Date(date);
