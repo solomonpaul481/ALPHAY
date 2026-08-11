@@ -25,6 +25,8 @@ export default function MenuPage() {
   const [isVegOnly, setIsVegOnly] = useState(true);
   const [expandedCategory, setExpandedCategory] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  // View option state: "cart" = Constant Card View (default) | "list" = Item Details List View
+  const [viewMode, setViewMode] = useState("cart");
 
   useEffect(() => {
     if (!restaurantId) return;
@@ -193,6 +195,39 @@ export default function MenuPage() {
 
       {/* MAIN CATEGORIES HOME VIEW */}
       <div className="mx-auto max-w-2xl px-3 sm:px-4 pt-3">
+        {/* TOP RIGHT VIEW OPTION SWITCHER (BELOW APPBAR) */}
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-[11px] font-bold text-slate-400 font-['Cinzel'] tracking-wider">
+            Menu View Mode
+          </span>
+          <div className="inline-flex rounded-2xl bg-slate-900 p-1 border border-amber-500/30 shadow-md">
+            <button
+              type="button"
+              onClick={() => setViewMode("list")}
+              className={`flex items-center gap-1.5 rounded-xl px-3 py-1 text-xs font-black transition-all cursor-pointer ${
+                viewMode === "list"
+                  ? "bg-amber-500 text-slate-950 shadow-sm"
+                  : "text-slate-300 hover:text-white"
+              }`}
+            >
+              <span>📋</span>
+              <span>1. List View</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("cart")}
+              className={`flex items-center gap-1.5 rounded-xl px-3 py-1 text-xs font-black transition-all cursor-pointer ${
+                viewMode === "cart"
+                  ? "bg-amber-500 text-slate-950 shadow-sm"
+                  : "text-slate-300 hover:text-white"
+              }`}
+            >
+              <span>🎴</span>
+              <span>2. Cart View</span>
+            </button>
+          </div>
+        </div>
+
         <SearchBar allItems={allItems} restaurantId={restaurantId} />
 
         {/* TODAY'S SPECIAL CAROUSEL */}
@@ -207,7 +242,7 @@ export default function MenuPage() {
             </div>
             <div className="scrollbar-none -mx-3 flex gap-3 overflow-x-auto px-3 pb-2">
               {todaysSpecials.map((item) => (
-                <FoodCard key={item.id} item={item} layout="wide" />
+                <FoodCard key={item.id} item={item} layout="wide" viewMode={viewMode} />
               ))}
             </div>
           </section>
@@ -245,7 +280,7 @@ export default function MenuPage() {
         </section>
       </div>
 
-      {/* FULLSCREEN EXPANDED CATEGORY VIEW WITH APP BAR & 2-COLUMN ELEVATED ITEMS */}
+      {/* FULLSCREEN EXPANDED CATEGORY VIEW WITH APP BAR & ELEVATED ITEMS */}
       <AnimatePresence>
         {expandedCategory && (
           <motion.div
@@ -296,29 +331,64 @@ export default function MenuPage() {
 
             {/* EXPANDED CATEGORY CONTENT BODY */}
             <div className="mx-auto w-full max-w-2xl flex-1 px-3 sm:px-4 py-4 pb-36">
-              {/* Optional Search filter inside category */}
-              <div className="mb-4 relative">
-                <IconSearch className="absolute left-3.5 top-3.5 h-4 w-4 text-amber-400" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={`Search dishes in ${expandedCategory}...`}
-                  className="w-full rounded-2xl border border-amber-500/20 bg-slate-900 pl-10 pr-4 py-3 text-xs font-extrabold text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 shadow-sm"
-                />
+              {/* Top Filter and View Mode Switcher inside Category */}
+              <div className="mb-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                <div className="relative flex-1">
+                  <IconSearch className="absolute left-3.5 top-3.5 h-4 w-4 text-amber-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={`Search dishes in ${expandedCategory}...`}
+                    className="w-full rounded-2xl border border-amber-500/20 bg-slate-900 pl-10 pr-4 py-3 text-xs font-extrabold text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 shadow-sm"
+                  />
+                </div>
+
+                <div className="inline-flex self-end sm:self-auto rounded-2xl bg-slate-900 p-1 border border-amber-500/30 shadow-xs">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("list")}
+                    className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-black transition-all cursor-pointer ${
+                      viewMode === "list"
+                        ? "bg-amber-500 text-slate-950 shadow-sm"
+                        : "text-slate-300 hover:text-white"
+                    }`}
+                  >
+                    <span>📋</span>
+                    <span>1. List View</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("cart")}
+                    className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-black transition-all cursor-pointer ${
+                      viewMode === "cart"
+                        ? "bg-amber-500 text-slate-950 shadow-sm"
+                        : "text-slate-300 hover:text-white"
+                    }`}
+                  >
+                    <span>🎴</span>
+                    <span>2. Cart View</span>
+                  </button>
+                </div>
               </div>
 
-              {/* ITEMS GRID: TWO ITEMS IN A ROW WITH ELEVATED FOOD CARDS */}
+              {/* ITEMS GRID / LIST */}
               {filteredCategoryItems.length === 0 ? (
                 <div className="rounded-3xl bg-slate-900 p-8 text-center border border-amber-500/20 mt-4">
                   <p className="text-xs font-bold text-slate-400">
                     No items found matching your search.
                   </p>
                 </div>
+              ) : viewMode === "list" ? (
+                <div className="flex flex-col gap-2.5">
+                  {filteredCategoryItems.map((item) => (
+                    <FoodCard key={item.id} item={item} viewMode="list" />
+                  ))}
+                </div>
               ) : (
                 <div className="grid grid-cols-2 gap-3.5 sm:gap-4">
                   {filteredCategoryItems.map((item) => (
-                    <FoodCard key={item.id} item={item} />
+                    <FoodCard key={item.id} item={item} viewMode="cart" />
                   ))}
                 </div>
               )}

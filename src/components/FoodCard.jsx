@@ -5,14 +5,75 @@ import Badge from "./Badge";
 import VegDot from "./VegDot";
 import { IconPlus, IconMinus } from "./Icons";
 
-export default function FoodCard({ item, layout = "grid" }) {
+export default function FoodCard({ item, layout = "grid", viewMode = "cart" }) {
   const { addItem, setQuantity, quantityOf } = useCart();
   const quantity = quantityOf(item.id);
   const isWide = layout === "wide";
+  const isList = viewMode === "list";
 
   const badgeList = [];
   if (item.isTodaysSpecial) badgeList.push("CHEF_SPECIAL");
   if (item.isPopular) badgeList.push("POPULAR");
+
+  if (isList) {
+    return (
+      <div
+        className={`group relative flex items-center justify-between overflow-hidden rounded-2xl bg-slate-900 border-b-2 border-r border-amber-500/30 p-3 sm:p-3.5 shadow-md hover:border-amber-400 transition-all ${
+          !item.isAvailable ? "opacity-60" : ""
+        }`}
+      >
+        <div className="flex items-center gap-2.5 min-w-0 pr-2">
+          <div className="flex-shrink-0">
+            <VegDot isVeg={item.isVeg} />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-xs sm:text-sm font-extrabold text-white font-['Cinzel'] tracking-wide truncate leading-tight">
+              {item.name}
+            </h3>
+            <span className="font-mono text-xs sm:text-sm font-black text-amber-400 tabular-nums">
+              ₹{item.price}
+            </span>
+          </div>
+        </div>
+
+        {/* Add option */}
+        {item.isAvailable ? (
+          <div className="flex-shrink-0">
+            {quantity > 0 ? (
+              <div className="flex items-center rounded-xl bg-amber-500 text-slate-950 font-mono text-xs font-black shadow-xs border-b-2 border-amber-700 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setQuantity(item.id, quantity - 1)}
+                  className="px-2 py-1 hover:bg-amber-400 transition-colors cursor-pointer"
+                >
+                  <IconMinus className="h-3 w-3 text-slate-950" />
+                </button>
+                <span className="px-1.5 text-xs text-slate-950 font-extrabold">{quantity}</span>
+                <button
+                  type="button"
+                  onClick={() => setQuantity(item.id, quantity + 1)}
+                  className="px-2 py-1 hover:bg-amber-400 transition-colors cursor-pointer"
+                >
+                  <IconPlus className="h-3 w-3 text-slate-950" />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => addItem(item, 1)}
+                className="flex items-center gap-1 rounded-xl border border-amber-500 bg-amber-500/15 hover:bg-amber-500 hover:text-slate-950 px-3 py-1.5 text-xs font-black text-amber-300 shadow-xs transition-all cursor-pointer font-['Cinzel']"
+              >
+                <span>ADD</span>
+                <IconPlus className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+        ) : (
+          <span className="text-[10px] font-bold text-slate-500 font-['Cinzel'] flex-shrink-0">OUT OF STOCK</span>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div

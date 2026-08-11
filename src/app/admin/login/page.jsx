@@ -16,15 +16,30 @@ function AdminLoginContent() {
   const error = searchParams.get("error");
 
   return (
-    <div className="mt-8 rounded-3xl bg-white dark:bg-slate-900 p-7 shadow-2xl border border-purple-100 dark:border-slate-800">
+    <div className="mt-8 rounded-3xl bg-white dark:bg-slate-900 p-7 shadow-2xl border border-purple-100 dark:border-slate-800 space-y-3">
       {error && (
         <p className="mb-4 rounded-xl bg-nonveg-tint p-3 text-xs font-bold text-nonveg">
           {ERROR_MESSAGES[error] || "Something went wrong. Please try again."}
         </p>
       )}
+
+      <a
+        href="/api/admin/auth/demo-login"
+        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 py-4 text-xs font-extrabold text-white shadow-lg transition-all transform active:scale-98 cursor-pointer uppercase tracking-wider"
+      >
+        <span>⚡</span>
+        Login to Admin Account
+      </a>
+
+      <div className="flex items-center my-2">
+        <div className="flex-1 border-t border-purple-100 dark:border-slate-800" />
+        <span className="px-3 text-[10px] font-bold text-slate-400 uppercase">Or</span>
+        <div className="flex-1 border-t border-purple-100 dark:border-slate-800" />
+      </div>
+
       <a
         href="/api/admin/auth/google"
-        className="flex w-full items-center justify-center gap-3 rounded-2xl border border-purple-100 dark:border-slate-700 bg-white dark:bg-slate-800 py-4 text-xs font-bold text-ink shadow-soft transition-all hover:bg-purple-50 dark:hover:bg-slate-700 cursor-pointer"
+        className="flex w-full items-center justify-center gap-3 rounded-2xl border border-purple-100 dark:border-slate-700 bg-white dark:bg-slate-800 py-3.5 text-xs font-bold text-ink dark:text-white shadow-soft transition-all hover:bg-purple-50 dark:hover:bg-slate-700 cursor-pointer"
       >
         <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden>
           <path
@@ -46,9 +61,6 @@ function AdminLoginContent() {
         </svg>
         Sign in with Google Account
       </a>
-      <p className="mt-4 text-[11px] text-ink2">
-        Requires <code className="rounded bg-purple-50 dark:bg-slate-800 px-1 py-0.5">GOOGLE_CLIENT_ID</code> configured in environment.
-      </p>
     </div>
   );
 }
