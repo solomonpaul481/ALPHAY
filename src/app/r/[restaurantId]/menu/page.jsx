@@ -59,14 +59,26 @@ export default function MenuPage() {
     }
   }, [expandedCategory]);
 
-  const categories = menu?.categories || [];
-  const allItems = useMemo(() => {
-    return categories.flatMap((cat) => cat.items || []);
-  }, [categories]);
+  const vegGroups = menu?.veg || {};
+  const nonVegGroups = menu?.nonVeg || {};
+
+  const allVegItems = useMemo(() => Object.values(vegGroups).flat(), [vegGroups]);
+  const allNonVegItems = useMemo(() => Object.values(nonVegGroups).flat(), [nonVegGroups]);
+  const allItems = useMemo(() => [...allVegItems, ...allNonVegItems], [allVegItems, allNonVegItems]);
+
+  const activeGroups = isVegOnly ? vegGroups : nonVegGroups;
+
+  const categoryNames = useMemo(() => Object.keys(activeGroups), [activeGroups]);
 
   const todaysSpecials = useMemo(() => {
-    return allItems.filter((i) => i.isAvailable && i.isSpecial);
-  }, [allItems]);
+    const list = [...(menu?.todaysSpecial || []), ...(menu?.recommended || [])];
+    const uniqueMap = new Map();
+    list.forEach((item) => uniqueMap.set(item.id, item));
+    let result = Array.from(uniqueMap.values());
+    if (isVegOnly) result = result.filter((i) => i.isVeg);
+    else result = result.filter((i) => !i.isVeg);
+    return result;
+  }, [menu, isVegOnly]);
 
   if (loadError) {
     return (
@@ -87,7 +99,7 @@ export default function MenuPage() {
     );
   }
 
-  const currentCategoryItems = expandedCategory ? categories.find(c => c.name === expandedCategory)?.items || [] : [];
+  const currentCategoryItems = expandedCategory ? activeGroups[expandedCategory] || [] : [];
   const filteredCategoryItems = searchQuery.trim()
     ? currentCategoryItems.filter((i) => i.name.toLowerCase().includes(searchQuery.toLowerCase()))
     : currentCategoryItems;
@@ -101,7 +113,7 @@ export default function MenuPage() {
             {menu.logoUrl ? (
               <img
                 src={menu.logoUrl}
-                alt={menu.name}
+                alt={menu.restaurantName}
                 className="h-10 w-10 rounded-2xl object-cover border border-amber-500/40 shadow-md"
               />
             ) : (
@@ -111,7 +123,7 @@ export default function MenuPage() {
             )}
             <div>
               <h1 className="text-sm sm:text-base font-extrabold leading-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-100 font-['Cinzel'] tracking-wider">
-                {menu.name}
+                {menu.restaurantName}
               </h1>
               <div className="flex items-center gap-2 text-[11px] font-bold text-amber-400 font-mono">
                 <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
