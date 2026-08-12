@@ -40,15 +40,28 @@ async function createRazorpayOrder({ amountInPaise, receipt, notes }) {
 /**
  * Verifies the signature Razorpay sends back to the CHECKOUT SUCCESS
  * callback on the client (razorpay_order_id + razorpay_payment_id +
- * razorpay_signature). Used as a first, fast check.
+ * razorpay_signature).
  */
-function verifyCheckoutSignature({ orderId, paymentId, signature }) {
+function verifyCheckoutSignature(params = {}) {
+  const orderId = params.orderId || params.razorpayOrderId || params.order_id || params.razorpay_order_id;
+  const paymentId = params.paymentId || params.razorpayPaymentId || params.payment_id || params.razorpay_payment_id;
+  const signature = params.signature || params.razorpaySignature || params.razorpay_signature;
+
+  if (!orderId || !paymentId || !signature) {
+    return false;
+  }
+
+  const keySecret = (process.env.RAZORPAY_KEY_SECRET || "").trim();
+  if (!keySecret) return false;
+
   const expected = crypto
-    .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+    .createHmac("sha256", keySecret)
     .update(`${orderId}|${paymentId}`)
     .digest("hex");
   return expected === signature;
 }
+
+const verifyPaymentSignature = verifyCheckoutSignature;
 
 /**
  * Verifies the signature on an incoming WEBHOOK request body. This is the
@@ -76,6 +89,7 @@ module.exports = {
   getRazorpay,
   createRazorpayOrder,
   verifyCheckoutSignature,
+  verifyPaymentSignature,
   verifyWebhookSignature,
   fetchRazorpayOrder,
 };
