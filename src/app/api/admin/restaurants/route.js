@@ -10,11 +10,15 @@ async function GET() {
   const admin = await getAdminSession();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const restaurants = await db.restaurant.findMany({ orderBy: { createdAt: "asc" } });
+  const restaurants = await db.restaurant.findMany({
+    include: { managers: true },
+    orderBy: { createdAt: "asc" },
+  });
 
   const rows = await Promise.all(
     restaurants.map(async (r) => {
       const summary = await getRevenueSummary(r.id);
+      const primaryManager = r.managers[0] || null;
       return {
         id: r.id,
         name: r.name,
@@ -22,6 +26,9 @@ async function GET() {
         longitude: r.longitude,
         geofenceRadiusMeters: r.geofenceRadiusMeters,
         status: r.status,
+        managerEmail: primaryManager?.email || "—",
+        managerPassword: primaryManager?.rawPassword || "Password set (encrypted)",
+        managerName: primaryManager?.name || "Manager",
         orders: { day: summary.today.count, month: summary.month.count, year: summary.year.count },
         earnings: { day: summary.today.total, month: summary.month.total, year: summary.year.total },
       };
@@ -94,7 +101,7 @@ async function POST(request) {
       billingStatus: "ACTIVE",
       billingDueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       managers: {
-        create: { name: managerName, email: managerEmail.toLowerCase(), passwordHash },
+        create: { name: managerName, email: managerEmail.toLowerCase(), passwordHash, rawPassword: managerPassword },
       },
       tables: {
         create: [{ number: "1" }, { number: "PARCEL", isParcelCounter: true }],

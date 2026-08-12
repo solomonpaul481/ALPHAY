@@ -32,35 +32,35 @@ export default function AdminDashboardPage() {
           <>
             {/* TOP ROW STAT CARDS */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <div className="rounded-3xl bg-purple p-6 text-white shadow-lift">
+              <div className="rounded-3xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 p-6 text-slate-950 shadow-xl font-['Cinzel']">
                 <div className="flex items-center gap-2 mb-2">
-                  <IconOrders className="h-5 w-5 text-purple-tint" />
-                  <p className="text-xs font-bold uppercase tracking-wider text-purple-tint">Platform Orders</p>
+                  <IconOrders className="h-5 w-5 text-slate-950" />
+                  <p className="text-xs font-black uppercase tracking-wider text-slate-950">Platform Orders</p>
                 </div>
-                <p className="font-mono text-4xl font-bold tabular-nums">{data.allOrders}</p>
-                <p className="mt-2 text-xs font-semibold text-white/70">Total processed across all venues</p>
+                <p className="font-mono text-4xl font-black tabular-nums">{data.allOrders}</p>
+                <p className="mt-2 text-xs font-bold text-slate-900">Total processed across all venues</p>
               </div>
 
-              <div className="rounded-3xl bg-white dark:bg-slate-800 p-6 shadow-soft border border-purple-50">
+              <div className="rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-xl border border-amber-500/30">
                 <div className="flex items-center gap-2 mb-2">
-                  <IconTransactions className="h-5 w-5 text-veg" />
-                  <p className="text-xs font-bold uppercase tracking-wider text-veg">Gross Venue Sales</p>
+                  <IconTransactions className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                  <p className="text-xs font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400 font-['Cinzel']">Gross Venue Sales</p>
                 </div>
-                <p className="font-mono text-3xl font-bold tabular-nums text-ink">
+                <p className="font-mono text-3xl font-black tabular-nums text-slate-900 dark:text-white">
                   ₹{data.restaurantsEarning.toFixed(2)}
                 </p>
-                <p className="mt-2 text-xs font-semibold text-ink2">Total customer payment volume</p>
+                <p className="mt-2 text-xs font-semibold text-slate-500 dark:text-slate-400">Total customer payment volume</p>
               </div>
 
-              <div className="rounded-3xl bg-white dark:bg-slate-800 p-6 shadow-soft border border-purple-50">
+              <div className="rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-xl border border-amber-500/30">
                 <div className="flex items-center gap-2 mb-2">
-                  <IconSparkles className="h-5 w-5 text-purple" />
-                  <p className="text-xs font-bold uppercase tracking-wider text-purple">Platform Commission</p>
+                  <IconSparkles className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                  <p className="text-xs font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 font-['Cinzel']">Platform Commission</p>
                 </div>
-                <p className="font-mono text-3xl font-bold tabular-nums text-purple">
+                <p className="font-mono text-3xl font-black tabular-nums text-amber-600 dark:text-amber-300">
                   ₹{data.yourCommission.toFixed(2)}
                 </p>
-                <p className="mt-2 text-xs font-semibold text-ink2">Commercial SaaS platform share</p>
+                <p className="mt-2 text-xs font-semibold text-slate-500 dark:text-slate-400">Commercial SaaS platform share</p>
               </div>
             </div>
 
@@ -72,13 +72,13 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* LIVE VENUE BREAKDOWN TABLE */}
-            <div className="rounded-3xl bg-white dark:bg-slate-800 shadow-soft p-6 border border-purple-50">
-              <div className="flex items-center justify-between border-b border-purple-50 pb-4">
+            <div className="rounded-3xl bg-white dark:bg-slate-900 shadow-xl p-6 border border-amber-500/30">
+              <div className="flex items-center justify-between border-b border-amber-500/20 pb-4">
                 <div>
-                  <h2 className="font-display text-lg font-bold text-ink">Live Venue Overview</h2>
-                  <p className="text-xs font-semibold text-ink2">Real-time stats per onboarded restaurant venue.</p>
+                  <h2 className="font-['Cinzel'] text-lg font-bold text-slate-900 dark:text-white">Live Venue Overview</h2>
+                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Real-time stats per onboarded restaurant venue.</p>
                 </div>
-                <span className="font-mono text-xs font-bold text-purple bg-purple-50 dark:bg-slate-700 px-3 py-1.5 rounded-full">
+                <span className="font-mono text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-slate-950 px-3 py-1.5 rounded-full border border-amber-500/30">
                   ● Real-time Live
                 </span>
               </div>
@@ -86,7 +86,7 @@ export default function AdminDashboardPage() {
               <div className="mt-4 overflow-x-auto">
                 <table className="w-full text-left font-mono text-xs">
                   <thead>
-                    <tr className="border-b border-purple-50 text-[11px] uppercase tracking-wider text-ink2">
+                    <tr className="border-b border-amber-500/20 bg-amber-50/80 dark:bg-slate-950/80 font-['Cinzel'] text-[11px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400">
                       <th className="px-4 py-3 font-bold">Venue ID</th>
                       <th className="px-4 py-3 font-bold">Venue Name</th>
                       <th className="px-4 py-3 font-bold">Orders</th>
@@ -94,38 +94,40 @@ export default function AdminDashboardPage() {
                       <th className="px-4 py-3 font-bold">Platform Fee</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-purple-50">
+                  <tbody className="divide-y divide-amber-100 dark:divide-slate-800 text-slate-900 dark:text-white font-semibold">
                     {data.restaurants.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-4 py-8 text-center text-xs text-ink2">
+                        <td colSpan={5} className="px-4 py-8 text-center text-xs text-slate-500 dark:text-slate-400">
                           No venues onboarded yet.
                         </td>
                       </tr>
                     ) : (
                       data.restaurants.map((r) => (
-                        <tr key={r.id} className="hover:bg-purple-50/30 transition-colors">
-                          <td className="px-4 py-3.5 font-bold text-purple">
+                        <tr key={r.id} className="hover:bg-amber-50/40 dark:hover:bg-slate-950/40 transition-colors">
+                          <td className="px-4 py-3.5 font-bold text-amber-600 dark:text-amber-300">
                             #{r.id.slice(-6).toUpperCase()}
                           </td>
-                          <td className="px-4 py-3.5 font-bold text-ink flex items-center gap-2">
+                          <td className="px-4 py-3.5 font-bold text-slate-900 dark:text-white flex items-center gap-2">
                             <span>{r.name}</span>
                             <span
                               className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
-                                r.status === "ACTIVE" ? "bg-veg-tint text-veg" : "bg-nonveg-tint text-nonveg"
+                                r.status === "ACTIVE"
+                                  ? "bg-emerald-100 text-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-400"
+                                  : "bg-rose-100 text-rose-900 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-400"
                               }`}
                             >
                               {r.status === "ACTIVE" ? "ACTIVE" : "SUSPENDED"}
                             </span>
                           </td>
-                          <td className="px-4 py-3.5 font-bold tabular-nums text-ink">
+                          <td className="px-4 py-3.5 font-bold tabular-nums text-slate-900 dark:text-white">
                             {r.orders}
                           </td>
-                          <td className="px-4 py-3.5 font-bold tabular-nums text-ink2">
+                          <td className="px-4 py-3.5 font-bold tabular-nums text-slate-700 dark:text-slate-300">
                             ₹{r.earnings.toFixed(2)}
                           </td>
-                          <td className="px-4 py-3.5 font-bold tabular-nums text-purple">
+                          <td className="px-4 py-3.5 font-bold tabular-nums text-amber-600 dark:text-amber-300">
                             ₹{r.commission.toFixed(2)}{" "}
-                            <span className="text-[10px] text-ink2">({r.commissionPercent}%)</span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400">({r.commissionPercent}%)</span>
                           </td>
                         </tr>
                       ))

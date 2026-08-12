@@ -3,35 +3,43 @@
 import { useEffect, useState } from "react";
 
 export default function ThemeSwitcher() {
-  const [isDark, setIsDark] = useState(false);
+  const [theme, setTheme] = useState("dark");
   const [mounted, setMounted] = useState(false);
+
+  const applyTheme = (mode) => {
+    document.documentElement.classList.remove("dark", "aquarium");
+    document.documentElement.removeAttribute("data-theme");
+
+    if (mode === "light") {
+      // Light Mode (White & Gold)
+      document.documentElement.setAttribute("data-theme", "light");
+    } else if (mode === "aquarium") {
+      // Aquarium Theme
+      document.documentElement.setAttribute("data-theme", "aquarium");
+      document.documentElement.classList.add("aquarium");
+    } else {
+      // Default: Black & Gold (Dark)
+      document.documentElement.setAttribute("data-theme", "dark");
+      document.documentElement.classList.add("dark");
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
-    const saved = localStorage.getItem("alphay_theme_mode");
-    if (saved === "dark") {
-      setIsDark(true);
-      document.documentElement.setAttribute("data-theme", "dark");
-      document.documentElement.classList.add("dark");
-    } else {
-      setIsDark(false);
-      document.documentElement.removeAttribute("data-theme");
-      document.documentElement.classList.remove("dark");
-    }
+    const saved = localStorage.getItem("alphay_theme_mode") || "dark";
+    setTheme(saved);
+    applyTheme(saved);
   }, []);
 
-  const toggleTheme = () => {
-    if (isDark) {
-      setIsDark(false);
-      document.documentElement.removeAttribute("data-theme");
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("alphay_theme_mode", "light");
-    } else {
-      setIsDark(true);
-      document.documentElement.setAttribute("data-theme", "dark");
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("alphay_theme_mode", "dark");
-    }
+  const cycleTheme = () => {
+    let nextTheme = "dark";
+    if (theme === "dark") nextTheme = "light";
+    else if (theme === "light") nextTheme = "aquarium";
+    else if (theme === "aquarium") nextTheme = "dark";
+
+    setTheme(nextTheme);
+    localStorage.setItem("alphay_theme_mode", nextTheme);
+    applyTheme(nextTheme);
   };
 
   if (!mounted) return null;
@@ -39,24 +47,26 @@ export default function ThemeSwitcher() {
   return (
     <button
       type="button"
-      onClick={toggleTheme}
-      className="inline-flex items-center gap-2 rounded-full border border-purple/20 bg-white dark:bg-slate-800 px-3.5 py-1.5 text-xs font-semibold text-ink shadow-soft hover:bg-purple-50 dark:hover:bg-slate-700 transition-all active:scale-95 cursor-pointer"
-      title={isDark ? "Switch to Light Theme" : "Switch to Dark Theme"}
-      aria-label={isDark ? "Switch to Light Theme" : "Switch to Dark Theme"}
+      onClick={cycleTheme}
+      className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-50 dark:bg-slate-900 px-3.5 py-1.5 text-xs font-bold text-slate-900 dark:text-white shadow-sm hover:border-amber-500 transition-all active:scale-95 cursor-pointer font-['Cinzel']"
+      title={`Current Theme: ${theme.toUpperCase()} (Click to switch)`}
     >
-      {isDark ? (
+      {theme === "dark" && (
         <>
-          <svg className="h-4 w-4 text-amber-400 animate-spin-slow" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-          </svg>
-          <span className="text-slate-200">Light Mode</span>
+          <span className="text-amber-400 font-extrabold">👑</span>
+          <span className="text-amber-300 font-extrabold">Black & Gold</span>
         </>
-      ) : (
+      )}
+      {theme === "light" && (
         <>
-          <svg className="h-4 w-4 text-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-          </svg>
-          <span className="text-ink">Dark Mode</span>
+          <span className="text-amber-600 font-extrabold">☀️</span>
+          <span className="text-amber-700 font-extrabold">White & Gold</span>
+        </>
+      )}
+      {theme === "aquarium" && (
+        <>
+          <span className="text-cyan-400 font-extrabold">🐠</span>
+          <span className="text-cyan-300 font-extrabold">Aquarium Theme</span>
         </>
       )}
     </button>

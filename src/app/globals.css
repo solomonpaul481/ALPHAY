@@ -24,7 +24,7 @@
 
 [data-theme="dark"],
 .dark {
-  /* Black & Gold Dark Mode Scheme */
+  /* Black & Gold Dark Mode Scheme (Default Constant) */
   --bg-main: #09090B;
   --bg-card: #18181B;
   --bg-cream: #09090B;
@@ -37,6 +37,21 @@
   --color-primary-50: #18181B;
 }
 
+[data-theme="aquarium"],
+.aquarium {
+  /* Aquarium Crystal Glassmorphism Scheme */
+  --bg-main: #031726;
+  --bg-card: rgba(6, 38, 61, 0.55);
+  --bg-cream: #052339;
+  --text-ink: #E0F7FA;
+  --text-ink2: #80DEEA;
+  --border-subtle: rgba(0, 229, 255, 0.35);
+
+  --color-primary: #00E5FF;
+  --color-primary-deep: #00B8D4;
+  --color-primary-50: rgba(0, 229, 255, 0.15);
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -47,6 +62,44 @@ body {
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Aquarium Theme Universal Crystal Overrides */
+[data-theme="aquarium"] body,
+.aquarium body {
+  background: linear-gradient(135deg, #031726 0%, #062C43 50%, #055C9D 100%) fixed !important;
+  color: #E0F7FA !important;
+}
+
+[data-theme="aquarium"] header,
+.aquarium header,
+[data-theme="aquarium"] nav,
+.aquarium nav,
+[data-theme="aquarium"] aside,
+.aquarium aside,
+[data-theme="aquarium"] [class*="bg-slate"],
+.aquarium [class*="bg-slate"],
+[data-theme="aquarium"] [class*="bg-white"],
+.aquarium [class*="bg-white"] {
+  background-color: rgba(6, 38, 61, 0.65) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  color: #E0F7FA !important;
+  border-color: rgba(0, 229, 255, 0.35) !important;
+}
+
+[data-theme="aquarium"] .text-slate-900,
+.aquarium .text-slate-900,
+[data-theme="aquarium"] .text-ink,
+.aquarium .text-ink {
+  color: #E0F7FA !important;
+}
+
+[data-theme="aquarium"] .text-amber-600,
+.aquarium .text-amber-600,
+[data-theme="aquarium"] .text-amber-400,
+.aquarium .text-amber-400 {
+  color: #00E5FF !important;
 }
 
 /* Light Mode Gold Scrollbars & Highlights */

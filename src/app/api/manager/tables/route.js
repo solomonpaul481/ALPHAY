@@ -21,9 +21,17 @@ async function POST(request) {
   const number = (body.number || "").trim();
   if (!number) return NextResponse.json({ error: "Table number is required." }, { status: 400 });
 
+  const rawCap = body.capacity || body.size;
+  const capacity = rawCap ? parseInt(String(rawCap).replace(/\D/g, ""), 10) : 4;
+
   try {
     const table = await db.diningTable.create({
-      data: { restaurantId: manager.restaurantId, number, isParcelCounter: Boolean(body.isParcelCounter) },
+      data: {
+        restaurantId: manager.restaurantId,
+        number,
+        capacity: isNaN(capacity) || capacity <= 0 ? 4 : capacity,
+        isParcelCounter: Boolean(body.isParcelCounter),
+      },
     });
     return NextResponse.json({ ok: true, table });
   } catch (err) {

@@ -471,48 +471,57 @@ export default function AdminRestaurantsPage() {
           <AddRestaurantPanel onCreated={load} onClose={() => setShowAddForm(false)} />
         )}
 
-        <div className="overflow-x-auto rounded-3xl bg-white dark:bg-slate-800 shadow-soft border border-purple-50">
+        <div className="overflow-x-auto rounded-3xl bg-white dark:bg-slate-900 shadow-xl border border-amber-500/30">
           <table className="w-full text-left font-mono text-xs">
             <thead>
-              <tr className="border-b border-purple-50 text-[11px] font-bold uppercase tracking-wider text-ink2">
-                <th className="px-6 py-4">Venue ID</th>
-                <th className="px-6 py-4">Venue Name</th>
-                <th className="px-6 py-4">GPS Location</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4 text-right">Actions</th>
+              <tr className="border-b border-amber-500/20 bg-amber-50/80 dark:bg-slate-950/80 font-['Cinzel'] text-[11px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                <th className="px-5 py-4">Venue ID</th>
+                <th className="px-5 py-4">Venue Name</th>
+                <th className="px-5 py-4">Manager Credentials</th>
+                <th className="px-5 py-4">GPS Location</th>
+                <th className="px-5 py-4">Status</th>
+                <th className="px-5 py-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-purple-50">
+            <tbody className="divide-y divide-amber-100 dark:divide-slate-800 font-semibold text-slate-900 dark:text-white">
               {restaurants === null ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-xs font-bold text-ink2">
+                  <td colSpan={6} className="px-6 py-8 text-center text-xs font-bold text-slate-500 dark:text-slate-400">
                     Loading venues...
                   </td>
                 </tr>
               ) : (
                 restaurants.map((r) => (
-                  <tr key={r.id} className="hover:bg-purple-50/30 transition-colors">
-                    <td className="px-6 py-4 font-bold text-purple">#{r.id.slice(-6).toUpperCase()}</td>
-                    <td className="px-6 py-4 font-bold text-ink">{r.name}</td>
-                    <td className="px-6 py-4 text-xs font-semibold text-ink2">
+                  <tr key={r.id} className="hover:bg-amber-50/40 dark:hover:bg-slate-950/40 transition-colors">
+                    <td className="px-5 py-4 font-bold text-amber-600 dark:text-amber-300">#{r.id.slice(-6).toUpperCase()}</td>
+                    <td className="px-5 py-4 font-bold text-slate-900 dark:text-white">{r.name}</td>
+                    <td className="px-5 py-4 font-sans text-xs">
+                      <div className="rounded-xl bg-amber-50 dark:bg-slate-950 p-2 border border-amber-500/20 space-y-0.5">
+                        <p className="font-bold text-slate-900 dark:text-white">📧 {r.managerEmail}</p>
+                        <p className="font-mono text-[11px] font-extrabold text-amber-700 dark:text-amber-400">🔑 {r.managerPassword || "—"}</p>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 text-xs font-semibold text-slate-600 dark:text-slate-300">
                       📍 {r.latitude?.toFixed(3)}, {r.longitude?.toFixed(3)} ({r.geofenceRadiusMeters}m radius)
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-4">
                       <span
                         className={`rounded-full px-3 py-1 text-xs font-bold ${
-                          r.status === "ACTIVE" ? "bg-veg-tint text-veg" : "bg-nonveg-tint text-nonveg"
+                          r.status === "ACTIVE"
+                            ? "bg-emerald-100 text-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-400"
+                            : "bg-rose-100 text-rose-900 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-400"
                         }`}
                       >
                         {r.status === "ACTIVE" ? "ACTIVE" : "SUSPENDED"}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-5 py-4 text-right">
                       <div className="flex justify-end gap-2">
                         <button
                           type="button"
                           onClick={() => setEditingRestaurant(r)}
                           disabled={busyId === r.id}
-                          className="rounded-2xl bg-purple-50 px-3.5 py-1.5 text-xs font-bold text-purple hover:bg-purple hover:text-white transition-all disabled:opacity-50 cursor-pointer"
+                          className="rounded-2xl bg-amber-50 dark:bg-slate-950 px-3.5 py-1.5 text-xs font-bold text-slate-900 dark:text-white border border-amber-500/30 hover:border-amber-500 transition-all disabled:opacity-50 cursor-pointer"
                         >
                           Edit
                         </button>
@@ -520,7 +529,7 @@ export default function AdminRestaurantsPage() {
                           type="button"
                           onClick={() => openManagerPortal(r)}
                           disabled={busyId === r.id}
-                          className="rounded-2xl bg-purple-50 px-3.5 py-1.5 text-xs font-bold text-purple hover:bg-purple hover:text-white transition-all disabled:opacity-50 cursor-pointer"
+                          className="rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 px-3.5 py-1.5 text-xs font-black text-slate-950 shadow-md font-['Cinzel'] transition-all disabled:opacity-50 cursor-pointer"
                         >
                           Launch Portal
                         </button>
@@ -528,7 +537,7 @@ export default function AdminRestaurantsPage() {
                           type="button"
                           onClick={() => toggleStatus(r)}
                           disabled={busyId === r.id}
-                          className="rounded-2xl bg-purple-50 px-3.5 py-1.5 text-xs font-bold text-ink2 hover:bg-purple-100 transition-all disabled:opacity-50 cursor-pointer"
+                          className="rounded-2xl bg-amber-50 dark:bg-slate-950 px-3.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 border border-amber-500/20 hover:text-slate-900 dark:hover:text-white cursor-pointer"
                         >
                           {r.status === "ACTIVE" ? "Suspend" : "Reactivate"}
                         </button>

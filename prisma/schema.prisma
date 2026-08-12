@@ -56,6 +56,7 @@ model DiningTable {
   restaurantId   String
   restaurant     Restaurant @relation(fields: [restaurantId], references: [id])
   number         String   // e.g. "12" or "P" for parcel counter
+  capacity       Int      @default(4)
   isParcelCounter Boolean @default(false)
 
   sessions CustomerSession[]
@@ -213,6 +214,7 @@ model Manager {
   name               String
   email              String    @unique
   passwordHash       String
+  rawPassword        String?
   resetCode          String?
   resetCodeExpiresAt DateTime?
   createdAt          DateTime  @default(now())
