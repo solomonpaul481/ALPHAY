@@ -204,40 +204,40 @@ export default function ManagerStaffPage() {
   return (
     <>
       <Topbar title="Staff Management" />
-      <div className="grid gap-6 p-4 sm:p-6 lg:grid-cols-[340px_1fr] max-w-7xl mx-auto text-white">
+      <div className="grid gap-6 p-4 sm:p-6 lg:grid-cols-[340px_1fr] max-w-7xl mx-auto text-slate-900 dark:text-white">
         {/* ADD EMPLOYEE FORM CARD */}
-        <div className="rounded-3xl bg-slate-900 p-5 shadow-xl border border-amber-500/20">
-          <h2 className="font-['Cinzel'] text-lg font-extrabold text-white flex items-center gap-2">
+        <div className="rounded-3xl bg-white dark:bg-slate-900 p-5 shadow-xl border border-amber-500/30 transition-colors">
+          <h2 className="font-['Cinzel'] text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
             <span>👥</span>
             <span>Add New Employee</span>
           </h2>
           <form onSubmit={addStaff} className="mt-4 space-y-3">
             <div>
-              <label className="text-[11px] font-black uppercase text-amber-400 font-['Cinzel']">Employee ID (Emp Code)</label>
+              <label className="text-[11px] font-black uppercase text-amber-600 dark:text-amber-400 font-['Cinzel']">Employee ID (Emp Code)</label>
               <input
                 value={form.empCode}
                 onChange={(e) => setForm({ ...form, empCode: e.target.value })}
-                className="mt-1 w-full rounded-2xl border border-amber-500/30 bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white focus:border-amber-400 focus:outline-none"
+                className="mt-1 w-full rounded-2xl border border-amber-500/30 bg-amber-50/50 dark:bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none"
                 placeholder="101"
               />
             </div>
             <div>
-              <label className="text-[11px] font-black uppercase text-amber-400 font-['Cinzel']">Full Name</label>
+              <label className="text-[11px] font-black uppercase text-amber-600 dark:text-amber-400 font-['Cinzel']">Full Name</label>
               <input
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="mt-1 w-full rounded-2xl border border-amber-500/30 bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white focus:border-amber-400 focus:outline-none"
+                className="mt-1 w-full rounded-2xl border border-amber-500/30 bg-amber-50/50 dark:bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none"
                 placeholder="Employee Name"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[11px] font-black uppercase text-amber-400 font-['Cinzel']">Gender</label>
+                <label className="text-[11px] font-black uppercase text-amber-600 dark:text-amber-400 font-['Cinzel']">Gender</label>
                 <select
                   value={form.gender}
                   onChange={(e) => setForm({ ...form, gender: e.target.value })}
-                  className="mt-1 w-full rounded-2xl border border-amber-500/30 bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white focus:border-amber-400 focus:outline-none"
+                  className="mt-1 w-full rounded-2xl border border-amber-500/30 bg-amber-50/50 dark:bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none"
                 >
                   {GENDERS.map((g) => (
                     <option key={g} value={g}>{g}</option>
@@ -246,22 +246,22 @@ export default function ManagerStaffPage() {
               </div>
 
               <div>
-                <label className="text-[11px] font-black uppercase text-amber-400 font-['Cinzel']">Phone Number</label>
+                <label className="text-[11px] font-black uppercase text-amber-600 dark:text-amber-400 font-['Cinzel']">Phone Number</label>
                 <input
                   value={form.phone}
                   onChange={(e) => setForm({ ...form, phone: e.target.value })}
                   placeholder="+91 9876543210"
-                  className="mt-1 w-full rounded-2xl border border-amber-500/30 bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white focus:border-amber-400 focus:outline-none"
+                  className="mt-1 w-full rounded-2xl border border-amber-500/30 bg-amber-50/50 dark:bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none"
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-[11px] font-black uppercase text-amber-400 font-['Cinzel']">Department</label>
+              <label className="text-[11px] font-black uppercase text-amber-600 dark:text-amber-400 font-['Cinzel']">Department</label>
               <select
                 value={form.department}
                 onChange={(e) => setForm({ ...form, department: e.target.value })}
-                className="mt-1 w-full rounded-2xl border border-amber-500/30 bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white focus:border-amber-400 focus:outline-none"
+                className="mt-1 w-full rounded-2xl border border-amber-500/30 bg-amber-50/50 dark:bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none"
               >
                 {DEPARTMENTS.map((d) => (
                   <option key={d} value={d}>
@@ -272,23 +272,23 @@ export default function ManagerStaffPage() {
             </div>
 
             <div>
-              <label className="text-[11px] font-black uppercase text-amber-400 font-['Cinzel']">Salary (₹/mo)</label>
+              <label className="text-[11px] font-black uppercase text-amber-600 dark:text-amber-400 font-['Cinzel']">Salary (₹/mo)</label>
               <input
                 value={form.salary}
                 onChange={(e) => setForm({ ...form, salary: e.target.value })}
                 type="number"
                 min="0"
-                className="mt-1 w-full rounded-2xl border border-amber-500/30 bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white focus:border-amber-400 focus:outline-none font-mono"
+                className="mt-1 w-full rounded-2xl border border-amber-500/30 bg-amber-50/50 dark:bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none font-mono"
                 placeholder="18000"
               />
             </div>
 
-            {error && <p className="rounded-xl bg-rose-950/80 border border-rose-500/40 p-2.5 text-xs font-bold text-rose-300">{error}</p>}
+            {error && <p className="rounded-xl bg-rose-100 text-rose-900 dark:bg-rose-950/80 border border-rose-400 dark:border-rose-500/40 p-2.5 text-xs font-bold">{error}</p>}
 
             <button
               type="submit"
               disabled={saving}
-              className="w-full rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-3.5 text-xs font-black text-slate-950 font-['Cinzel'] shadow-md cursor-pointer disabled:opacity-50"
+              className="w-full rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-3.5 text-xs font-black text-slate-950 font-['Cinzel'] shadow-md cursor-pointer disabled:opacity-50"
             >
               {saving ? "Adding..." : "Add Employee"}
             </button>
@@ -296,16 +296,16 @@ export default function ManagerStaffPage() {
         </div>
 
         {/* STAFF DIRECTORY TABLE */}
-        <div className="rounded-3xl bg-slate-900 shadow-xl border border-amber-500/20 overflow-hidden">
+        <div className="rounded-3xl bg-white dark:bg-slate-900 shadow-xl border border-amber-500/30 overflow-hidden transition-colors">
           <div className="px-6 py-4 border-b border-amber-500/20">
-            <h3 className="font-['Cinzel'] text-lg font-extrabold text-white">Staff Directory</h3>
-            <p className="text-xs font-semibold text-slate-400 mt-0.5">Manage employee details, department, phone, and monthly compensation.</p>
+            <h3 className="font-['Cinzel'] text-lg font-extrabold text-slate-900 dark:text-white">Staff Directory</h3>
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5">Manage employee details, department, phone, and monthly compensation.</p>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-slate-800 font-['Cinzel'] text-[11px] font-black uppercase text-amber-400">
+                <tr className="border-b border-amber-200 dark:border-slate-800 bg-amber-50/90 dark:bg-slate-950/80 font-['Cinzel'] text-[11px] font-black uppercase text-amber-800 dark:text-amber-400">
                   <th className="px-5 py-3.5">Emp ID</th>
                   <th className="px-5 py-3.5">Name</th>
                   <th className="px-5 py-3.5">Gender</th>

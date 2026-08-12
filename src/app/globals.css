@@ -9,31 +9,31 @@
   --font-body: "Inter", -apple-system, system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", monospace;
 
-  /* Elegant Light Mode Color Scheme - Clean White & Subtle Slate */
-  --bg-main: #FAFAFA;
+  /* White & Gold Light Mode Scheme */
+  --bg-main: #FFFFFF;
   --bg-card: #FFFFFF;
-  --bg-cream: #FAFAFA;
+  --bg-cream: #FFFDF5;
   --text-ink: #0F172A;
   --text-ink2: #475569;
-  --border-subtle: #E2E8F0;
+  --border-subtle: rgba(212, 175, 55, 0.3);
 
-  --color-primary: #6366F1;
-  --color-primary-deep: #4338CA;
-  --color-primary-50: #EEF2FF;
+  --color-primary: #D4AF37;
+  --color-primary-deep: #B45309;
+  --color-primary-50: #FFFBEB;
 }
 
 [data-theme="dark"],
 .dark {
-  /* Sleek Dark Mode Color Scheme - Pure White Text & Crisp Dark Background */
+  /* Black & Gold Dark Mode Scheme */
   --bg-main: #09090B;
   --bg-card: #18181B;
   --bg-cream: #09090B;
   --text-ink: #FFFFFF;
   --text-ink2: #94A3B8;
-  --border-subtle: #27272A;
+  --border-subtle: rgba(245, 158, 11, 0.25);
 
-  --color-primary: #818CF8;
-  --color-primary-deep: #4F46E5;
+  --color-primary: #F59E0B;
+  --color-primary-deep: #D97706;
   --color-primary-50: #18181B;
 }
 
@@ -49,6 +49,12 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
+/* Light Mode Gold Scrollbars & Highlights */
+::selection {
+  background-color: #F59E0B;
+  color: #09090B;
+}
+
 /* Dark Mode Universal Overrides for High-Contrast Text */
 [data-theme="dark"] body,
 .dark body {
@@ -61,14 +67,10 @@ body {
 [data-theme="dark"] nav,
 .dark nav,
 [data-theme="dark"] aside,
-.dark aside,
-[data-theme="dark"] [class*="bg-white"],
-.dark [class*="bg-white"],
-[data-theme="dark"] [class*="bg-cream"],
-.dark [class*="bg-cream"] {
-  background-color: #18181B !important;
+.dark aside {
+  background-color: #09090B !important;
   color: #FFFFFF !important;
-  border-color: #27272A !important;
+  border-color: rgba(245, 158, 11, 0.25) !important;
 }
 
 [data-theme="dark"] [class*="bg-purple-50"],

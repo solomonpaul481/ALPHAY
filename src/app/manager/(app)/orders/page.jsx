@@ -62,23 +62,23 @@ export default function ManagerOrdersPage() {
   return (
     <>
       <Topbar title="Orders" />
-      <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6 text-white">
+      <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6 text-slate-900 dark:text-white">
         {/* HEADER & DATE RANGE FILTER BAR */}
-        <div className="bg-slate-900 p-5 rounded-3xl shadow-xl border border-amber-500/20 space-y-4">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl shadow-xl border border-amber-500/30 space-y-4 transition-colors">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-amber-500/20 pb-4">
             <div>
-              <h2 className="font-['Cinzel'] text-xl font-extrabold text-white flex items-center gap-2 tracking-wide">
+              <h2 className="font-['Cinzel'] text-xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2 tracking-wide">
                 <span>📦</span>
                 <span>Orders</span>
               </h2>
-              <p className="text-xs text-slate-400 font-medium mt-0.5">
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
                 All customer dining orders grouped by session. Click any order list to expand itemized breakdown.
               </p>
             </div>
 
             {/* TOP RIGHT DATE RANGE FILTERS: TODAY | YESTERDAY | THIS WEEK | THIS MONTH */}
-            <div className="flex flex-wrap items-center gap-1.5 rounded-2xl bg-slate-950 p-1.5 border border-amber-500/30 shadow-inner">
-              <span className="text-[11px] font-black text-amber-400 px-2 font-['Cinzel'] uppercase">Filter:</span>
+            <div className="flex flex-wrap items-center gap-1.5 rounded-2xl bg-amber-50/50 dark:bg-slate-950 p-1.5 border border-amber-500/30 shadow-inner">
+              <span className="text-[11px] font-black text-amber-600 dark:text-amber-400 px-2 font-['Cinzel'] uppercase">Filter:</span>
               {["today", "yesterday", "week", "month"].map((r) => (
                 <button
                   key={r}
@@ -86,8 +86,8 @@ export default function ManagerOrdersPage() {
                   onClick={() => setRange(r)}
                   className={`rounded-xl px-3.5 py-1.5 text-xs font-black transition-all cursor-pointer font-['Cinzel'] ${
                     range === r
-                      ? "bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-md"
-                      : "text-slate-400 hover:text-white hover:bg-slate-900"
+                      ? "bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 text-slate-950 shadow-md"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-amber-100 dark:hover:bg-slate-900"
                   }`}
                 >
                   {RANGE_LABELS[r]}
@@ -96,7 +96,7 @@ export default function ManagerOrdersPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-xs font-mono font-bold text-amber-400">
+          <div className="flex items-center justify-between text-xs font-mono font-bold text-amber-600 dark:text-amber-400">
             <span>Showing {ordersList.length} Order List{ordersList.length === 1 ? "" : "s"}</span>
             <span>Active Filter: {RANGE_LABELS[range]}</span>
           </div>
@@ -104,11 +104,11 @@ export default function ManagerOrdersPage() {
 
         {/* ORDERS LIST */}
         {loading && !ordersData ? (
-          <div className="animate-pulse text-xs font-bold text-amber-400 p-8 text-center font-['Cinzel']">
+          <div className="animate-pulse text-xs font-bold text-amber-600 dark:text-amber-400 p-8 text-center font-['Cinzel']">
             Loading orders data...
           </div>
         ) : ordersList.length === 0 ? (
-          <div className="rounded-3xl bg-slate-900 p-10 text-center text-xs font-bold text-slate-400 shadow-xl border border-amber-500/20 font-['Cinzel']">
+          <div className="rounded-3xl bg-white dark:bg-slate-900 p-10 text-center text-xs font-bold text-slate-500 dark:text-slate-400 shadow-xl border border-amber-500/30 font-['Cinzel']">
             No orders found for {RANGE_LABELS[range]}.
           </div>
         ) : (
@@ -121,32 +121,32 @@ export default function ManagerOrdersPage() {
                 <div
                   key={order.id}
                   onClick={() => toggleExpand(order.id)}
-                  className={`rounded-3xl bg-slate-900 p-4 sm:p-5 shadow-xl border transition-all cursor-pointer ${
+                  className={`rounded-3xl bg-white dark:bg-slate-900 p-4 sm:p-5 shadow-xl border transition-all cursor-pointer ${
                     isExpanded
-                      ? "border-amber-400 ring-1 ring-amber-400/20"
-                      : "border-amber-500/20 hover:border-amber-500/50"
+                      ? "border-amber-500 ring-2 ring-amber-500/20"
+                      : "border-amber-500/30 hover:border-amber-500/60"
                   }`}
                 >
                   {/* COMPACT HEADER CARD */}
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-500/20 border border-amber-500/40 font-mono text-xs font-black text-amber-300 shadow-xs">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-900 dark:bg-amber-500/20 border border-amber-300 dark:border-amber-500/40 font-mono text-xs font-black dark:text-amber-300 shadow-xs">
                         T#{order.tableNumber}
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-black text-amber-400">
+                          <span className="font-mono text-xs font-black text-amber-600 dark:text-amber-400">
                             {order.orderNumber}
                           </span>
                           <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${
                             order.paymentStatus === "PAID"
-                              ? "bg-emerald-950/80 text-emerald-400 border border-emerald-500/30"
-                              : "bg-amber-950/80 text-amber-300 border border-amber-500/30"
+                              ? "bg-emerald-100 text-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-400 border border-emerald-400 dark:border-emerald-500/30"
+                              : "bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-400 dark:border-amber-500/30"
                           }`}>
                             {order.paymentStatus === "PAID" ? "PAID ✓" : "UNPAID"}
                           </span>
                         </div>
-                        <p className="text-[11px] font-medium text-slate-400 mt-0.5">
+                        <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">
                           {new Date(order.createdAt).toLocaleString([], {
                             month: "short",
                             day: "numeric",
@@ -160,14 +160,14 @@ export default function ManagerOrdersPage() {
 
                     <div className="flex items-center gap-4">
                       <div className="text-right">
-                        <p className="text-[10px] uppercase font-bold text-slate-400 font-['Cinzel']">Total Bill</p>
-                        <p className="font-mono text-base sm:text-lg font-black text-amber-400 tabular-nums">
+                        <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 font-['Cinzel']">Total Bill</p>
+                        <p className="font-mono text-base sm:text-lg font-black text-amber-600 dark:text-amber-400 tabular-nums">
                           ₹{order.total.toFixed(2)}
                         </p>
                       </div>
 
                       {/* Expand Chevron Icon */}
-                      <div className={`flex h-8 w-8 items-center justify-center rounded-full bg-slate-950 text-amber-400 border border-amber-500/30 transition-transform duration-200 ${
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-full bg-amber-50 dark:bg-slate-950 text-amber-600 dark:text-amber-400 border border-amber-500/30 transition-transform duration-200 ${
                         isExpanded ? "rotate-180 bg-amber-500 text-slate-950" : ""
                       }`}>
                         ▼

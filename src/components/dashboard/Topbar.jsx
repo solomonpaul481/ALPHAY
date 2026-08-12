@@ -169,16 +169,16 @@ export default function Topbar({ title, right }) {
 
   return (
     <>
-      <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between border-b border-amber-500/20 bg-slate-900/95 px-6 py-3.5 backdrop-blur-md transition-colors shadow-md">
+      <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between border-b border-amber-500/30 bg-white/95 dark:bg-slate-900/95 px-6 py-3.5 backdrop-blur-md transition-colors shadow-md text-slate-900 dark:text-white">
         <div>
-          <h1 className="text-xl font-extrabold text-white tracking-tight font-['Cinzel']">{title}</h1>
+          <h1 className="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight font-['Cinzel']">{title}</h1>
           {isAdmin ? (
-            <p className="text-xs font-bold text-amber-400 font-['Cinzel']">
+            <p className="text-xs font-bold text-amber-600 dark:text-amber-400 font-['Cinzel']">
               Platform Admin Portal
             </p>
           ) : (
             managerData?.restaurantName && (
-              <p className="text-xs font-bold text-amber-400 font-['Cinzel']">
+              <p className="text-xs font-bold text-amber-600 dark:text-amber-400 font-['Cinzel']">
                 {managerData.restaurantName}
               </p>
             )
@@ -188,12 +188,12 @@ export default function Topbar({ title, right }) {
         <div className="flex items-center gap-3">
           {/* Online or Suspended Status Badge */}
           {managerData?.restaurantStatus === "SUSPENDED" ? (
-            <div className="flex items-center gap-1.5 rounded-full bg-rose-950/80 px-3 py-1 text-xs font-extrabold text-rose-400 border border-rose-500/40 shadow-sm font-['Cinzel']">
+            <div className="flex items-center gap-1.5 rounded-full bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-400 px-3 py-1 text-xs font-extrabold border border-rose-400 dark:border-rose-500/40 shadow-sm font-['Cinzel']">
               <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
               <span>SUSPENDED</span>
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 rounded-full bg-emerald-950/80 px-3 py-1 text-xs font-extrabold text-emerald-400 border border-emerald-500/30 font-['Cinzel']">
+            <div className="flex items-center gap-1.5 rounded-full bg-emerald-100 text-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-400 px-3 py-1 text-xs font-extrabold border border-emerald-400 dark:border-emerald-500/30 font-['Cinzel']">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
               <span>ONLINE</span>
             </div>
@@ -203,15 +203,15 @@ export default function Topbar({ title, right }) {
           <button
             type="button"
             onClick={() => setShowProfile(true)}
-            className="flex items-center gap-2 rounded-2xl bg-slate-950 px-3.5 py-1.5 border border-amber-500/30 hover:border-amber-400 transition-all cursor-pointer shadow-xs"
+            className="flex items-center gap-2 rounded-2xl bg-amber-50 dark:bg-slate-950 px-3.5 py-1.5 border border-amber-500/30 hover:border-amber-500 transition-all cursor-pointer shadow-xs"
             title={isAdmin ? "Click to view Admin Profile" : "Click to view Manager & Venue Profile"}
           >
             {isAdmin && adminData?.avatarUrl ? (
               <img src={adminData.avatarUrl} alt="Admin" className="h-5 w-5 rounded-full object-cover" />
             ) : (
-              <IconUser className={`h-4 w-4 ${isAdmin ? "text-amber-400" : "text-amber-400"}`} />
+              <IconUser className="h-4 w-4 text-amber-600 dark:text-amber-400" />
             )}
-            <span className="text-xs font-black text-white hidden sm:inline font-['Cinzel']">
+            <span className="text-xs font-black text-slate-900 dark:text-white hidden sm:inline font-['Cinzel']">
               {isAdmin ? adminData?.name || "Admin" : managerData?.managerName || "Manager"}
             </span>
           </button>

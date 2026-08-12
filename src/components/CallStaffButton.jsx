@@ -7,7 +7,7 @@ import { createApiClient } from "@/lib/api-client";
 const OPTIONS = [
   { type: "WAITER", label: "Call Waiter", emoji: "🙋" },
   { type: "WATER", label: "Request Water", emoji: "💧" },
-  { type: "HELP", label: "Need Help", emoji: "🆘" },
+  { type: "HELP", label: "SOS Help", emoji: "🆘" },
 ];
 
 export default function CallStaffButton({ restaurantId }) {

@@ -85,7 +85,7 @@ async function GET(request) {
     })
     .map((o) => {
       const isCash = o.session?.paymentMethod === "CASH" || (!o.razorpayPaymentId && !o.payment?.razorpayPaymentId);
-      const methodLabel = isCash ? "Cash Payment 💵" : "Razorpay / Online UPI 💳";
+      const methodLabel = isCash ? "Cash" : "Online / UPI 💳";
       const statusLabel = isCash ? "PAID (CASH)" : "PAID (ONLINE)";
 
       return {
@@ -96,7 +96,8 @@ async function GET(request) {
         amount: o.total,
         paymentMethod: methodLabel,
         paymentStatus: statusLabel,
-        razorpayPaymentId: isCash ? "CASH_PAYMENT" : (o.razorpayPaymentId || o.payment?.razorpayPaymentId || "—"),
+        razorpayPaymentId: isCash ? "Cash" : (o.razorpayPaymentId || o.payment?.razorpayPaymentId || "—"),
+        isCash,
         createdAt: o.createdAt,
       };
     });

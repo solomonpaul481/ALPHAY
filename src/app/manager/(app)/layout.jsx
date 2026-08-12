@@ -23,7 +23,7 @@ export default async function ManagerAppLayout({ children }) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white selection:bg-amber-500 selection:text-slate-950">
+    <div className="min-h-screen bg-amber-50/20 dark:bg-black text-slate-900 dark:text-white selection:bg-amber-500 selection:text-slate-950 transition-colors duration-200">
       <Sidebar
         brand={manager.restaurant.name}
         subtitle="ALPHAX Manager Portal"
