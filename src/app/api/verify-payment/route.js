@@ -1,35 +1,37 @@
 const { NextResponse } = require("next/server");
-const { verifyPaymentSignature } = require("@/lib/razorpay");
+const { verifyOnlinePayment, getActiveGateway } = require("@/lib/payment-gateway");
 
 async function POST(request) {
   try {
     const body = await request.json().catch(() => ({}));
     const orderId =
-      body.razorpay_order_id || body.razorpayOrderId || body.orderId || body.order_id;
+      body.cfOrderId || body.orderId || body.order_id || body.razorpay_order_id || body.razorpayOrderId;
     const paymentId =
-      body.razorpay_payment_id || body.razorpayPaymentId || body.paymentId || body.payment_id;
+      body.paymentId || body.payment_id || body.razorpay_payment_id || body.razorpayPaymentId;
     const signature =
-      body.razorpay_signature || body.razorpaySignature || body.signature;
+      body.signature || body.razorpay_signature || body.razorpaySignature;
+    const gateway = body.gateway || getActiveGateway();
 
-    if (!orderId || !paymentId || !signature) {
+    if (!orderId) {
       return NextResponse.json(
         {
           error: "Missing required payment verification fields.",
-          details: "razorpay_order_id, razorpay_payment_id, and razorpay_signature are required.",
+          details: "orderId is required.",
         },
         { status: 400 }
       );
     }
 
-    const isValid = verifyPaymentSignature({
+    const verification = await verifyOnlinePayment({
       orderId,
       paymentId,
       signature,
+      gateway,
     });
 
-    if (!isValid) {
+    if (!verification.success) {
       return NextResponse.json(
-        { error: "Invalid payment signature.", success: false },
+        { error: "Payment verification failed or status not paid.", success: false },
         { status: 400 }
       );
     }
@@ -37,12 +39,13 @@ async function POST(request) {
     return NextResponse.json({
       ok: true,
       success: true,
+      gateway: verification.gateway,
       message: "Payment verified successfully!",
-      paymentId,
+      paymentId: verification.paymentId || paymentId,
       orderId,
     });
   } catch (err) {
-    console.error("Razorpay Verify Payment Error:", err?.message || err);
+    console.error("Verify Payment Error:", err?.message || err);
     return NextResponse.json(
       { error: err?.message || "Payment verification failed." },
       { status: 500 }

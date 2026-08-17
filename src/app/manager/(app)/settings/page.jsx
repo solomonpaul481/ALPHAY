@@ -152,10 +152,15 @@ export default function ManagerSettingsPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 font-['Cinzel']">Payment Gateway</label>
-              <div className="mt-1 rounded-2xl bg-amber-50 dark:bg-slate-950 p-3 text-xs font-bold text-slate-900 dark:text-white border border-amber-500/30 flex items-center gap-2">
-                <span>💳</span>
-                <span>Razorpay Automatic Online Verification</span>
+              <label className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 font-['Cinzel']">Active Payment Gateway</label>
+              <div className="mt-1 rounded-2xl bg-amber-50 dark:bg-slate-950 p-3 text-xs font-bold text-slate-900 dark:text-white border border-amber-500/30 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span>💳</span>
+                  <span>Cashfree & Razorpay Support Enabled</span>
+                </div>
+                <span className="rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-black text-emerald-400 border border-emerald-500/30 font-mono">
+                  ACTIVE
+                </span>
               </div>
             </div>
 

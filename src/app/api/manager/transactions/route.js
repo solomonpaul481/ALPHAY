@@ -79,20 +79,21 @@ async function GET(request) {
       const orderNo = o.id.slice(-6).toLowerCase();
       const orderSeqStr = o.orderSeq ? String(o.orderSeq) : "";
       const tableNo = o.table?.number.toLowerCase() || "";
-      const pId = (o.razorpayPaymentId || "").toLowerCase();
+      const pId = (o.cashfreePaymentId || o.razorpayPaymentId || "").toLowerCase();
       const pMethod = (o.session?.paymentMethod || "").toLowerCase();
       return orderNo.includes(q) || orderSeqStr.includes(q) || tableNo.includes(q) || pId.includes(q) || pMethod.includes(q);
     })
     .map((o) => {
-      const rawTxnId = o.razorpayPaymentId || o.payment?.razorpayPaymentId || o.session?.razorpayPaymentId;
+      const rawTxnId = o.cashfreePaymentId || o.razorpayPaymentId || o.payment?.cashfreePaymentId || o.payment?.razorpayPaymentId || o.session?.cashfreePaymentId || o.session?.razorpayPaymentId;
       const isOnline = Boolean(
         (rawTxnId && !["CASH", "CASH_PAYMENT", "Cash"].includes(rawTxnId)) ||
         o.session?.paymentMethod === "ONLINE" ||
         o.session?.paymentMethod === "UPI"
       );
       const isCash = !isOnline;
-      const methodLabel = isOnline ? "UPI / Online 💳" : "Cash";
-      const statusLabel = isOnline ? "PAID (ONLINE)" : "PAID (CASH)";
+      const gateway = o.paymentGateway || o.session?.paymentGateway || (o.cashfreePaymentId ? "CASHFREE" : "RAZORPAY");
+      const methodLabel = isOnline ? (gateway === "CASHFREE" ? "Cashfree Online 💳" : "Razorpay Online 💳") : "Cash";
+      const statusLabel = isOnline ? `PAID (${gateway})` : "PAID (CASH)";
       const txnDisplayId = isOnline ? (rawTxnId || `pay_${o.id.slice(-8)}`) : "Cash";
 
       return {
@@ -103,7 +104,9 @@ async function GET(request) {
         amount: o.total,
         paymentMethod: methodLabel,
         paymentStatus: statusLabel,
+        paymentGateway: gateway,
         razorpayPaymentId: txnDisplayId,
+        cashfreePaymentId: txnDisplayId,
         isCash,
         createdAt: o.createdAt,
       };

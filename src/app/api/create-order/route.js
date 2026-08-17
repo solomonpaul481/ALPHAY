@@ -1,17 +1,16 @@
 const { NextResponse } = require("next/server");
-const { createRazorpayOrder } = require("@/lib/razorpay");
+const { createOnlinePaymentOrder, getActiveGateway } = require("@/lib/payment-gateway");
 
 async function POST(request) {
   try {
     const body = await request.json().catch(() => ({}));
-    let { amount, amountInPaise, currency = "INR", receipt, notes } = body;
+    let { amount, amountInPaise, currency = "INR", receipt, notes, gateway } = body;
 
-    // Resolve amount in paise. If amount is provided, check if it's already in paise or rupees.
     let finalAmountPaise = amountInPaise || amount;
 
     if (!finalAmountPaise || isNaN(finalAmountPaise)) {
       return NextResponse.json(
-        { error: "Invalid amount. Amount must be specified as a number in paise." },
+        { error: "Invalid amount. Amount must be specified as a number in paise or rupees." },
         { status: 400 }
       );
     }
@@ -26,30 +25,33 @@ async function POST(request) {
       );
     }
 
+    const amountInRupees = finalAmountPaise / 100;
     const orderReceipt = receipt || `rec_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
-    const razorpayOrder = await createRazorpayOrder({
-      amountInPaise: finalAmountPaise,
-      currency,
+    const paymentOrder = await createOnlinePaymentOrder({
+      amountInRupees,
       receipt: orderReceipt,
       notes: notes || {},
+      forceGateway: gateway,
     });
-
-    const keyId =
-      process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || "";
 
     return NextResponse.json({
       ok: true,
-      order_id: razorpayOrder.id,
-      razorpayOrderId: razorpayOrder.id,
-      amount: razorpayOrder.amount,
-      currency: razorpayOrder.currency,
-      keyId,
+      gateway: paymentOrder.gateway,
+      order_id: paymentOrder.orderId,
+      orderId: paymentOrder.orderId,
+      paymentSessionId: paymentOrder.paymentSessionId,
+      razorpayOrderId: paymentOrder.orderId,
+      amount: paymentOrder.amountInPaise,
+      amountInRupees,
+      currency: paymentOrder.currency || "INR",
+      keyId: paymentOrder.keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "",
+      env: paymentOrder.env || process.env.NEXT_PUBLIC_CASHFREE_ENV || "sandbox",
     });
   } catch (err) {
-    console.error("Razorpay Create Order Error:", err?.message || err);
+    console.error("Create Online Order Error:", err?.message || err);
     return NextResponse.json(
-      { error: err?.message || "Failed to create Razorpay order." },
+      { error: err?.message || "Failed to create payment order." },
       { status: 500 }
     );
   }

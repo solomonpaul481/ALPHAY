@@ -119,6 +119,9 @@ model CustomerSession {
   billTotal         Float?
   razorpayOrderId   String?
   razorpayPaymentId String?
+  cashfreeOrderId   String?
+  cashfreePaymentId String?
+  paymentGateway    String?  // CASHFREE | RAZORPAY | CASH
   createdAt         DateTime @default(now())
   expiresAt         DateTime
 
@@ -151,6 +154,9 @@ model Order {
   specialInstructions String?
   razorpayOrderId   String?  @unique
   razorpayPaymentId String?
+  cashfreeOrderId   String?  @unique
+  cashfreePaymentId String?
+  paymentGateway    String?
   queuePosition     Int?
   orderSeq          Int?
   createdAt     DateTime @default(now())
@@ -178,9 +184,12 @@ model Payment {
   id                String   @id @default(cuid())
   orderId           String   @unique
   order             Order    @relation(fields: [orderId], references: [id])
-  razorpayOrderId   String
+  razorpayOrderId   String?
   razorpayPaymentId String?
   razorpaySignature String?
+  cashfreeOrderId   String?
+  cashfreePaymentId String?
+  paymentGateway    String?  // CASHFREE | RAZORPAY
   status            String   // created | verified | failed
   amount            Float
   verifiedAt        DateTime?
