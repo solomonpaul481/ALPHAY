@@ -58,9 +58,7 @@ async function POST(request) {
 
     // 1. Process CustomerSession payment matching cashfreeOrderId
     const session = await db.customerSession.findFirst({
-      where: {
-        OR: [{ cashfreeOrderId }, { razorpayOrderId: cashfreeOrderId }],
-      },
+      where: { cashfreeOrderId },
     });
 
     if (session) {
@@ -90,9 +88,7 @@ async function POST(request) {
 
     // 2. Fallback single Order payment matching cashfreeOrderId
     const order = await db.order.findFirst({
-      where: {
-        OR: [{ cashfreeOrderId }, { razorpayOrderId: cashfreeOrderId }],
-      },
+      where: { cashfreeOrderId },
     });
 
     if (order) {
@@ -110,7 +106,6 @@ async function POST(request) {
             where: { orderId: order.id },
             create: {
               orderId: order.id,
-              razorpayOrderId: order.razorpayOrderId || cashfreeOrderId,
               cashfreeOrderId,
               cashfreePaymentId: cfPaymentId,
               paymentGateway: "CASHFREE",

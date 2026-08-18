@@ -299,8 +299,8 @@ async function main() {
         subtotal,
         gstAmount,
         total,
-        razorpayOrderId: `seed_${Math.random().toString(36).slice(2)}`,
-        razorpayPaymentId: `pay_seed_${Math.random().toString(36).slice(2)}`,
+        cashfreeOrderId: `seed_${Math.random().toString(36).slice(2)}`,
+        cashfreePaymentId: `cf_pay_seed_${Math.random().toString(36).slice(2)}`,
         createdAt,
         updatedAt: createdAt,
         items: {

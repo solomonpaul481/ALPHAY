@@ -21,12 +21,12 @@ async function GET(request, { params }) {
     return NextResponse.json({ error: "Order not found." }, { status: 404 });
   }
 
-  // Fallback: If still pending payment, try fetching status directly from Razorpay
-  if (order.status === "PENDING_PAYMENT" && order.razorpayOrderId) {
+  // Fallback: If still pending payment, try fetching status directly from Cashfree
+  if (order.status === "PENDING_PAYMENT" && order.cashfreeOrderId) {
     try {
-      const { fetchRazorpayOrder } = require("@/lib/razorpay");
-      const rzpOrder = await fetchRazorpayOrder(order.razorpayOrderId);
-      if (rzpOrder && rzpOrder.status === "paid") {
+      const { fetchCashfreeOrder } = require("@/lib/cashfree");
+      const cfOrder = await fetchCashfreeOrder(order.cashfreeOrderId);
+      if (cfOrder && (cfOrder.order_status === "PAID" || cfOrder.order_status === "SUCCESS" || cfOrder.order_status === "COMPLETED")) {
         await db.$transaction([
           db.order.update({
             where: { id: order.id },
@@ -71,7 +71,7 @@ async function GET(request, { params }) {
     subtotal: order.subtotal,
     gstAmount: order.gstAmount,
     total: order.total,
-    razorpayPaymentId: order.razorpayPaymentId,
+    cashfreePaymentId: order.cashfreePaymentId,
     createdAt: order.createdAt,
     tableNumber: session.table.number,
     items: order.items.map((i) => ({

@@ -119,7 +119,7 @@ async function GET() {
       table: o.table ? o.table.number : "12",
       total: o.total,
       createdAt: o.createdAt,
-      razorpayPaymentId: o.razorpayPaymentId,
+      cashfreePaymentId: o.cashfreePaymentId,
       items: o.items.map((i) => ({ name: i.name, quantity: i.quantity, price: i.price })),
     })),
     staffCalls: staffCalls.map((c) => ({

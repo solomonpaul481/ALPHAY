@@ -39,7 +39,7 @@ async function POST(request, { params }) {
       },
       create: {
         orderId: order.id,
-        razorpayOrderId: `CASH_${order.id}`,
+        cashfreeOrderId: `CASH_${order.id}`,
         status: "CASH_PENDING",
         amount: order.total,
       },

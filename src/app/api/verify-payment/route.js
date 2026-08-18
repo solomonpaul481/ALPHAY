@@ -4,13 +4,8 @@ const { verifyOnlinePayment, getActiveGateway } = require("@/lib/payment-gateway
 async function POST(request) {
   try {
     const body = await request.json().catch(() => ({}));
-    const orderId =
-      body.cfOrderId || body.orderId || body.order_id || body.razorpay_order_id || body.razorpayOrderId;
-    const paymentId =
-      body.paymentId || body.payment_id || body.razorpay_payment_id || body.razorpayPaymentId;
-    const signature =
-      body.signature || body.razorpay_signature || body.razorpaySignature;
-    const gateway = body.gateway || getActiveGateway();
+    const orderId = body.cfOrderId || body.orderId || body.order_id;
+    const paymentId = body.paymentId || body.payment_id || body.cfPaymentId;
 
     if (!orderId) {
       return NextResponse.json(
@@ -25,8 +20,6 @@ async function POST(request) {
     const verification = await verifyOnlinePayment({
       orderId,
       paymentId,
-      signature,
-      gateway,
     });
 
     if (!verification.success) {

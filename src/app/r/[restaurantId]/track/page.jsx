@@ -5,21 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import { createApiClient } from "@/lib/api-client";
 import { IconArrowLeft, IconCheck, IconSparkles } from "@/components/Icons";
 
-function loadRazorpayScript() {
-  return new Promise((resolve) => {
-    if (typeof window !== "undefined" && window.Razorpay) {
-      resolve(true);
-      return;
-    }
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.async = true;
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
-}
-
 function loadCashfreeScript() {
   return new Promise((resolve) => {
     if (typeof window !== "undefined" && window.Cashfree) {
@@ -67,7 +52,6 @@ export default function SessionTrackPage() {
     fetchSession();
 
     // Preload checkout scripts in background
-    loadRazorpayScript();
     loadCashfreeScript();
 
     // Auto refresh active session state every 3 seconds
@@ -98,73 +82,30 @@ export default function SessionTrackPage() {
       const checkoutData = await api.paySessionOnline();
 
       // Cashfree Flow
-      if (checkoutData.gateway === "cashfree" || checkoutData.paymentSessionId) {
-        const isLoaded = await loadCashfreeScript();
-        if (!isLoaded || typeof window === "undefined" || !window.Cashfree) {
-          throw new Error("Could not load Cashfree SDK. Please check your internet connection.");
-        }
-
-        const cashfree = window.Cashfree({
-          mode: checkoutData.env || "sandbox",
-        });
-
-        const result = await cashfree.checkout({
-          paymentSessionId: checkoutData.paymentSessionId,
-          redirectTarget: "_modal",
-        });
-
-        if (result?.error) {
-          throw new Error(result.error.message || "Payment cancelled.");
-        }
-
-        await api.verifySessionPayment({
-          sessionId: sessionData.sessionId,
-          orderId: checkoutData.orderId,
-          gateway: "cashfree",
-        });
-        await fetchSession();
-      } else {
-        // Razorpay Flow
-        const isLoaded = await loadRazorpayScript();
-        if (!isLoaded || typeof window === "undefined" || !window.Razorpay) {
-          throw new Error("Could not load Razorpay SDK. Please check your internet connection.");
-        }
-
-        const razorpayKey = checkoutData.keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_TMtvLg56jNntEI";
-
-        const rzp = new window.Razorpay({
-          key: razorpayKey,
-          amount: checkoutData.amountInPaise,
-          currency: "INR",
-          order_id: checkoutData.razorpayOrderId,
-          name: checkoutData.restaurantName || "ALPHAY Restaurant",
-          description: `Table ${checkoutData.tableNumber} · Session Bill Payment`,
-          theme: { color: "#f59e0b" },
-          handler: async function (response) {
-            try {
-              await api.verifySessionPayment({
-                sessionId: sessionData.sessionId,
-                razorpayPaymentId: response.razorpay_payment_id,
-                razorpayOrderId: response.razorpay_order_id,
-                signature: response.razorpay_signature,
-                gateway: "razorpay",
-              });
-              await fetchSession();
-            } catch (err) {
-              setError(err.message || "Payment verification failed.");
-            } finally {
-              setPaying(false);
-            }
-          },
-          modal: {
-            ondismiss: () => {
-              setPaying(false);
-            },
-          },
-        });
-
-        rzp.open();
+      const isLoaded = await loadCashfreeScript();
+      if (!isLoaded || typeof window === "undefined" || !window.Cashfree) {
+        throw new Error("Could not load Cashfree SDK. Please check your internet connection.");
       }
+
+      const cashfree = window.Cashfree({
+        mode: checkoutData.env || "sandbox",
+      });
+
+      const result = await cashfree.checkout({
+        paymentSessionId: checkoutData.paymentSessionId,
+        redirectTarget: "_modal",
+      });
+
+      if (result?.error) {
+        throw new Error(result.error.message || "Payment cancelled.");
+      }
+
+      await api.verifySessionPayment({
+        sessionId: sessionData.sessionId,
+        orderId: checkoutData.orderId,
+        gateway: "cashfree",
+      });
+      await fetchSession();
     } catch (err) {
       setError(err.message || "Failed to launch online payment.");
     } finally {
@@ -576,7 +517,7 @@ export default function SessionTrackPage() {
                 className="flex-1 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-3.5 text-xs font-extrabold text-slate-950 shadow-lg font-['Cinzel'] tracking-wider disabled:opacity-50 cursor-pointer"
               >
                 {paying
-                  ? "Launching Razorpay..."
+                  ? "Launching Cashfree..."
                   : paymentMethod === "ONLINE"
                   ? `Pay Online ₹${(sessionData?.totalAmount || 0).toFixed(2)}`
                   : `Confirm Cash Payment (₹${(sessionData?.totalAmount || 0).toFixed(2)})`}

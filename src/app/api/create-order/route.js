@@ -41,11 +41,9 @@ async function POST(request) {
       order_id: paymentOrder.orderId,
       orderId: paymentOrder.orderId,
       paymentSessionId: paymentOrder.paymentSessionId,
-      razorpayOrderId: paymentOrder.orderId,
       amount: paymentOrder.amountInPaise,
       amountInRupees,
       currency: paymentOrder.currency || "INR",
-      keyId: paymentOrder.keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "",
       env: paymentOrder.env || process.env.NEXT_PUBLIC_CASHFREE_ENV || "sandbox",
     });
   } catch (err) {

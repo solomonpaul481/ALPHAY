@@ -1,12 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import RazorpayCheckoutButton from "@/components/RazorpayCheckoutButton";
 import CashfreeCheckoutButton from "@/components/CashfreeCheckoutButton";
 
 export default function CheckoutDemoPage() {
   const [amount, setAmount] = useState(100); // Amount in ₹
-  const [activeGateway, setActiveGateway] = useState("cashfree"); // "cashfree" | "razorpay"
   const [paymentResult, setPaymentResult] = useState(null);
 
   return (
@@ -18,41 +16,11 @@ export default function CheckoutDemoPage() {
             Online Payment Checkout Demo
           </h1>
           <p className="text-xs text-slate-400 font-medium">
-            Test Cashfree and Razorpay order creation, payment modals, and backend verification.
+            Test Cashfree order creation, payment modal, and backend verification.
           </p>
         </div>
 
         <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-black uppercase text-amber-400 font-['Cinzel'] mb-2">
-              Select Payment Provider
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setActiveGateway("cashfree")}
-                className={`rounded-2xl p-3 text-xs font-black border transition-all cursor-pointer ${
-                  activeGateway === "cashfree"
-                    ? "border-emerald-400 bg-emerald-500/15 text-emerald-300 ring-2 ring-emerald-500/40"
-                    : "border-slate-800 bg-slate-950 text-slate-400"
-                }`}
-              >
-                💚 Cashfree Payment Gateway
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveGateway("razorpay")}
-                className={`rounded-2xl p-3 text-xs font-black border transition-all cursor-pointer ${
-                  activeGateway === "razorpay"
-                    ? "border-amber-400 bg-amber-500/15 text-amber-300 ring-2 ring-amber-500/40"
-                    : "border-slate-800 bg-slate-950 text-slate-400"
-                }`}
-              >
-                💙 Razorpay Gateway
-              </button>
-            </div>
-          </div>
-
           <div>
             <label className="block text-xs font-black uppercase text-amber-400 font-['Cinzel'] mb-1">
               Payment Amount (₹ INR)
@@ -75,7 +43,7 @@ export default function CheckoutDemoPage() {
           <div className="rounded-2xl bg-slate-950 p-4 border border-amber-500/20 text-xs font-mono space-y-1">
             <div className="flex justify-between text-slate-400">
               <span>Active Provider:</span>
-              <span className="text-amber-300 font-bold uppercase">{activeGateway}</span>
+              <span className="text-emerald-400 font-bold uppercase">CASHFREE</span>
             </div>
             <div className="flex justify-between text-slate-400">
               <span>Order Endpoint:</span>
@@ -88,23 +56,13 @@ export default function CheckoutDemoPage() {
           </div>
 
           <div className="pt-2 flex justify-center">
-            {activeGateway === "cashfree" ? (
-              <CashfreeCheckoutButton
-                amountInRupees={amount}
-                description={`Test Cashfree Checkout for ₹${amount}`}
-                onSuccess={(result) => setPaymentResult(result)}
-                onFailure={() => setPaymentResult(null)}
-                buttonText={`Pay ₹${amount} with Cashfree 💳`}
-              />
-            ) : (
-              <RazorpayCheckoutButton
-                amountInRupees={amount}
-                description={`Test Razorpay Checkout for ₹${amount}`}
-                onSuccess={(result) => setPaymentResult(result)}
-                onFailure={() => setPaymentResult(null)}
-                buttonText={`Pay ₹${amount} with Razorpay 💳`}
-              />
-            )}
+            <CashfreeCheckoutButton
+              amountInRupees={amount}
+              description={`Test Cashfree Checkout for ₹${amount}`}
+              onSuccess={(result) => setPaymentResult(result)}
+              onFailure={() => setPaymentResult(null)}
+              buttonText={`Pay ₹${amount} with Cashfree 💳`}
+            />
           </div>
         </div>
 

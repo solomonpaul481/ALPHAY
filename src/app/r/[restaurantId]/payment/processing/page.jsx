@@ -14,11 +14,7 @@ function ProcessingContent() {
   const router = useRouter();
   const api = createApiClient(restaurantId);
   const orderId = searchParams.get("orderId");
-  const paymentId = searchParams.get("paymentId");
-  const signature = searchParams.get("signature");
-  const razorpayOrderId = searchParams.get("razorpayOrderId");
   const pollCount = useRef(0);
-  const verifyingRef = useRef(false);
 
   useEffect(() => {
     if (!orderId) {
@@ -28,72 +24,49 @@ function ProcessingContent() {
 
     let cancelled = false;
 
-    const runVerificationAndPoll = async () => {
-      // 1. First, attempt immediate signature verification if client params are available
-      if (paymentId && signature && !verifyingRef.current) {
-        verifyingRef.current = true;
-        try {
-          const res = await api.verifyPayment(orderId, {
-            razorpayPaymentId: paymentId,
-            razorpayOrderId: razorpayOrderId || "",
-            razorpaySignature: signature,
-          });
-          if (res.success || res.status === "CONFIRMED") {
-            router.replace(`/r/${restaurantId}/payment/success?orderId=${orderId}`);
-            return;
-          }
-        } catch (err) {
-          console.warn("Direct signature verification warning:", err);
+    const poll = async () => {
+      try {
+        const order = await api.getOrder(orderId);
+        if (cancelled) return;
+
+        if (
+          order.status === "CONFIRMED" ||
+          order.status === "PREPARING" ||
+          order.status === "READY" ||
+          order.status === "SERVED"
+        ) {
+          router.replace(`/r/${restaurantId}/payment/success?orderId=${orderId}`);
+          return;
         }
+        if (order.status === "PAYMENT_FAILED" || order.status === "CANCELLED") {
+          router.replace(`/r/${restaurantId}/payment/failure?orderId=${orderId}`);
+          return;
+        }
+
+        pollCount.current += 1;
+        if (pollCount.current >= MAX_POLLS) {
+          router.replace(`/r/${restaurantId}/payment/failure?orderId=${orderId}&timeout=1`);
+          return;
+        }
+        setTimeout(poll, POLL_INTERVAL_MS);
+      } catch (err) {
+        if (cancelled) return;
+        pollCount.current += 1;
+        if (pollCount.current >= MAX_POLLS) {
+          router.replace(`/r/${restaurantId}/payment/failure?orderId=${orderId}`);
+          return;
+        }
+        setTimeout(poll, POLL_INTERVAL_MS);
       }
-
-      // 2. Poll backend for order status update
-      const poll = async () => {
-        try {
-          const order = await api.getOrder(orderId);
-          if (cancelled) return;
-
-          if (
-            order.status === "CONFIRMED" ||
-            order.status === "PREPARING" ||
-            order.status === "READY" ||
-            order.status === "SERVED"
-          ) {
-            router.replace(`/r/${restaurantId}/payment/success?orderId=${orderId}`);
-            return;
-          }
-          if (order.status === "PAYMENT_FAILED" || order.status === "CANCELLED") {
-            router.replace(`/r/${restaurantId}/payment/failure?orderId=${orderId}`);
-            return;
-          }
-
-          pollCount.current += 1;
-          if (pollCount.current >= MAX_POLLS) {
-            router.replace(`/r/${restaurantId}/payment/failure?orderId=${orderId}&timeout=1`);
-            return;
-          }
-          setTimeout(poll, POLL_INTERVAL_MS);
-        } catch (err) {
-          if (cancelled) return;
-          pollCount.current += 1;
-          if (pollCount.current >= MAX_POLLS) {
-            router.replace(`/r/${restaurantId}/payment/failure?orderId=${orderId}`);
-            return;
-          }
-          setTimeout(poll, POLL_INTERVAL_MS);
-        }
-      };
-
-      poll();
     };
 
-    runVerificationAndPoll();
+    poll();
 
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderId, paymentId, signature]);
+  }, [orderId]);
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-6 text-center">

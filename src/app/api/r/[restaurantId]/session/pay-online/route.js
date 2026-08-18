@@ -38,7 +38,7 @@ async function POST(request, { params }) {
   }
 
   try {
-    const activeGateway = getActiveGateway();
+    const activeGateway = "cashfree";
     const paymentOrder = await createOnlinePaymentOrder({
       amountInRupees: totalAmount,
       receipt: `SESS_${session.id.slice(-8)}`,
@@ -50,33 +50,24 @@ async function POST(request, { params }) {
       },
     });
 
-    const updateData = {
-      billTotal: totalAmount,
-      paymentMethod: "ONLINE",
-      paymentGateway: activeGateway.toUpperCase(),
-    };
-
-    if (activeGateway === "cashfree") {
-      updateData.cashfreeOrderId = paymentOrder.orderId;
-    } else {
-      updateData.razorpayOrderId = paymentOrder.orderId;
-    }
-
     await db.customerSession.update({
       where: { id: session.id },
-      data: updateData,
+      data: {
+        billTotal: totalAmount,
+        paymentMethod: "ONLINE",
+        paymentGateway: "CASHFREE",
+        cashfreeOrderId: paymentOrder.orderId,
+      },
     });
 
     return NextResponse.json({
       ok: true,
-      gateway: activeGateway,
+      gateway: "cashfree",
       sessionId: session.id,
       orderId: paymentOrder.orderId,
       paymentSessionId: paymentOrder.paymentSessionId,
-      razorpayOrderId: paymentOrder.orderId,
       amount: totalAmount,
       amountInPaise: Math.round(totalAmount * 100),
-      keyId: paymentOrder.keyId || process.env.RAZORPAY_KEY_ID,
       env: paymentOrder.env || process.env.NEXT_PUBLIC_CASHFREE_ENV || "sandbox",
       restaurantName: sessionWithOrders.restaurant.name,
       tableNumber: sessionWithOrders.table.number,

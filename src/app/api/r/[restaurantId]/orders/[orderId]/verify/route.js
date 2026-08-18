@@ -1,7 +1,7 @@
 const { NextResponse } = require("next/server");
 const { db } = require("@/lib/db");
 const { getSession } = require("@/lib/get-session");
-const { verifyCheckoutSignature } = require("@/lib/razorpay");
+const { verifyOnlinePayment } = require("@/lib/payment-gateway");
 
 async function POST(request, { params }) {
   const { restaurantId, orderId } = params;
@@ -26,49 +26,34 @@ async function POST(request, { params }) {
     return NextResponse.json({ success: true, status: order.status });
   }
 
-  const body = await request.json().catch(() => ({}));
-  const { razorpayPaymentId, razorpayOrderId, razorpaySignature } = body;
+  const targetOrderId = order.cashfreeOrderId || orderId;
 
-  if (!razorpayPaymentId || !razorpayOrderId || !razorpaySignature) {
-    return NextResponse.json({ error: "Missing payment verification parameters." }, { status: 400 });
-  }
+  const verifyResult = await verifyOnlinePayment({
+    orderId: targetOrderId,
+  });
 
-  const secret = process.env.RAZORPAY_KEY_SECRET;
-  const isSecretConfigured = secret && !secret.includes("***");
-
-  let isValid = false;
-  if (isSecretConfigured) {
-    isValid = verifyCheckoutSignature({
-      orderId: razorpayOrderId,
-      paymentId: razorpayPaymentId,
-      signature: razorpaySignature,
-    });
-  } else {
-    // If secret is not configured or placeholder in dev mode, check order matches
-    isValid = order.razorpayOrderId === razorpayOrderId || !order.razorpayOrderId;
-  }
-
-  if (!isValid) {
-    return NextResponse.json({ error: "Invalid payment signature." }, { status: 400 });
+  if (!verifyResult.success) {
+    return NextResponse.json({ error: "Payment verification failed or unpaid." }, { status: 400 });
   }
 
   // Transactionally confirm order and payment
   await db.$transaction([
     db.order.update({
       where: { id: order.id },
-      data: { status: "CONFIRMED", razorpayPaymentId },
+      data: { status: "CONFIRMED", cashfreePaymentId: verifyResult.paymentId, paymentGateway: "CASHFREE" },
     }),
     db.payment.updateMany({
       where: { orderId: order.id },
       data: {
         status: "verified",
-        razorpayPaymentId,
+        cashfreePaymentId: verifyResult.paymentId,
+        paymentGateway: "CASHFREE",
         verifiedAt: new Date(),
       },
     }),
   ]);
 
-  console.log(`[Verify API] Order ${order.id} verified & confirmed with payment ID ${razorpayPaymentId}`);
+  console.log(`[Verify API] Order ${order.id} verified & confirmed with Cashfree payment ID ${verifyResult.paymentId}`);
 
   return NextResponse.json({ success: true, status: "CONFIRMED" });
 }

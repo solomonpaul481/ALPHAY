@@ -15,8 +15,9 @@ into the platform that oversees it:
    Admin Portal (ALPHAY)  oversees every restaurant on the platform
 ```
 
-- **Customer Portal** (`/r/<restaurantId>`) — QR → menu → cart → Razorpay
+- **Customer Portal** (`/r/<restaurantId>`) — QR → menu → cart → Cashfree
   payment → live tracking
+
 - **Manager Portal** (`/manager`) — live orders, analytics, menu, QR/tables,
   staff, for one restaurant
 - **Admin Portal / ALPHAX** (`/admin`) — every restaurant on the platform:
@@ -31,7 +32,7 @@ single shared schema.
 
 - **Next.js 14** (App Router) — pages + API routes in one project
 - **Prisma + SQLite** for dev (swap to Postgres/MySQL for production — one line change)
-- **Razorpay** Node SDK — order creation + webhook signature verification
+- **Cashfree Payment Gateway** — order creation + webhook verification
 - **Google OAuth 2.0** (hand-rolled, no extra library) — Admin sign-in
 - **bcryptjs** — Manager password hashing
 - **Tailwind CSS**, **Framer Motion**, **Recharts** (analytics), **qrcode** (QR generation)

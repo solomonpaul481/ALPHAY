@@ -58,7 +58,7 @@ async function GET(request) {
     gstAmount: o.gstAmount,
     total: o.total,
     specialInstructions: o.specialInstructions,
-    razorpayPaymentId: o.razorpayPaymentId,
+    cashfreePaymentId: o.cashfreePaymentId,
     paymentMethod: o.session ? o.session.paymentMethod || "CASH" : "CASH",
     paymentStatus: o.session ? o.session.paymentStatus : (o.status === "PAID" ? "PAID" : "UNPAID"),
     items: o.items.map((i) => ({

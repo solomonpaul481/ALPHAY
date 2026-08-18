@@ -79,22 +79,22 @@ async function GET(request) {
       const orderNo = o.id.slice(-6).toLowerCase();
       const orderSeqStr = o.orderSeq ? String(o.orderSeq) : "";
       const tableNo = o.table?.number.toLowerCase() || "";
-      const pId = (o.cashfreePaymentId || o.razorpayPaymentId || "").toLowerCase();
+      const pId = (o.cashfreePaymentId || o.payment?.cashfreePaymentId || o.session?.cashfreePaymentId || "").toLowerCase();
       const pMethod = (o.session?.paymentMethod || "").toLowerCase();
       return orderNo.includes(q) || orderSeqStr.includes(q) || tableNo.includes(q) || pId.includes(q) || pMethod.includes(q);
     })
     .map((o) => {
-      const rawTxnId = o.cashfreePaymentId || o.razorpayPaymentId || o.payment?.cashfreePaymentId || o.payment?.razorpayPaymentId || o.session?.cashfreePaymentId || o.session?.razorpayPaymentId;
+      const rawTxnId = o.cashfreePaymentId || o.payment?.cashfreePaymentId || o.session?.cashfreePaymentId;
       const isOnline = Boolean(
         (rawTxnId && !["CASH", "CASH_PAYMENT", "Cash"].includes(rawTxnId)) ||
         o.session?.paymentMethod === "ONLINE" ||
         o.session?.paymentMethod === "UPI"
       );
       const isCash = !isOnline;
-      const gateway = o.paymentGateway || o.session?.paymentGateway || (o.cashfreePaymentId ? "CASHFREE" : "RAZORPAY");
-      const methodLabel = isOnline ? (gateway === "CASHFREE" ? "Cashfree Online 💳" : "Razorpay Online 💳") : "Cash";
-      const statusLabel = isOnline ? `PAID (${gateway})` : "PAID (CASH)";
-      const txnDisplayId = isOnline ? (rawTxnId || `pay_${o.id.slice(-8)}`) : "Cash";
+      const gateway = "CASHFREE";
+      const methodLabel = isOnline ? "Cashfree Online 💳" : "Cash";
+      const statusLabel = isOnline ? "PAID (CASHFREE)" : "PAID (CASH)";
+      const txnDisplayId = isOnline ? (rawTxnId || `cf_pay_${o.id.slice(-8)}`) : "Cash";
 
       return {
         id: o.payment?.id || `txn_${o.id}`,
@@ -105,7 +105,6 @@ async function GET(request) {
         paymentMethod: methodLabel,
         paymentStatus: statusLabel,
         paymentGateway: gateway,
-        razorpayPaymentId: txnDisplayId,
         cashfreePaymentId: txnDisplayId,
         isCash,
         createdAt: o.createdAt,
