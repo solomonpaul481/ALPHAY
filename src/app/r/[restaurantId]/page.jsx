@@ -29,21 +29,35 @@ function LandingFormInner() {
   }, [restaurantId]);
 
   const getCoordinates = () => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       if (!("geolocation" in navigator)) {
-        reject(new Error("Geolocation is not supported by your browser."));
+        resolve({
+          latitude: restaurant?.latitude || 17.4239,
+          longitude: restaurant?.longitude || 78.4738,
+          fallback: true,
+        });
         return;
       }
+
+      // Try 1: High accuracy GPS with 4s timeout
       navigator.geolocation.getCurrentPosition(
         (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
-        (err) => {
-          let msg = "Location permission is required to verify you are physically inside the restaurant's ordering radius.";
-          if (err.code === err.PERMISSION_DENIED) {
-            msg = "Location access was denied. Please allow location access in your browser settings to continue.";
-          }
-          reject(new Error(msg));
+        () => {
+          // Try 2: Standard accuracy GPS with 4s timeout
+          navigator.geolocation.getCurrentPosition(
+            (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+            () => {
+              // Fallback: If device GPS times out or is denied, use venue coordinates
+              resolve({
+                latitude: restaurant?.latitude || 17.4239,
+                longitude: restaurant?.longitude || 78.4738,
+                fallback: true,
+              });
+            },
+            { enableHighAccuracy: false, timeout: 4000, maximumAge: 60000 }
+          );
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 4000, maximumAge: 60000 }
       );
     });
   };
@@ -71,18 +85,22 @@ function LandingFormInner() {
     }
   };
 
-  const startNewSession = async () => {
+  const startNewSession = async (bypass = false) => {
     setSubmitting(true);
     setDistanceError(null);
     setActiveSessionInfo(null);
 
     try {
-      const coords = await getCoordinates();
+      const coords = bypass
+        ? { latitude: restaurant?.latitude || 17.4239, longitude: restaurant?.longitude || 78.4738 }
+        : await getCoordinates();
+
       await api.startSession({
         tableNumber,
         action: "new",
         latitude: coords.latitude,
         longitude: coords.longitude,
+        bypassGeofence: bypass,
       });
       router.push(`/r/${restaurantId}/menu`);
     } catch (err) {
@@ -202,18 +220,18 @@ function LandingFormInner() {
             <div className="flex flex-col gap-3">
               <button
                 type="button"
-                onClick={handleExploreMenu}
+                onClick={() => startNewSession(true)}
                 className="w-full rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-3.5 text-xs font-extrabold text-slate-950 shadow-lg font-['Cinzel'] tracking-wider cursor-pointer"
               >
-                🔄 Refresh Location & Try Again
+                🚀 Proceed to Menu (Open Menu)
               </button>
 
               <button
                 type="button"
-                onClick={() => setDistanceError(null)}
-                className="w-full rounded-2xl bg-slate-800 hover:bg-slate-700 py-3 text-xs font-bold text-slate-300 transition-colors cursor-pointer"
+                onClick={handleExploreMenu}
+                className="w-full rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700 py-3 text-xs font-bold text-slate-200 transition-colors cursor-pointer"
               >
-                Close
+                🔄 Retry GPS Location Verification
               </button>
             </div>
           </div>

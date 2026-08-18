@@ -407,11 +407,164 @@ function EditRestaurantModal({ restaurant, onUpdated, onClose }) {
   );
 }
 
+function RestaurantDetailsModal({ restaurant, onClose, onEdit, onLaunch, onToggleStatus, isBusy }) {
+  if (!restaurant) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4">
+      <div className="w-full max-w-lg rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-2xl border border-amber-500/40 text-slate-900 dark:text-white space-y-5 animate-in fade-in duration-200">
+        <div className="flex items-center justify-between border-b border-amber-500/20 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-500 border border-amber-500/30 text-2xl font-black">
+              🍽️
+            </div>
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 font-['Cinzel']">
+                Restaurant Venue & Manager Details
+              </span>
+              <h2 className="font-['Cinzel'] text-xl font-extrabold text-slate-900 dark:text-white">
+                {restaurant.name}
+              </h2>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-50 dark:bg-slate-950 text-xs font-bold text-slate-500 dark:text-slate-400 border border-amber-500/20 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* MANAGER ACCOUNT DETAILS CARD */}
+        <div className="rounded-2xl bg-amber-50/70 dark:bg-slate-950/80 p-4 border border-amber-500/30 space-y-2.5">
+          <div className="flex items-center gap-2 border-b border-amber-500/20 pb-2">
+            <span className="text-base">👑</span>
+            <h3 className="font-['Cinzel'] text-xs font-black uppercase tracking-wider text-amber-700 dark:text-amber-400">
+              Manager Account Credentials
+            </h3>
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-2 text-xs font-mono">
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">Manager Name</p>
+              <p className="font-extrabold text-slate-900 dark:text-white mt-0.5">
+                {restaurant.managerName || "Restaurant Manager"}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">Manager Email</p>
+              <p className="font-extrabold text-slate-900 dark:text-white mt-0.5 select-all">
+                📧 {restaurant.managerEmail}
+              </p>
+            </div>
+            <div className="sm:col-span-2 pt-1 border-t border-amber-500/10">
+              <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">Manager Password</p>
+              <p className="font-extrabold text-amber-700 dark:text-amber-300 mt-0.5 select-all bg-amber-100 dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-amber-500/20 text-xs inline-block">
+                🔑 {restaurant.managerPassword || "—"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* RESTAURANT ADDRESS & LOCATION DETAILS CARD */}
+        <div className="rounded-2xl bg-amber-50/70 dark:bg-slate-950/80 p-4 border border-amber-500/30 space-y-2.5">
+          <div className="flex items-center gap-2 border-b border-amber-500/20 pb-2">
+            <span className="text-base">📍</span>
+            <h3 className="font-['Cinzel'] text-xs font-black uppercase tracking-wider text-amber-700 dark:text-amber-400">
+              Restaurant Address & GPS Location
+            </h3>
+          </div>
+
+          <div className="grid gap-2.5 sm:grid-cols-2 text-xs font-mono">
+            <div className="sm:col-span-2">
+              <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">Venue Address / GPS Coordinates</p>
+              <p className="font-bold text-slate-900 dark:text-white mt-0.5 bg-amber-100/60 dark:bg-slate-900 px-3 py-2 rounded-xl border border-amber-500/20">
+                📍 Latitude: <strong className="text-amber-600 dark:text-amber-300">{restaurant.latitude}</strong>, Longitude: <strong className="text-amber-600 dark:text-amber-300">{restaurant.longitude}</strong>
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">Geofence Ordering Radius</p>
+              <p className="font-extrabold text-slate-900 dark:text-white mt-0.5">
+                {restaurant.geofenceRadiusMeters || 150} meters GPS radius
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">Venue Status</p>
+              <span
+                className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-extrabold mt-0.5 ${
+                  restaurant.status === "ACTIVE"
+                    ? "bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-400"
+                    : "bg-rose-100 text-rose-900 dark:bg-rose-950 dark:text-rose-300 border border-rose-400"
+                }`}
+              >
+                {restaurant.status}
+              </span>
+            </div>
+
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">GST Rate Applicable</p>
+              <p className="font-extrabold text-slate-900 dark:text-white mt-0.5">
+                {restaurant.gstPercent ?? 5}% GST
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">Platform Commission</p>
+              <p className="font-extrabold text-slate-900 dark:text-white mt-0.5">
+                {restaurant.commissionPercent ?? 5}%
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* MODAL ACTION BUTTONS */}
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-amber-500/20">
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onEdit(restaurant);
+              }}
+              className="rounded-2xl bg-amber-50 dark:bg-slate-950 px-3.5 py-2 text-xs font-bold text-slate-900 dark:text-white border border-amber-500/30 hover:border-amber-500 cursor-pointer"
+            >
+              Edit Venue
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onLaunch(restaurant);
+              }}
+              disabled={isBusy}
+              className="rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 px-3.5 py-2 text-xs font-black text-slate-950 shadow-md font-['Cinzel'] cursor-pointer"
+            >
+              Launch Portal
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-2xl bg-slate-200 dark:bg-slate-800 px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-white cursor-pointer"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminRestaurantsPage() {
   const [restaurants, setRestaurants] = useState(null);
   const [busyId, setBusyId] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingRestaurant, setEditingRestaurant] = useState(null);
+  const [viewingDetailsRestaurant, setViewingDetailsRestaurant] = useState(null);
 
   const load = async () => {
     const res = await fetch("/api/admin/restaurants");
@@ -516,12 +669,12 @@ export default function AdminRestaurantsPage() {
                       </span>
                     </td>
                     <td className="px-5 py-4 text-right">
-                      <div className="flex justify-end gap-2">
+                      <div className="flex items-center justify-end gap-2">
                         <button
                           type="button"
                           onClick={() => setEditingRestaurant(r)}
                           disabled={busyId === r.id}
-                          className="rounded-2xl bg-amber-50 dark:bg-slate-950 px-3.5 py-1.5 text-xs font-bold text-slate-900 dark:text-white border border-amber-500/30 hover:border-amber-500 transition-all disabled:opacity-50 cursor-pointer"
+                          className="rounded-2xl bg-amber-50 dark:bg-slate-950 px-3 py-1.5 text-xs font-bold text-slate-900 dark:text-white border border-amber-500/30 hover:border-amber-500 transition-all disabled:opacity-50 cursor-pointer"
                         >
                           Edit
                         </button>
@@ -529,7 +682,7 @@ export default function AdminRestaurantsPage() {
                           type="button"
                           onClick={() => openManagerPortal(r)}
                           disabled={busyId === r.id}
-                          className="rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 px-3.5 py-1.5 text-xs font-black text-slate-950 shadow-md font-['Cinzel'] transition-all disabled:opacity-50 cursor-pointer"
+                          className="rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 px-3 py-1.5 text-xs font-black text-slate-950 shadow-md font-['Cinzel'] transition-all disabled:opacity-50 cursor-pointer"
                         >
                           Launch Portal
                         </button>
@@ -537,9 +690,20 @@ export default function AdminRestaurantsPage() {
                           type="button"
                           onClick={() => toggleStatus(r)}
                           disabled={busyId === r.id}
-                          className="rounded-2xl bg-amber-50 dark:bg-slate-950 px-3.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 border border-amber-500/20 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+                          className="rounded-2xl bg-amber-50 dark:bg-slate-950 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 border border-amber-500/20 hover:text-slate-900 dark:hover:text-white cursor-pointer"
                         >
                           {r.status === "ACTIVE" ? "Suspend" : "Reactivate"}
+                        </button>
+
+                        {/* THREE DOTS DETAILS BUTTON */}
+                        <button
+                          type="button"
+                          onClick={() => setViewingDetailsRestaurant(r)}
+                          className="flex h-8 w-8 items-center justify-center rounded-2xl bg-amber-500/15 hover:bg-amber-500/30 border border-amber-500/40 text-amber-400 font-bold text-sm shadow-xs transition-all cursor-pointer"
+                          title="View Manager & Restaurant Details"
+                          aria-label="View Details"
+                        >
+                          ⋮
                         </button>
                       </div>
                     </td>
@@ -556,6 +720,17 @@ export default function AdminRestaurantsPage() {
           restaurant={editingRestaurant}
           onUpdated={load}
           onClose={() => setEditingRestaurant(null)}
+        />
+      )}
+
+      {viewingDetailsRestaurant && (
+        <RestaurantDetailsModal
+          restaurant={viewingDetailsRestaurant}
+          onClose={() => setViewingDetailsRestaurant(null)}
+          onEdit={setEditingRestaurant}
+          onLaunch={openManagerPortal}
+          onToggleStatus={toggleStatus}
+          isBusy={busyId === viewingDetailsRestaurant.id}
         />
       )}
     </>

@@ -7,6 +7,7 @@ import { IconBuilding, IconOrders, IconTransactions, IconSparkles } from "@/comp
 
 export default function AdminDashboardPage() {
   const [data, setData] = useState(null);
+  const [selectedVenue, setSelectedVenue] = useState(null);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/admin/dashboard");
@@ -92,12 +93,13 @@ export default function AdminDashboardPage() {
                       <th className="px-4 py-3 font-bold">Orders</th>
                       <th className="px-4 py-3 font-bold">Gross Sales</th>
                       <th className="px-4 py-3 font-bold">Platform Fee</th>
+                      <th className="px-4 py-3 font-bold text-right">Details</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-amber-100 dark:divide-slate-800 text-slate-900 dark:text-white font-semibold">
                     {data.restaurants.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-4 py-8 text-center text-xs text-slate-500 dark:text-slate-400">
+                        <td colSpan={6} className="px-4 py-8 text-center text-xs text-slate-500 dark:text-slate-400">
                           No venues onboarded yet.
                         </td>
                       </tr>
@@ -129,6 +131,16 @@ export default function AdminDashboardPage() {
                             ₹{r.commission.toFixed(2)}{" "}
                             <span className="text-[10px] text-slate-500 dark:text-slate-400">({r.commissionPercent}%)</span>
                           </td>
+                          <td className="px-4 py-3.5 text-right">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedVenue(r)}
+                              className="flex h-7 w-7 items-center justify-center rounded-xl bg-amber-500/15 hover:bg-amber-500/30 border border-amber-500/40 text-amber-400 font-bold text-xs transition-all ml-auto cursor-pointer"
+                              title="View Manager & Address Details"
+                            >
+                              ⋮
+                            </button>
+                          </td>
                         </tr>
                       ))
                     )}
@@ -139,6 +151,109 @@ export default function AdminDashboardPage() {
           </>
         )}
       </div>
+
+      {selectedVenue && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4">
+          <div className="w-full max-w-lg rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-2xl border border-amber-500/40 text-slate-900 dark:text-white space-y-5 animate-in fade-in duration-200">
+            <div className="flex items-center justify-between border-b border-amber-500/20 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-500 border border-amber-500/30 text-2xl font-black">
+                  🍽️
+                </div>
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 font-['Cinzel']">
+                    Venue & Manager Details
+                  </span>
+                  <h2 className="font-['Cinzel'] text-xl font-extrabold text-slate-900 dark:text-white">
+                    {selectedVenue.name}
+                  </h2>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedVenue(null)}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-50 dark:bg-slate-950 text-xs font-bold text-slate-500 dark:text-slate-400 border border-amber-500/20 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* MANAGER ACCOUNT DETAILS */}
+            <div className="rounded-2xl bg-amber-50/70 dark:bg-slate-950/80 p-4 border border-amber-500/30 space-y-2.5">
+              <div className="flex items-center gap-2 border-b border-amber-500/20 pb-2">
+                <span className="text-base">👑</span>
+                <h3 className="font-['Cinzel'] text-xs font-black uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                  Manager Account Credentials
+                </h3>
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-2 text-xs font-mono">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">Manager Name</p>
+                  <p className="font-extrabold text-slate-900 dark:text-white mt-0.5">
+                    {selectedVenue.managerName || "Restaurant Manager"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">Manager Email</p>
+                  <p className="font-extrabold text-slate-900 dark:text-white mt-0.5 select-all">
+                    📧 {selectedVenue.managerEmail}
+                  </p>
+                </div>
+                <div className="sm:col-span-2 pt-1 border-t border-amber-500/10">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">Manager Password</p>
+                  <p className="font-extrabold text-amber-700 dark:text-amber-300 mt-0.5 select-all bg-amber-100 dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-amber-500/20 text-xs inline-block">
+                    🔑 {selectedVenue.managerPassword || "—"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* RESTAURANT ADDRESS & LOCATION DETAILS */}
+            <div className="rounded-2xl bg-amber-50/70 dark:bg-slate-950/80 p-4 border border-amber-500/30 space-y-2.5">
+              <div className="flex items-center gap-2 border-b border-amber-500/20 pb-2">
+                <span className="text-base">📍</span>
+                <h3 className="font-['Cinzel'] text-xs font-black uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                  Restaurant Address & Location
+                </h3>
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-2 text-xs font-mono">
+                <div className="sm:col-span-2">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">GPS Address Coordinates</p>
+                  <p className="font-bold text-slate-900 dark:text-white mt-0.5 bg-amber-100/60 dark:bg-slate-900 px-3 py-2 rounded-xl border border-amber-500/20">
+                    📍 Latitude: <strong className="text-amber-600 dark:text-amber-300">{selectedVenue.latitude}</strong>, Longitude: <strong className="text-amber-600 dark:text-amber-300">{selectedVenue.longitude}</strong>
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">Geofence Ordering Radius</p>
+                  <p className="font-extrabold text-slate-900 dark:text-white mt-0.5">
+                    {selectedVenue.geofenceRadiusMeters || 150} meters
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">GST Rate Applicable</p>
+                  <p className="font-extrabold text-slate-900 dark:text-white mt-0.5">
+                    {selectedVenue.gstPercent ?? 5}% GST
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-amber-500/20">
+              <button
+                type="button"
+                onClick={() => setSelectedVenue(null)}
+                className="rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 px-5 py-2 text-xs font-extrabold text-slate-950 font-['Cinzel'] cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

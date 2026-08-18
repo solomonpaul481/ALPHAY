@@ -7,7 +7,10 @@ async function GET() {
   const admin = await getAdminSession();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const restaurants = await db.restaurant.findMany({ orderBy: { createdAt: "asc" } });
+  const restaurants = await db.restaurant.findMany({
+    include: { managers: true },
+    orderBy: { createdAt: "asc" },
+  });
 
   let allOrdersCount = 0;
   let totalCommissionEarned = 0;
@@ -31,9 +34,18 @@ async function GET() {
       allOrdersCount += count;
       totalCommissionEarned += commission;
 
+      const primaryManager = r.managers[0] || null;
+
       return {
         id: r.id,
         name: r.name,
+        latitude: r.latitude,
+        longitude: r.longitude,
+        geofenceRadiusMeters: r.geofenceRadiusMeters,
+        gstPercent: r.gstPercent,
+        managerName: primaryManager?.name || "Manager",
+        managerEmail: primaryManager?.email || "—",
+        managerPassword: primaryManager?.rawPassword || "Password set (encrypted)",
         orders: count,
         earnings,
         commission,
