@@ -1,4 +1,5 @@
 const { NextResponse } = require("next/server");
+const bcrypt = require("bcryptjs");
 const { db } = require("@/lib/db");
 const { getAdminSession } = require("@/lib/admin-auth");
 const { isValidCoordinate } = require("@/lib/geolocation");
@@ -12,7 +13,17 @@ async function PATCH(request, { params }) {
   if (!restaurant) return NextResponse.json({ error: "Restaurant not found." }, { status: 404 });
 
   const body = await request.json().catch(() => ({}));
-  const { name, latitude, longitude, geofenceRadiusMeters, gstPercent, commissionPercent } = body;
+  const {
+    name,
+    latitude,
+    longitude,
+    geofenceRadiusMeters,
+    gstPercent,
+    commissionPercent,
+    managerName,
+    managerEmail,
+    managerPassword,
+  } = body;
 
   const cleanName = typeof name === "string" ? name.trim() : restaurant.name;
   if (!cleanName) {
@@ -42,6 +53,56 @@ async function PATCH(request, { params }) {
 
   const gstNum = gstPercent !== undefined && gstPercent !== null ? parseFloat(gstPercent) : restaurant.gstPercent;
   const commissionNum = commissionPercent !== undefined && commissionPercent !== null ? parseFloat(commissionPercent) : restaurant.commissionPercent;
+
+  // Handle Manager details update
+  const primaryManager = await db.manager.findFirst({
+    where: { restaurantId: id },
+    orderBy: { createdAt: "asc" },
+  });
+
+  if (primaryManager) {
+    const managerData = {};
+    if (managerName && typeof managerName === "string" && managerName.trim()) {
+      managerData.name = managerName.trim();
+    }
+    if (managerEmail && typeof managerEmail === "string" && managerEmail.trim()) {
+      const cleanEmail = managerEmail.trim().toLowerCase();
+      if (cleanEmail !== primaryManager.email) {
+        const existing = await db.manager.findUnique({ where: { email: cleanEmail } });
+        if (existing && existing.id !== primaryManager.id) {
+          return NextResponse.json({ error: "That manager email is already in use by another venue." }, { status: 409 });
+        }
+        managerData.email = cleanEmail;
+      }
+    }
+    if (managerPassword && typeof managerPassword === "string" && managerPassword.trim()) {
+      const cleanPw = managerPassword.trim();
+      if (cleanPw.length < 4) {
+        return NextResponse.json({ error: "Password must be at least 4 characters." }, { status: 400 });
+      }
+      managerData.passwordHash = await bcrypt.hash(cleanPw, 10);
+      managerData.rawPassword = cleanPw;
+    }
+
+    if (Object.keys(managerData).length > 0) {
+      await db.manager.update({
+        where: { id: primaryManager.id },
+        data: managerData,
+      });
+    }
+  } else if (managerEmail && managerPassword) {
+    const cleanPw = managerPassword.trim();
+    const passwordHash = await bcrypt.hash(cleanPw, 10);
+    await db.manager.create({
+      data: {
+        restaurantId: id,
+        name: (managerName && managerName.trim()) || "Manager",
+        email: managerEmail.trim().toLowerCase(),
+        passwordHash,
+        rawPassword: cleanPw,
+      },
+    });
+  }
 
   const updated = await db.restaurant.update({
     where: { id },

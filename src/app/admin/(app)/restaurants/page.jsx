@@ -242,11 +242,14 @@ function AddRestaurantPanel({ onCreated, onClose }) {
 function EditRestaurantModal({ restaurant, onUpdated, onClose }) {
   const [form, setForm] = useState({
     name: restaurant?.name || "",
+    managerName: restaurant?.managerName || "",
+    managerEmail: restaurant?.managerEmail || "",
+    managerPassword: restaurant?.managerPassword || "",
     latitude: String(restaurant?.latitude || ""),
     longitude: String(restaurant?.longitude || ""),
     geofenceRadiusMeters: String(restaurant?.geofenceRadiusMeters || "150"),
-    gstPercent: String(restaurant?.gstPercent || "5"),
-    commissionPercent: String(restaurant?.commissionPercent || "5"),
+    gstPercent: String(restaurant?.gstPercent ?? "5"),
+    commissionPercent: String(restaurant?.commissionPercent ?? "5"),
   });
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -281,7 +284,10 @@ function EditRestaurantModal({ restaurant, onUpdated, onClose }) {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...form,
+          name: form.name,
+          managerName: form.managerName,
+          managerEmail: form.managerEmail,
+          managerPassword: form.managerPassword,
           latitude: parseFloat(form.latitude),
           longitude: parseFloat(form.longitude),
           geofenceRadiusMeters: parseInt(form.geofenceRadiusMeters, 10),
@@ -301,104 +307,157 @@ function EditRestaurantModal({ restaurant, onUpdated, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-      <div className="w-full max-w-xl rounded-3xl bg-white dark:bg-slate-800 p-6 shadow-2xl border border-purple-50 text-ink">
-        <div className="flex items-center justify-between border-b border-purple-50 pb-3">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 overflow-y-auto">
+      <div className="w-full max-w-xl rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-2xl border border-amber-500/40 text-slate-900 dark:text-white my-8">
+        <div className="flex items-center justify-between border-b border-amber-500/20 pb-3">
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-purple">Edit Restaurant Details</span>
-            <h2 className="font-display text-xl font-bold text-ink">{restaurant.name}</h2>
+            <span className="text-[11px] font-black uppercase tracking-wider text-amber-500 font-['Cinzel']">Edit Restaurant Details</span>
+            <h2 className="font-['Cinzel'] text-xl font-extrabold text-slate-900 dark:text-white">{restaurant.name}</h2>
           </div>
-          <button type="button" onClick={onClose} className="rounded-full bg-purple-50 px-3 py-1 text-xs font-bold text-ink2 cursor-pointer">
+          <button type="button" onClick={onClose} className="rounded-full bg-amber-50 dark:bg-slate-950 px-3 py-1 text-xs font-bold text-slate-400 hover:text-white cursor-pointer">
             ✕
           </button>
         </div>
 
         <form onSubmit={submit} className="mt-4 grid gap-4 sm:grid-cols-2">
+          {/* Restaurant Venue Name */}
           <div className="sm:col-span-2">
-            <label className="text-xs font-bold uppercase text-ink2">Restaurant Venue Name</label>
+            <label className="text-xs font-black uppercase text-amber-600 dark:text-amber-400 font-['Cinzel']">Restaurant Venue Name</label>
             <input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="mt-1.5 w-full rounded-2xl border border-purple/20 bg-purple-50/40 px-4 py-3 text-xs font-bold text-ink focus:border-purple focus:outline-none"
+              className="mt-1.5 w-full rounded-2xl border border-amber-500/30 bg-slate-950 px-4 py-3 text-xs font-bold text-white focus:border-amber-400 focus:outline-none"
               placeholder="e.g. Paradise Biryani"
             />
           </div>
 
+          {/* Manager Credentials Editing Section */}
+          <div className="sm:col-span-2 pt-2 border-t border-amber-500/20">
+            <p className="text-xs font-black uppercase text-amber-500 font-['Cinzel']">👑 Manager Account Details</p>
+          </div>
+
           <div>
-            <label className="text-xs font-bold uppercase text-ink2">GPS Latitude</label>
+            <label className="text-xs font-bold uppercase text-slate-400">Manager Name</label>
             <input
-              value={form.latitude}
-              onChange={(e) => setForm({ ...form, latitude: e.target.value })}
-              className="mt-1.5 w-full rounded-2xl border border-purple/20 bg-purple-50/40 px-4 py-3 text-xs font-bold text-ink focus:border-purple focus:outline-none"
-              placeholder="17.4239"
+              value={form.managerName}
+              onChange={(e) => setForm({ ...form, managerName: e.target.value })}
+              className="mt-1.5 w-full rounded-2xl border border-amber-500/30 bg-slate-950 px-4 py-3 text-xs font-bold text-white focus:border-amber-400 focus:outline-none"
+              placeholder="e.g. John Doe"
             />
           </div>
+
           <div>
-            <label className="text-xs font-bold uppercase text-ink2">GPS Longitude</label>
+            <label className="text-xs font-bold uppercase text-slate-400">Manager Mail ID / Email</label>
             <input
-              value={form.longitude}
-              onChange={(e) => setForm({ ...form, longitude: e.target.value })}
-              className="mt-1.5 w-full rounded-2xl border border-purple/20 bg-purple-50/40 px-4 py-3 text-xs font-bold text-ink focus:border-purple focus:outline-none"
-              placeholder="78.4738"
+              value={form.managerEmail}
+              onChange={(e) => setForm({ ...form, managerEmail: e.target.value })}
+              type="email"
+              className="mt-1.5 w-full rounded-2xl border border-amber-500/30 bg-slate-950 px-4 py-3 text-xs font-bold text-white focus:border-amber-400 focus:outline-none"
+              placeholder="manager@venue.com"
             />
           </div>
 
           <div className="sm:col-span-2">
-            <button
-              type="button"
-              onClick={useMyLocation}
-              className="rounded-full bg-purple-50 px-4 py-2 text-xs font-bold text-purple hover:bg-purple-100 cursor-pointer"
-            >
-              📍 Use Current Device GPS
-            </button>
-          </div>
-
-          <div>
-            <label className="text-xs font-bold uppercase text-ink2">Geofence Radius (meters)</label>
+            <label className="text-xs font-bold uppercase text-slate-400">Manager Password (Raw & Hash)</label>
             <input
-              value={form.geofenceRadiusMeters}
-              onChange={(e) => setForm({ ...form, geofenceRadiusMeters: e.target.value })}
-              type="number"
-              className="mt-1.5 w-full rounded-2xl border border-purple/20 bg-purple-50/40 px-4 py-3 text-xs font-bold text-ink focus:border-purple focus:outline-none"
+              value={form.managerPassword}
+              onChange={(e) => setForm({ ...form, managerPassword: e.target.value })}
+              type="text"
+              className="mt-1.5 w-full rounded-2xl border border-amber-500/30 bg-slate-950 px-4 py-3 text-xs font-bold text-amber-300 font-mono focus:border-amber-400 focus:outline-none"
+              placeholder="••••••••"
             />
           </div>
 
+          {/* Taxes & Financials Editing Section */}
+          <div className="sm:col-span-2 pt-2 border-t border-amber-500/20">
+            <p className="text-xs font-black uppercase text-amber-500 font-['Cinzel']">📊 Tax & Platform Commission</p>
+          </div>
+
           <div>
-            <label className="text-xs font-bold uppercase text-ink2">GST Rate %</label>
+            <label className="text-xs font-bold uppercase text-slate-400">GST Tax Percentage (%)</label>
             <input
               value={form.gstPercent}
               onChange={(e) => setForm({ ...form, gstPercent: e.target.value })}
               type="number"
-              className="mt-1.5 w-full rounded-2xl border border-purple/20 bg-purple-50/40 px-4 py-3 text-xs font-bold text-ink focus:border-purple focus:outline-none"
+              step="0.1"
+              className="mt-1.5 w-full rounded-2xl border border-amber-500/30 bg-slate-950 px-4 py-3 text-xs font-bold text-white focus:border-amber-400 focus:outline-none"
+              placeholder="5"
             />
           </div>
 
-          <div className="sm:col-span-2">
-            <label className="text-xs font-bold uppercase text-ink2">ALPHAY Platform Commission %</label>
+          <div>
+            <label className="text-xs font-bold uppercase text-slate-400">Platform Commission (%)</label>
             <input
               value={form.commissionPercent}
               onChange={(e) => setForm({ ...form, commissionPercent: e.target.value })}
               type="number"
-              className="mt-1.5 w-full rounded-2xl border border-purple/20 bg-purple-50/40 px-4 py-3 text-xs font-bold text-ink focus:border-purple focus:outline-none"
+              step="0.1"
+              className="mt-1.5 w-full rounded-2xl border border-amber-500/30 bg-slate-950 px-4 py-3 text-xs font-bold text-white focus:border-amber-400 focus:outline-none"
+              placeholder="5"
             />
           </div>
 
-          {error && <div className="sm:col-span-2 rounded-xl bg-nonveg-tint p-3 text-xs font-bold text-nonveg">{error}</div>}
+          {/* Location & Geofence Section */}
+          <div className="sm:col-span-2 pt-2 border-t border-amber-500/20">
+            <p className="text-xs font-black uppercase text-amber-500 font-['Cinzel']">📍 GPS Location & Radius</p>
+          </div>
 
-          <div className="sm:col-span-2 mt-4 flex justify-end gap-3">
+          <div>
+            <label className="text-xs font-bold uppercase text-slate-400">GPS Latitude</label>
+            <input
+              value={form.latitude}
+              onChange={(e) => setForm({ ...form, latitude: e.target.value })}
+              className="mt-1.5 w-full rounded-2xl border border-amber-500/30 bg-slate-950 px-4 py-3 text-xs font-bold text-white focus:border-amber-400 focus:outline-none"
+              placeholder="17.4239"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold uppercase text-slate-400">GPS Longitude</label>
+            <input
+              value={form.longitude}
+              onChange={(e) => setForm({ ...form, longitude: e.target.value })}
+              className="mt-1.5 w-full rounded-2xl border border-amber-500/30 bg-slate-950 px-4 py-3 text-xs font-bold text-white focus:border-amber-400 focus:outline-none"
+              placeholder="78.4738"
+            />
+          </div>
+
+          <div className="sm:col-span-2 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={useMyLocation}
+              className="rounded-full bg-amber-500/20 px-4 py-2 text-xs font-bold text-amber-400 border border-amber-500/40 hover:bg-amber-500/30 cursor-pointer"
+            >
+              📍 Use Current Device GPS
+            </button>
+
+            <div>
+              <label className="text-xs font-bold uppercase text-slate-400 mr-2">Geofence Radius (m)</label>
+              <input
+                value={form.geofenceRadiusMeters}
+                onChange={(e) => setForm({ ...form, geofenceRadiusMeters: e.target.value })}
+                type="number"
+                className="w-24 rounded-xl border border-amber-500/30 bg-slate-950 px-3 py-1.5 text-xs font-bold text-white focus:border-amber-400 focus:outline-none inline-block"
+              />
+            </div>
+          </div>
+
+          {error && <div className="sm:col-span-2 rounded-xl bg-rose-950/80 border border-rose-500/40 p-3 text-xs font-bold text-rose-300">{error}</div>}
+
+          <div className="sm:col-span-2 mt-4 flex justify-end gap-3 border-t border-amber-500/20 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-2xl bg-purple-50 px-5 py-3 text-xs font-bold text-ink2 hover:bg-purple-100 cursor-pointer"
+              className="rounded-2xl bg-slate-800 px-5 py-3 text-xs font-bold text-slate-300 hover:text-white cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="rounded-2xl bg-purple px-6 py-3 text-xs font-bold text-white shadow-lift disabled:opacity-50 cursor-pointer"
+              className="rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 px-6 py-3 text-xs font-black text-slate-950 shadow-md font-['Cinzel'] disabled:opacity-50 cursor-pointer"
             >
-              {saving ? "Saving Changes..." : "Save Changes"}
+              {saving ? "Saving Changes..." : "Save Details"}
             </button>
           </div>
         </form>
@@ -407,12 +466,82 @@ function EditRestaurantModal({ restaurant, onUpdated, onClose }) {
   );
 }
 
-function RestaurantDetailsModal({ restaurant, onClose, onLaunch, onToggleStatus, isBusy }) {
+function RestaurantDetailsModal({ restaurant, onClose, onLaunch, onUpdated, onToggleStatus, isBusy }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [form, setForm] = useState({
+    name: restaurant?.name || "",
+    managerName: restaurant?.managerName || "",
+    managerEmail: restaurant?.managerEmail || "",
+    managerPassword: restaurant?.managerPassword || "",
+    gstPercent: String(restaurant?.gstPercent ?? "5"),
+    commissionPercent: String(restaurant?.commissionPercent ?? "5"),
+    latitude: String(restaurant?.latitude || ""),
+    longitude: String(restaurant?.longitude || ""),
+    geofenceRadiusMeters: String(restaurant?.geofenceRadiusMeters || "150"),
+  });
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (restaurant) {
+      setForm({
+        name: restaurant.name || "",
+        managerName: restaurant.managerName || "",
+        managerEmail: restaurant.managerEmail || "",
+        managerPassword: restaurant.managerPassword || "",
+        gstPercent: String(restaurant.gstPercent ?? "5"),
+        commissionPercent: String(restaurant.commissionPercent ?? "5"),
+        latitude: String(restaurant.latitude || ""),
+        longitude: String(restaurant.longitude || ""),
+        geofenceRadiusMeters: String(restaurant.geofenceRadiusMeters || "150"),
+      });
+    }
+  }, [restaurant]);
+
   if (!restaurant) return null;
 
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setError("");
+    if (!form.name || !form.latitude || !form.longitude) {
+      setError("Restaurant name and GPS location coordinates are required.");
+      return;
+    }
+    if (!form.managerEmail) {
+      setError("Manager Email / Mail ID is required.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/restaurants/${restaurant.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name,
+          managerName: form.managerName,
+          managerEmail: form.managerEmail,
+          managerPassword: form.managerPassword,
+          gstPercent: parseFloat(form.gstPercent),
+          commissionPercent: parseFloat(form.commissionPercent),
+          latitude: parseFloat(form.latitude),
+          longitude: parseFloat(form.longitude),
+          geofenceRadiusMeters: parseInt(form.geofenceRadiusMeters, 10),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update details.");
+      await onUpdated();
+      setIsEditing(false);
+    } catch (err) {
+      setError(err.message || "Couldn't save changes.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4">
-      <div className="w-full max-w-lg rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-2xl border border-amber-500/40 text-slate-900 dark:text-white space-y-5 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 overflow-y-auto">
+      <div className="w-full max-w-lg rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-2xl border border-amber-500/40 text-slate-900 dark:text-white space-y-5 animate-in fade-in duration-200 my-8">
         <div className="flex items-center justify-between border-b border-amber-500/20 pb-4">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-500 border border-amber-500/30 text-2xl font-black">
@@ -436,114 +565,227 @@ function RestaurantDetailsModal({ restaurant, onClose, onLaunch, onToggleStatus,
           </button>
         </div>
 
-        {/* MANAGER ACCOUNT DETAILS CARD */}
-        <div className="rounded-2xl bg-amber-50/70 dark:bg-slate-950/80 p-4 border border-amber-500/30 space-y-2.5">
-          <div className="flex items-center gap-2 border-b border-amber-500/20 pb-2">
-            <span className="text-base">👑</span>
-            <h3 className="font-['Cinzel'] text-xs font-black uppercase tracking-wider text-amber-700 dark:text-amber-400">
-              Manager Account Credentials
-            </h3>
-          </div>
-
-          <div className="grid gap-2 sm:grid-cols-2 text-xs font-mono">
+        {isEditing ? (
+          /* EDIT FORM VIEW INSIDE DETAILS MODAL */
+          <form onSubmit={handleSave} className="space-y-4">
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">Manager Name</p>
-              <p className="font-extrabold text-slate-900 dark:text-white mt-0.5">
-                {restaurant.managerName || "Restaurant Manager"}
-              </p>
+              <label className="text-xs font-black uppercase text-amber-400 font-['Cinzel']">Restaurant Venue Name</label>
+              <input
+                type="text"
+                required
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                className="mt-1 w-full rounded-2xl border border-amber-500/30 bg-slate-950 px-4 py-2.5 text-xs font-bold text-white focus:border-amber-400 focus:outline-none"
+              />
             </div>
-            <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">Manager Email</p>
-              <p className="font-extrabold text-slate-900 dark:text-white mt-0.5 select-all">
-                📧 {restaurant.managerEmail}
-              </p>
-            </div>
-            <div className="sm:col-span-2 pt-1 border-t border-amber-500/10">
-              <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">Manager Password</p>
-              <p className="font-extrabold text-amber-700 dark:text-amber-300 mt-0.5 select-all bg-amber-100 dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-amber-500/20 text-xs inline-block">
-                🔑 {restaurant.managerPassword || "paradise123"}
-              </p>
-            </div>
-          </div>
-        </div>
 
-        {/* RESTAURANT ADDRESS & LOCATION DETAILS CARD */}
-        <div className="rounded-2xl bg-amber-50/70 dark:bg-slate-950/80 p-4 border border-amber-500/30 space-y-2.5">
-          <div className="flex items-center gap-2 border-b border-amber-500/20 pb-2">
-            <span className="text-base">📍</span>
-            <h3 className="font-['Cinzel'] text-xs font-black uppercase tracking-wider text-amber-700 dark:text-amber-400">
-              Restaurant Address & GPS Location
-            </h3>
-          </div>
-
-          <div className="grid gap-2.5 sm:grid-cols-2 text-xs font-mono">
-            <div className="sm:col-span-2">
-              <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">Venue Address / GPS Coordinates</p>
-              <p className="font-bold text-slate-900 dark:text-white mt-0.5 bg-amber-100/60 dark:bg-slate-900 px-3 py-2 rounded-xl border border-amber-500/20">
-                📍 Latitude: <strong className="text-amber-600 dark:text-amber-300">{restaurant.latitude}</strong>, Longitude: <strong className="text-amber-600 dark:text-amber-300">{restaurant.longitude}</strong>
-              </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="text-xs font-black uppercase text-amber-400 font-['Cinzel']">Manager Name</label>
+                <input
+                  type="text"
+                  required
+                  value={form.managerName}
+                  onChange={(e) => setForm({ ...form, managerName: e.target.value })}
+                  className="mt-1 w-full rounded-2xl border border-amber-500/30 bg-slate-950 px-4 py-2.5 text-xs font-bold text-white focus:border-amber-400 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-black uppercase text-amber-400 font-['Cinzel']">Manager Mail ID</label>
+                <input
+                  type="email"
+                  required
+                  value={form.managerEmail}
+                  onChange={(e) => setForm({ ...form, managerEmail: e.target.value })}
+                  className="mt-1 w-full rounded-2xl border border-amber-500/30 bg-slate-950 px-4 py-2.5 text-xs font-bold text-white focus:border-amber-400 focus:outline-none"
+                />
+              </div>
             </div>
 
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">Geofence Ordering Radius</p>
-              <p className="font-extrabold text-slate-900 dark:text-white mt-0.5">
-                {restaurant.geofenceRadiusMeters || 150} meters GPS radius
-              </p>
+              <label className="text-xs font-black uppercase text-amber-400 font-['Cinzel']">Manager Password</label>
+              <input
+                type="text"
+                required
+                value={form.managerPassword}
+                onChange={(e) => setForm({ ...form, managerPassword: e.target.value })}
+                className="mt-1 w-full rounded-2xl border border-amber-500/30 bg-slate-950 px-4 py-2.5 text-xs font-mono font-bold text-amber-300 focus:border-amber-400 focus:outline-none"
+              />
             </div>
 
-            <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">Venue Status</p>
-              <span
-                className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-extrabold mt-0.5 ${
-                  restaurant.status === "ACTIVE"
-                    ? "bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-400"
-                    : "bg-rose-100 text-rose-900 dark:bg-rose-950 dark:text-rose-300 border border-rose-400"
-                }`}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="text-xs font-black uppercase text-amber-400 font-['Cinzel']">GST Rate %</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  required
+                  value={form.gstPercent}
+                  onChange={(e) => setForm({ ...form, gstPercent: e.target.value })}
+                  className="mt-1 w-full rounded-2xl border border-amber-500/30 bg-slate-950 px-4 py-2.5 text-xs font-bold text-white focus:border-amber-400 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-black uppercase text-amber-400 font-['Cinzel']">Platform Commission %</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  required
+                  value={form.commissionPercent}
+                  onChange={(e) => setForm({ ...form, commissionPercent: e.target.value })}
+                  className="mt-1 w-full rounded-2xl border border-amber-500/30 bg-slate-950 px-4 py-2.5 text-xs font-bold text-white focus:border-amber-400 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {error && <p className="rounded-xl bg-rose-950/80 border border-rose-500/40 p-2.5 text-xs font-bold text-rose-300">{error}</p>}
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                className="flex-1 rounded-2xl bg-slate-800 py-2.5 text-xs font-bold text-slate-300"
               >
-                {restaurant.status}
-              </span>
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="flex-1 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 py-2.5 text-xs font-black text-slate-950 font-['Cinzel'] shadow-md disabled:opacity-50"
+              >
+                {saving ? "Saving..." : "Save Details ✓"}
+              </button>
+            </div>
+          </form>
+        ) : (
+          /* DISPLAY VIEW */
+          <>
+            {/* MANAGER ACCOUNT DETAILS CARD */}
+            <div className="rounded-2xl bg-amber-50/70 dark:bg-slate-950/80 p-4 border border-amber-500/30 space-y-2.5">
+              <div className="flex items-center justify-between border-b border-amber-500/20 pb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">👑</span>
+                  <h3 className="font-['Cinzel'] text-xs font-black uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                    Manager Account Credentials
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  className="rounded-xl bg-amber-500/20 px-3 py-1 text-[11px] font-extrabold text-amber-400 border border-amber-500/40 hover:bg-amber-500 hover:text-slate-950 transition-colors cursor-pointer font-['Cinzel']"
+                >
+                  ✏️ Edit Details
+                </button>
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-2 text-xs font-mono">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">Manager Name</p>
+                  <p className="font-extrabold text-slate-900 dark:text-white mt-0.5">
+                    {restaurant.managerName || "Restaurant Manager"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">Manager Mail ID</p>
+                  <p className="font-extrabold text-slate-900 dark:text-white mt-0.5 select-all">
+                    📧 {restaurant.managerEmail}
+                  </p>
+                </div>
+                <div className="sm:col-span-2 pt-1 border-t border-amber-500/10">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">Manager Password</p>
+                  <p className="font-extrabold text-amber-700 dark:text-amber-300 mt-0.5 select-all bg-amber-100 dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-amber-500/20 text-xs inline-block">
+                    🔑 {restaurant.managerPassword || "paradise123"}
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">GST Rate Applicable</p>
-              <p className="font-extrabold text-slate-900 dark:text-white mt-0.5">
-                {restaurant.gstPercent ?? 5}% GST
-              </p>
+            {/* RESTAURANT ADDRESS & LOCATION DETAILS CARD */}
+            <div className="rounded-2xl bg-amber-50/70 dark:bg-slate-950/80 p-4 border border-amber-500/30 space-y-2.5">
+              <div className="flex items-center gap-2 border-b border-amber-500/20 pb-2">
+                <span className="text-base">📍</span>
+                <h3 className="font-['Cinzel'] text-xs font-black uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                  Restaurant Details & Financials
+                </h3>
+              </div>
+
+              <div className="grid gap-2.5 sm:grid-cols-2 text-xs font-mono">
+                <div className="sm:col-span-2">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">Venue Address / GPS Coordinates</p>
+                  <p className="font-bold text-slate-900 dark:text-white mt-0.5 bg-amber-100/60 dark:bg-slate-900 px-3 py-2 rounded-xl border border-amber-500/20">
+                    📍 Latitude: <strong className="text-amber-600 dark:text-amber-300">{restaurant.latitude}</strong>, Longitude: <strong className="text-amber-600 dark:text-amber-300">{restaurant.longitude}</strong>
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">Geofence Ordering Radius</p>
+                  <p className="font-extrabold text-slate-900 dark:text-white mt-0.5">
+                    {restaurant.geofenceRadiusMeters || 150} meters GPS radius
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">Venue Status</p>
+                  <span
+                    className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-extrabold mt-0.5 ${
+                      restaurant.status === "ACTIVE"
+                        ? "bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-400"
+                        : "bg-rose-100 text-rose-900 dark:bg-rose-950 dark:text-rose-300 border border-rose-400"
+                    }`}
+                  >
+                    {restaurant.status}
+                  </span>
+                </div>
+
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">GST Tax Rate Applicable</p>
+                  <p className="font-extrabold text-slate-900 dark:text-white mt-0.5">
+                    {restaurant.gstPercent ?? 5}% GST
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">Platform Commission</p>
+                  <p className="font-extrabold text-slate-900 dark:text-white mt-0.5">
+                    {restaurant.commissionPercent ?? 5}%
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">Platform Commission</p>
-              <p className="font-extrabold text-slate-900 dark:text-white mt-0.5">
-                {restaurant.commissionPercent ?? 5}%
-              </p>
+            {/* MODAL ACTION BUTTONS */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-amber-500/20">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  className="rounded-2xl bg-amber-500/20 hover:bg-amber-500 hover:text-slate-950 border border-amber-500/40 px-4 py-2 text-xs font-black text-amber-400 shadow-md font-['Cinzel'] cursor-pointer transition-all"
+                >
+                  ✏️ Edit Manager & Taxes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onLaunch(restaurant);
+                  }}
+                  disabled={isBusy}
+                  className="rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-2 text-xs font-black text-slate-950 shadow-md font-['Cinzel'] cursor-pointer"
+                >
+                  Launch Manager Portal
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-2xl bg-slate-200 dark:bg-slate-800 px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-white cursor-pointer"
+              >
+                Close
+              </button>
             </div>
-          </div>
-        </div>
-
-        {/* MODAL ACTION BUTTONS */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-amber-500/20">
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                onLaunch(restaurant);
-              }}
-              disabled={isBusy}
-              className="rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-2 text-xs font-black text-slate-950 shadow-md font-['Cinzel'] cursor-pointer"
-            >
-              Launch Manager Portal
-            </button>
-          </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-2xl bg-slate-200 dark:bg-slate-800 px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-white cursor-pointer"
-          >
-            Close
-          </button>
-        </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -701,6 +943,15 @@ export default function AdminRestaurantsPage() {
           restaurant={viewingDetailsRestaurant}
           onClose={() => setViewingDetailsRestaurant(null)}
           onLaunch={openManagerPortal}
+          onUpdated={async () => {
+            const res = await fetch("/api/admin/restaurants");
+            if (res.ok) {
+              const data = await res.json();
+              setRestaurants(data.restaurants);
+              const updatedR = data.restaurants?.find((r) => r.id === viewingDetailsRestaurant.id);
+              if (updatedR) setViewingDetailsRestaurant(updatedR);
+            }
+          }}
           onToggleStatus={toggleStatus}
           isBusy={busyId === viewingDetailsRestaurant.id}
         />

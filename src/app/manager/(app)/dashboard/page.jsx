@@ -109,8 +109,18 @@ export default function ManagerDashboardPage() {
   const [busyId, setBusyId] = useState(null);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/manager/dashboard");
-    if (res.ok) setData(await res.json());
+    try {
+      const res = await fetch("/api/manager/dashboard");
+      if (res.status === 401) {
+        window.location.href = "/manager/login";
+        return;
+      }
+      if (res.ok) {
+        setData(await res.json());
+      }
+    } catch (err) {
+      console.error("Dashboard error:", err);
+    }
   }, []);
 
   useEffect(() => {

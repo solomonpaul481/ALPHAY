@@ -11,7 +11,7 @@ const {
 async function POST(request, { params }) {
   const { restaurantId } = params;
   const body = await request.json().catch(() => ({}));
-  let { tableNumber, latitude, longitude, action, sessionId } = body;
+  let { tableNumber, latitude, longitude, action, sessionId, bypassGeofence } = body;
 
   if (!tableNumber || !String(tableNumber).trim()) {
     return NextResponse.json(

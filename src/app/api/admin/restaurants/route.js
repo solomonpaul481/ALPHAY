@@ -25,6 +25,8 @@ async function GET() {
         latitude: r.latitude,
         longitude: r.longitude,
         geofenceRadiusMeters: r.geofenceRadiusMeters,
+        gstPercent: r.gstPercent ?? 5,
+        commissionPercent: r.commissionPercent ?? 5,
         status: r.status,
         managerEmail: primaryManager?.email || "—",
         managerPassword: primaryManager?.rawPassword || "paradise123",
