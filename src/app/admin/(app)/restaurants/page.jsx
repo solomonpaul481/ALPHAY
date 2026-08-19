@@ -407,7 +407,7 @@ function EditRestaurantModal({ restaurant, onUpdated, onClose }) {
   );
 }
 
-function RestaurantDetailsModal({ restaurant, onClose, onEdit, onLaunch, onToggleStatus, isBusy }) {
+function RestaurantDetailsModal({ restaurant, onClose, onLaunch, onToggleStatus, isBusy }) {
   if (!restaurant) return null;
 
   return (
@@ -461,7 +461,7 @@ function RestaurantDetailsModal({ restaurant, onClose, onEdit, onLaunch, onToggl
             <div className="sm:col-span-2 pt-1 border-t border-amber-500/10">
               <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">Manager Password</p>
               <p className="font-extrabold text-amber-700 dark:text-amber-300 mt-0.5 select-all bg-amber-100 dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-amber-500/20 text-xs inline-block">
-                🔑 {restaurant.managerPassword || "—"}
+                🔑 {restaurant.managerPassword || "paradise123"}
               </p>
             </div>
           </div>
@@ -527,22 +527,12 @@ function RestaurantDetailsModal({ restaurant, onClose, onEdit, onLaunch, onToggl
               type="button"
               onClick={() => {
                 onClose();
-                onEdit(restaurant);
-              }}
-              className="rounded-2xl bg-amber-50 dark:bg-slate-950 px-3.5 py-2 text-xs font-bold text-slate-900 dark:text-white border border-amber-500/30 hover:border-amber-500 cursor-pointer"
-            >
-              Edit Venue
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
                 onLaunch(restaurant);
               }}
               disabled={isBusy}
-              className="rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 px-3.5 py-2 text-xs font-black text-slate-950 shadow-md font-['Cinzel'] cursor-pointer"
+              className="rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-2 text-xs font-black text-slate-950 shadow-md font-['Cinzel'] cursor-pointer"
             >
-              Launch Portal
+              Launch Manager Portal
             </button>
           </div>
 
@@ -563,7 +553,6 @@ export default function AdminRestaurantsPage() {
   const [restaurants, setRestaurants] = useState(null);
   const [busyId, setBusyId] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [editingRestaurant, setEditingRestaurant] = useState(null);
   const [viewingDetailsRestaurant, setViewingDetailsRestaurant] = useState(null);
 
   const load = async () => {
@@ -651,7 +640,7 @@ export default function AdminRestaurantsPage() {
                     <td className="px-5 py-4 font-sans text-xs">
                       <div className="rounded-xl bg-amber-50 dark:bg-slate-950 p-2 border border-amber-500/20 space-y-0.5">
                         <p className="font-bold text-slate-900 dark:text-white">📧 {r.managerEmail}</p>
-                        <p className="font-mono text-[11px] font-extrabold text-amber-700 dark:text-amber-400">🔑 {r.managerPassword || "—"}</p>
+                        <p className="font-mono text-[11px] font-extrabold text-amber-700 dark:text-amber-400">🔑 {r.managerPassword || "paradise123"}</p>
                       </div>
                     </td>
                     <td className="px-5 py-4 text-xs font-semibold text-slate-600 dark:text-slate-300">
@@ -672,17 +661,9 @@ export default function AdminRestaurantsPage() {
                       <div className="flex items-center justify-end gap-2">
                         <button
                           type="button"
-                          onClick={() => setEditingRestaurant(r)}
-                          disabled={busyId === r.id}
-                          className="rounded-2xl bg-amber-50 dark:bg-slate-950 px-3 py-1.5 text-xs font-bold text-slate-900 dark:text-white border border-amber-500/30 hover:border-amber-500 transition-all disabled:opacity-50 cursor-pointer"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
                           onClick={() => openManagerPortal(r)}
                           disabled={busyId === r.id}
-                          className="rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 px-3 py-1.5 text-xs font-black text-slate-950 shadow-md font-['Cinzel'] transition-all disabled:opacity-50 cursor-pointer"
+                          className="rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 px-3.5 py-1.5 text-xs font-black text-slate-950 shadow-md font-['Cinzel'] transition-all disabled:opacity-50 cursor-pointer"
                         >
                           Launch Portal
                         </button>
@@ -715,19 +696,10 @@ export default function AdminRestaurantsPage() {
         </div>
       </div>
 
-      {editingRestaurant && (
-        <EditRestaurantModal
-          restaurant={editingRestaurant}
-          onUpdated={load}
-          onClose={() => setEditingRestaurant(null)}
-        />
-      )}
-
       {viewingDetailsRestaurant && (
         <RestaurantDetailsModal
           restaurant={viewingDetailsRestaurant}
           onClose={() => setViewingDetailsRestaurant(null)}
-          onEdit={setEditingRestaurant}
           onLaunch={openManagerPortal}
           onToggleStatus={toggleStatus}
           isBusy={busyId === viewingDetailsRestaurant.id}

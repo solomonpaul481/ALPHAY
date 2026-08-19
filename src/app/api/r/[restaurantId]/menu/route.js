@@ -22,14 +22,14 @@ async function GET(request, { params }) {
   const shape = (i) => ({
     id: i.id,
     name: i.name,
-    description: i.description,
+    description: i.description || "",
     price: i.price,
     prepTimeMinutes: i.prepTimeMinutes,
     isVeg: i.isVeg,
     isAvailable: i.isAvailable,
     imageUrl: i.imageUrl,
     badges: i.badges ? i.badges.split(",") : [],
-    category: i.category.name,
+    category: i.category?.name || "General",
   });
 
   const todaysSpecial = items.filter((i) => i.isTodaysSpecial && i.isAvailable).map(shape);
@@ -39,7 +39,7 @@ async function GET(request, { params }) {
   const groupByCategory = (list) => {
     const grouped = {};
     for (const i of list) {
-      const catName = i.category.name;
+      const catName = i.category?.name || "General";
       if (!grouped[catName]) grouped[catName] = [];
       grouped[catName].push(shape(i));
     }
@@ -49,7 +49,7 @@ async function GET(request, { params }) {
   // Category section logic:
   // If both isVeg and isNonVeg are false (or both true), category appears in BOTH sections!
   const vegItems = items.filter((i) => {
-    const cat = i.category;
+    const cat = i.category || { isVeg: true, isNonVeg: true };
     const isBoth = (cat.isVeg === false && cat.isNonVeg === false) || (cat.isVeg === true && cat.isNonVeg === true);
     if (isBoth) return true;
     if (cat.isVeg) return true;
@@ -57,7 +57,7 @@ async function GET(request, { params }) {
   });
 
   const nonVegItems = items.filter((i) => {
-    const cat = i.category;
+    const cat = i.category || { isVeg: true, isNonVeg: true };
     const isBoth = (cat.isVeg === false && cat.isNonVeg === false) || (cat.isVeg === true && cat.isNonVeg === true);
     if (isBoth) return true;
     if (cat.isNonVeg) return true;

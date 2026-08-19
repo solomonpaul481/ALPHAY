@@ -23,23 +23,43 @@ function startOfYear(date) {
  */
 async function getRevenueSummary(restaurantId) {
   const now = new Date();
+  const startDay = startOfDay(now);
+  const startMonth = startOfMonth(now);
+  const startYear = startOfYear(now);
+
   const where = {
     status: { in: REVENUE_STATUSES },
+    createdAt: { gte: startYear },
     ...(restaurantId ? { restaurantId } : {}),
   };
 
-  const [todayOrders, monthOrders, yearOrders] = await Promise.all([
-    db.order.findMany({ where: { ...where, createdAt: { gte: startOfDay(now) } }, select: { total: true } }),
-    db.order.findMany({ where: { ...where, createdAt: { gte: startOfMonth(now) } }, select: { total: true } }),
-    db.order.findMany({ where: { ...where, createdAt: { gte: startOfYear(now) } }, select: { total: true } }),
-  ]);
+  const yearOrders = await db.order.findMany({
+    where,
+    select: { total: true, createdAt: true },
+  });
 
-  const sum = (list) => list.reduce((s, o) => s + o.total, 0);
+  let todayCount = 0, todayTotal = 0;
+  let monthCount = 0, monthTotal = 0;
+  let yearCount = 0, yearTotal = 0;
+
+  for (const o of yearOrders) {
+    const t = o.total || 0;
+    yearCount++;
+    yearTotal += t;
+    if (o.createdAt >= startMonth) {
+      monthCount++;
+      monthTotal += t;
+    }
+    if (o.createdAt >= startDay) {
+      todayCount++;
+      todayTotal += t;
+    }
+  }
 
   return {
-    today: { count: todayOrders.length, total: sum(todayOrders) },
-    month: { count: monthOrders.length, total: sum(monthOrders) },
-    year: { count: yearOrders.length, total: sum(yearOrders) },
+    today: { count: todayCount, total: Math.round(todayTotal * 100) / 100 },
+    month: { count: monthCount, total: Math.round(monthTotal * 100) / 100 },
+    year: { count: yearCount, total: Math.round(yearTotal * 100) / 100 },
   };
 }
 

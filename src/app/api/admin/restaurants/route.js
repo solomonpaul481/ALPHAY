@@ -27,7 +27,7 @@ async function GET() {
         geofenceRadiusMeters: r.geofenceRadiusMeters,
         status: r.status,
         managerEmail: primaryManager?.email || "—",
-        managerPassword: primaryManager?.rawPassword || "Password set (encrypted)",
+        managerPassword: primaryManager?.rawPassword || "paradise123",
         managerName: primaryManager?.name || "Manager",
         orders: { day: summary.today.count, month: summary.month.count, year: summary.year.count },
         earnings: { day: summary.today.total, month: summary.month.total, year: summary.year.total },

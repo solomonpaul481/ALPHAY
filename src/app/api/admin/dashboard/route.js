@@ -45,7 +45,7 @@ async function GET() {
         gstPercent: r.gstPercent,
         managerName: primaryManager?.name || "Manager",
         managerEmail: primaryManager?.email || "—",
-        managerPassword: primaryManager?.rawPassword || "Password set (encrypted)",
+        managerPassword: primaryManager?.rawPassword || "paradise123",
         orders: count,
         earnings,
         commission,
