@@ -228,6 +228,7 @@ async function main() {
       name: "Ravi Shankar",
       email: MANAGER_EMAIL,
       passwordHash,
+      rawPassword: MANAGER_PASSWORD,
     },
   });
 
