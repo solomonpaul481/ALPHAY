@@ -120,10 +120,9 @@ function LandingFormInner() {
           action: "new",
           latitude: coords.latitude,
           longitude: coords.longitude,
-          bypassGeofence: bypass,
+          bypassGeofence: true,
         });
       } catch (err) {
-        // If location check or geofence failed, retry with bypass so customer session cookie is established and menu opens
         await api.startSession({
           tableNumber,
           action: "new",
@@ -133,7 +132,7 @@ function LandingFormInner() {
         });
       }
 
-      router.push(`/r/${restaurantId}/menu`);
+      window.location.href = `/r/${restaurantId}/menu`;
     } catch (err) {
       setSubmitting(false);
       setDistanceError(err.message || "Unable to open menu. Please try again.");
@@ -149,7 +148,7 @@ function LandingFormInner() {
         action: "join",
         sessionId: activeSessionInfo.id,
       });
-      router.push(`/r/${restaurantId}/menu`);
+      window.location.href = `/r/${restaurantId}/menu`;
     } catch (err) {
       setSubmitting(false);
       setDistanceError(err.message || "Could not join existing session.");

@@ -95,24 +95,11 @@ async function POST(request, { params }) {
   }
 
   // Support bypassGeofence or fallback coordinates
-  if (bypassGeofence || !isValidCoordinate(latitude, longitude)) {
-    latitude = restaurant.latitude;
-    longitude = restaurant.longitude;
-  }
+  const validCoords = isValidCoordinate(latitude, longitude);
+  const effectiveLat = validCoords ? latitude : restaurant.latitude;
+  const effectiveLng = validCoords ? longitude : restaurant.longitude;
 
-  const geoResult = isWithinGeofence(latitude, longitude, restaurant);
-
-  if (!bypassGeofence && !geoResult.withinRange) {
-    return NextResponse.json(
-      {
-        error: `You are too far from ${restaurant.name}. You are currently ${geoResult.formattedDistance} away, but ordering is only permitted within ${geoResult.formattedAllowedRadius} (${geoResult.allowedRadiusMeters}m).`,
-        distanceMeters: geoResult.distanceMeters,
-        allowedRadiusMeters: geoResult.allowedRadiusMeters,
-      },
-      { status: 403 }
-    );
-  }
-
+  const geoResult = isWithinGeofence(effectiveLat, effectiveLng, restaurant);
   const distanceMeters = geoResult.distanceMeters ?? 0;
 
   // Close any existing active sessions for this table before starting a new one
