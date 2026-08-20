@@ -106,6 +106,7 @@ function KotModal({ order, restaurantName, onClose }) {
 
 export default function ManagerDashboardPage() {
   const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
   const [busyId, setBusyId] = useState(null);
 
   const load = useCallback(async () => {
@@ -117,9 +118,14 @@ export default function ManagerDashboardPage() {
       }
       if (res.ok) {
         setData(await res.json());
+        setError(null);
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        setError(errData.error || `Server error (${res.status})`);
       }
     } catch (err) {
       console.error("Dashboard error:", err);
+      setError(err.message || "Failed to load dashboard.");
     }
   }, []);
 
@@ -167,7 +173,20 @@ export default function ManagerDashboardPage() {
     <>
       <Topbar title="Manager Dashboard" />
       <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-8 text-slate-900 dark:text-white">
-        {!data ? (
+        {error ? (
+          <div className="rounded-3xl border border-rose-500/20 bg-rose-50 dark:bg-rose-950/30 p-8 text-center space-y-4">
+            <div className="text-4xl">⚠️</div>
+            <h3 className="text-lg font-bold text-rose-800 dark:text-rose-200">Failed to Load Dashboard</h3>
+            <p className="text-xs text-rose-600 dark:text-rose-300 max-w-md mx-auto">{error}</p>
+            <button
+              type="button"
+              onClick={load}
+              className="px-6 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+            >
+              🔄 Retry Now
+            </button>
+          </div>
+        ) : !data ? (
           <div className="animate-pulse space-y-4">
             <div className="h-28 w-full rounded-3xl bg-white dark:bg-slate-900 border border-amber-500/20" />
             <div className="h-64 w-full rounded-3xl bg-white dark:bg-slate-900 border border-amber-500/20" />
