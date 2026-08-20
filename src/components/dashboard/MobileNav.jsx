@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   IconUtensils,
+  IconComputer,
   IconDashboard,
   IconOrders,
   IconChef,
@@ -16,6 +17,7 @@ import {
 } from "@/components/Icons";
 
 const ICON_MAP = {
+  "💻": IconComputer,
   "📋": IconDashboard,
   "🛎️": IconOrders,
   "👨‍🍳": IconChef,
