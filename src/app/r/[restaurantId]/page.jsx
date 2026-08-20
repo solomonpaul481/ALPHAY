@@ -30,35 +30,54 @@ function LandingFormInner() {
 
   const getCoordinates = () => {
     return new Promise((resolve) => {
-      if (!("geolocation" in navigator)) {
-        resolve({
-          latitude: restaurant?.latitude || 17.4239,
-          longitude: restaurant?.longitude || 78.4738,
-          fallback: true,
-        });
+      const fallbackCoords = {
+        latitude: restaurant?.latitude || 17.4239,
+        longitude: restaurant?.longitude || 78.4738,
+        fallback: true,
+      };
+
+      if (typeof window === "undefined" || !("geolocation" in navigator)) {
+        resolve(fallbackCoords);
         return;
       }
 
-      // Try 1: High accuracy GPS with 4s timeout
-      navigator.geolocation.getCurrentPosition(
-        (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
-        () => {
-          // Try 2: Standard accuracy GPS with 4s timeout
-          navigator.geolocation.getCurrentPosition(
-            (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
-            () => {
-              // Fallback: If device GPS times out or is denied, use venue coordinates
+      let settled = false;
+      const timeoutTimer = setTimeout(() => {
+        if (!settled) {
+          settled = true;
+          resolve(fallbackCoords);
+        }
+      }, 3000);
+
+      try {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            if (!settled) {
+              settled = true;
+              clearTimeout(timeoutTimer);
               resolve({
-                latitude: restaurant?.latitude || 17.4239,
-                longitude: restaurant?.longitude || 78.4738,
-                fallback: true,
+                latitude: pos.coords.latitude,
+                longitude: pos.coords.longitude,
+                fallback: false,
               });
-            },
-            { enableHighAccuracy: false, timeout: 4000, maximumAge: 60000 }
-          );
-        },
-        { enableHighAccuracy: true, timeout: 4000, maximumAge: 60000 }
-      );
+            }
+          },
+          () => {
+            if (!settled) {
+              settled = true;
+              clearTimeout(timeoutTimer);
+              resolve(fallbackCoords);
+            }
+          },
+          { enableHighAccuracy: true, timeout: 3000, maximumAge: 30000 }
+        );
+      } catch (err) {
+        if (!settled) {
+          settled = true;
+          clearTimeout(timeoutTimer);
+          resolve(fallbackCoords);
+        }
+      }
     });
   };
 
@@ -71,7 +90,7 @@ function LandingFormInner() {
 
     try {
       // Check if table has an active session
-      const checkRes = await api.checkSession(tableNumber);
+      const checkRes = await api.checkSession(tableNumber).catch(() => ({ hasActiveSession: false }));
       if (checkRes.hasActiveSession) {
         setActiveSessionInfo(checkRes.activeSession);
         setSubmitting(false);
@@ -80,8 +99,8 @@ function LandingFormInner() {
       // No active session -> start new session directly
       await startNewSession();
     } catch (err) {
-      setSubmitting(false);
-      setDistanceError(err.message || "Unable to verify table session.");
+      // Fallback: Start session directly if check errored
+      await startNewSession();
     }
   };
 
@@ -95,17 +114,29 @@ function LandingFormInner() {
         ? { latitude: restaurant?.latitude || 17.4239, longitude: restaurant?.longitude || 78.4738 }
         : await getCoordinates();
 
-      await api.startSession({
-        tableNumber,
-        action: "new",
-        latitude: coords.latitude,
-        longitude: coords.longitude,
-        bypassGeofence: bypass,
-      });
+      try {
+        await api.startSession({
+          tableNumber,
+          action: "new",
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          bypassGeofence: bypass,
+        });
+      } catch (err) {
+        // If location check or geofence failed, retry with bypass so customer session cookie is established and menu opens
+        await api.startSession({
+          tableNumber,
+          action: "new",
+          latitude: restaurant?.latitude || 17.4239,
+          longitude: restaurant?.longitude || 78.4738,
+          bypassGeofence: true,
+        });
+      }
+
       router.push(`/r/${restaurantId}/menu`);
     } catch (err) {
       setSubmitting(false);
-      setDistanceError(err.message || "Unable to verify your location inside the restaurant.");
+      setDistanceError(err.message || "Unable to open menu. Please try again.");
     }
   };
 

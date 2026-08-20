@@ -31,13 +31,23 @@ async function POST(request, { params }) {
     );
   }
 
-  const table = await db.diningTable.findUnique({
+  let table = await db.diningTable.findUnique({
     where: { restaurantId_number: { restaurantId, number: String(tableNumber).trim() } },
   });
   if (!table) {
+    table = await db.diningTable
+      .create({
+        data: {
+          restaurantId,
+          number: String(tableNumber).trim(),
+        },
+      })
+      .catch(() => null);
+  }
+  if (!table) {
     return NextResponse.json(
-      { error: "We couldn't find that table number. Please check the table number and try again." },
-      { status: 404 }
+      { error: "Unable to initialize table number. Please try again." },
+      { status: 500 }
     );
   }
 

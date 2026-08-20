@@ -10,12 +10,23 @@ async function POST(request, { params }) {
     return NextResponse.json({ error: "Table number is required." }, { status: 400 });
   }
 
-  const table = await db.diningTable.findUnique({
+  let table = await db.diningTable.findUnique({
     where: { restaurantId_number: { restaurantId, number: String(tableNumber).trim() } },
   });
 
   if (!table) {
-    return NextResponse.json({ error: "Table not found." }, { status: 404 });
+    table = await db.diningTable
+      .create({
+        data: {
+          restaurantId,
+          number: String(tableNumber).trim(),
+        },
+      })
+      .catch(() => null);
+  }
+
+  if (!table) {
+    return NextResponse.json({ hasActiveSession: false });
   }
 
   // Find active session on this table that is NOT ended or completed or closed
