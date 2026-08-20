@@ -815,7 +815,7 @@ export default function AdminRestaurantsPage() {
         alert(data.error || "Couldn't open Manager Portal.");
         return;
       }
-      window.open("/manager/dashboard", "_blank");
+      window.open("/manager/orders", "_blank");
     } finally {
       setBusyId(null);
     }

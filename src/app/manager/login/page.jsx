@@ -227,7 +227,7 @@ export default function ManagerLoginPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Couldn't sign in.");
-      router.push("/manager/dashboard");
+      router.push("/manager/orders");
       router.refresh();
     } catch (err) {
       setError(err.message);
