@@ -94,13 +94,28 @@ async function POST(request, { params }) {
     }
   }
 
-  // Support bypassGeofence or fallback coordinates
+  // Validate geofence location
   const validCoords = isValidCoordinate(latitude, longitude);
+  let distanceMeters = 0;
+
+  if (validCoords) {
+    const geoResult = isWithinGeofence(latitude, longitude, restaurant);
+    distanceMeters = geoResult.distanceMeters ?? 0;
+    if (!bypassGeofence && !geoResult.withinRange) {
+      return NextResponse.json(
+        {
+          error: "outside_geofence",
+          message: `You are currently ${geoResult.formattedDistance} away from ${restaurant.name}. Digital table ordering is only available within ${geoResult.formattedAllowedRadius} of the restaurant premises.`,
+          distanceMeters: geoResult.distanceMeters,
+          allowedRadiusMeters: geoResult.allowedRadiusMeters,
+        },
+        { status: 403 }
+      );
+    }
+  }
+
   const effectiveLat = validCoords ? latitude : restaurant.latitude;
   const effectiveLng = validCoords ? longitude : restaurant.longitude;
-
-  const geoResult = isWithinGeofence(effectiveLat, effectiveLng, restaurant);
-  const distanceMeters = geoResult.distanceMeters ?? 0;
 
   // Close any existing active sessions for this table before starting a new one
   await db.customerSession.updateMany({

@@ -12,12 +12,15 @@ function getCashfreeConfig() {
     );
   }
 
-  const isProduction = env === "PRODUCTION" || env === "PROD";
+  const isProduction =
+    env === "PRODUCTION" ||
+    env === "PROD" ||
+    secretKey.startsWith("cfsk_ma_prod_");
   const baseUrl = isProduction
     ? "https://api.cashfree.com/pg"
     : "https://sandbox.cashfree.com/pg";
 
-  return { appId, secretKey, env, isProduction, baseUrl, apiVersion };
+  return { appId, secretKey, env: isProduction ? "PRODUCTION" : "SANDBOX", isProduction, baseUrl, apiVersion };
 }
 
 /**

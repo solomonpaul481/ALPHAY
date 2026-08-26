@@ -4,4 +4,6 @@ out/
 .env
 *.db
 *.db-journal
+*.zip
+package.zip
 .DS_Store

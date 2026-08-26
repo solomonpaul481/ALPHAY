@@ -38,7 +38,7 @@ async function createOnlinePaymentOrder({
     amountInRupees: finalAmountRupees,
     amountInPaise: Math.round(finalAmountRupees * 100),
     currency: cfResult.currency || "INR",
-    env: process.env.NEXT_PUBLIC_CASHFREE_ENV || "sandbox",
+    env: cashfreeLib.getCashfreeConfig().isProduction ? "production" : "sandbox",
   };
 }
 
