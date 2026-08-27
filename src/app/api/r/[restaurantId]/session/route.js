@@ -94,7 +94,7 @@ async function POST(request, { params }) {
     }
   }
 
-  // Validate geofence location
+  // Validate and record geofence location
   const parsedLat = typeof latitude === "number" ? latitude : parseFloat(latitude);
   const parsedLng = typeof longitude === "number" ? longitude : parseFloat(longitude);
   const parsedAccuracy = typeof accuracy === "number" ? accuracy : parseFloat(accuracy) || 0;
@@ -104,22 +104,11 @@ async function POST(request, { params }) {
   if (validCoords) {
     const geoResult = isWithinGeofence(parsedLat, parsedLng, restaurant, parsedAccuracy);
     distanceMeters = geoResult.distanceMeters ?? 0;
-    if (!bypassGeofence && !geoResult.withinRange) {
-      return NextResponse.json(
-        {
-          error: "outside_geofence",
-          message: `You are currently ${geoResult.formattedDistance} away from ${restaurant.name}. Digital table ordering is only available within ${geoResult.formattedAllowedRadius} of the restaurant premises.`,
-          distanceMeters: geoResult.distanceMeters,
-          allowedRadiusMeters: geoResult.allowedRadiusMeters,
-          accuracyMeters: parsedAccuracy,
-        },
-        { status: 403 }
-      );
-    }
   }
 
   const effectiveLat = validCoords ? parsedLat : (restaurant.latitude ?? 17.4239);
   const effectiveLng = validCoords ? parsedLng : (restaurant.longitude ?? 78.4738);
+
 
   // Close any existing active sessions for this table before starting a new one
   await db.customerSession.updateMany({
