@@ -11,9 +11,10 @@ async function POST(request, { params }) {
   }
 
   const order = await db.order.findUnique({ where: { id: orderId } });
-  if (!order || order.restaurantId !== restaurantId || order.sessionId !== session.id) {
+  if (!order || order.restaurantId !== session.restaurantId || order.sessionId !== session.id) {
     return NextResponse.json({ error: "Order not found." }, { status: 404 });
   }
+
 
   if (order.status === "SERVED" || order.status === "PAID") {
     return NextResponse.json({ error: "Cannot cancel a served or settled order." }, { status: 400 });

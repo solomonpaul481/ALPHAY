@@ -2,6 +2,8 @@ const { NextResponse } = require("next/server");
 const { db } = require("@/lib/db");
 const { verifyOnlinePayment, getActiveGateway } = require("@/lib/payment-gateway");
 
+const { resolveRestaurant } = require("@/lib/resolve-restaurant");
+
 async function POST(request, { params }) {
   const { restaurantId } = params;
   const body = await request.json().catch(() => ({}));
@@ -19,9 +21,13 @@ async function POST(request, { params }) {
     include: { orders: true },
   });
 
-  if (!session || session.restaurantId !== restaurantId) {
+  const restaurant = await resolveRestaurant(restaurantId);
+  const resolvedRestaurantId = restaurant ? restaurant.id : restaurantId;
+
+  if (!session || (session.restaurantId !== resolvedRestaurantId && session.restaurantId !== restaurantId)) {
     return NextResponse.json({ error: "Session not found." }, { status: 404 });
   }
+
 
   const targetOrderId = orderId || session.cashfreeOrderId;
 

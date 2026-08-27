@@ -25,12 +25,13 @@ async function POST(request, { params }) {
   // Create a staff call request so manager/waiter is alerted immediately
   await db.staffCallRequest.create({
     data: {
-      restaurantId,
+      restaurantId: session.restaurantId,
       tableId: session.tableId,
       type: "BILL",
       status: "PENDING",
     },
   });
+
 
   return NextResponse.json({
     ok: true,

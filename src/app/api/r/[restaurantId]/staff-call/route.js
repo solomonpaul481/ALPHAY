@@ -18,8 +18,9 @@ async function POST(request, { params }) {
   }
 
   const call = await db.staffCallRequest.create({
-    data: { restaurantId, tableId: session.tableId, type: body.type },
+    data: { restaurantId: session.restaurantId, tableId: session.tableId, type: body.type },
   });
+
 
   // This is where the request would be pushed live to the Manager Dashboard
   // (websocket/SSE event) — the row above is what that dashboard would poll/read.

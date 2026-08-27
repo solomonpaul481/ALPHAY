@@ -24,12 +24,13 @@ async function POST(request, { params }) {
   // Alert staff/manager of cash payment intent
   await db.staffCallRequest.create({
     data: {
-      restaurantId,
+      restaurantId: session.restaurantId,
       tableId: session.tableId,
       type: "CASH_BILL",
       status: "PENDING",
     },
   });
+
 
   return NextResponse.json({
     ok: true,

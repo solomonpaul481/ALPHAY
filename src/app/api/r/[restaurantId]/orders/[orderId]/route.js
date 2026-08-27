@@ -17,7 +17,7 @@ async function GET(request, { params }) {
     include: { items: true },
   });
 
-  if (!order || order.restaurantId !== restaurantId || order.sessionId !== session.id) {
+  if (!order || order.restaurantId !== session.restaurantId || order.sessionId !== session.id) {
     return NextResponse.json({ error: "Order not found." }, { status: 404 });
   }
 
@@ -48,13 +48,14 @@ async function GET(request, { params }) {
   if (ACTIVE_STATUSES.includes(order.status)) {
     const aheadCount = await db.order.count({
       where: {
-        restaurantId,
+        restaurantId: session.restaurantId,
         status: { in: ACTIVE_STATUSES },
         createdAt: { lt: order.createdAt },
       },
     });
     queuePosition = aheadCount + 1;
   }
+
 
   const estimatedPrepMinutes =
     order.items.length > 0

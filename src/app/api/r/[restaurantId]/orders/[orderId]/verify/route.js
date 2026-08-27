@@ -12,9 +12,10 @@ async function POST(request, { params }) {
   }
 
   const order = await db.order.findUnique({ where: { id: orderId } });
-  if (!order || order.restaurantId !== restaurantId || order.sessionId !== session.id) {
+  if (!order || order.restaurantId !== session.restaurantId || order.sessionId !== session.id) {
     return NextResponse.json({ error: "Order not found." }, { status: 404 });
   }
+
 
   // Idempotent: if order is already confirmed or further along, return success
   if (

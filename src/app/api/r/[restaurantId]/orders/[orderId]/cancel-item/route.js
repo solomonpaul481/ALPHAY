@@ -21,9 +21,10 @@ async function POST(request, { params }) {
     include: { items: true, restaurant: true },
   });
 
-  if (!order || order.restaurantId !== restaurantId || order.sessionId !== session.id) {
+  if (!order || order.restaurantId !== session.restaurantId || order.sessionId !== session.id) {
     return NextResponse.json({ error: "Order not found." }, { status: 404 });
   }
+
 
   // Prevent cancelling served or closed orders
   if (order.status === "SERVED" || order.status === "PAID") {
