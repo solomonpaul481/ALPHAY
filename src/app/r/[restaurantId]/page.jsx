@@ -17,16 +17,27 @@ function LandingFormInner() {
 
   const [restaurant, setRestaurant] = useState(null);
   const [phase, setPhase] = useState("LOCATING"); // LOCATING | ACTIVE_SESSION_FOUND | OUTSIDE_GEOFENCE | PERMISSION_REQUIRED | READY
-  const [statusMessage, setStatusMessage] = useState("Verifying your location at restaurant...");
+  const [statusMessage, setStatusMessage] = useState("Verifying dining location...");
   const [distanceInfo, setDistanceInfo] = useState(null);
   const [activeSessionInfo, setActiveSessionInfo] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isInsecureOrigin, setIsInsecureOrigin] = useState(false);
 
   const hasInitiatedRef = useRef(false);
 
   useEffect(() => {
     if (!restaurantId || hasInitiatedRef.current) return;
     hasInitiatedRef.current = true;
+
+    // Check if running on an insecure non-localhost context where browser blocks Geolocation
+    if (
+      typeof window !== "undefined" &&
+      window.isSecureContext === false &&
+      window.location.hostname !== "localhost" &&
+      window.location.hostname !== "127.0.0.1"
+    ) {
+      setIsInsecureOrigin(true);
+    }
 
     initiateAutoVerification();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -59,7 +70,7 @@ function LandingFormInner() {
     }
 
     // Step 2: Acquire location and verify presence at restaurant
-    await verifyAndOpenMenu(restData);
+    await verifyAndOpenMenu(restData, false);
   };
 
   const getCoordinates = () => {
@@ -69,56 +80,76 @@ function LandingFormInner() {
         return;
       }
 
-      let settled = false;
-      const timeoutTimer = setTimeout(() => {
-        if (!settled) {
-          settled = true;
-          resolve({ error: "GPS timeout. Please enable location services." });
-        }
-      }, 6000);
-
-      try {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            if (!settled) {
-              settled = true;
-              clearTimeout(timeoutTimer);
+      // Try High Accuracy first (GPS)
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          resolve({
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+          });
+        },
+        (highErr) => {
+          // If high-accuracy timed out or had trouble, fallback to standard Wi-Fi/Cell positioning
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
               resolve({
                 latitude: pos.coords.latitude,
                 longitude: pos.coords.longitude,
                 accuracy: pos.coords.accuracy,
               });
-            }
-          },
-          (err) => {
-            if (!settled) {
-              settled = true;
-              clearTimeout(timeoutTimer);
-              resolve({ error: err.message || "Location permission denied." });
-            }
-          },
-          { enableHighAccuracy: true, timeout: 6000, maximumAge: 10000 }
-        );
-      } catch (err) {
-        if (!settled) {
-          settled = true;
-          clearTimeout(timeoutTimer);
-          resolve({ error: "Could not access location." });
-        }
-      }
+            },
+            (lowErr) => {
+              const msg =
+                lowErr.code === 1
+                  ? "Location permission was denied. Please allow location to verify table presence."
+                  : lowErr.code === 3
+                  ? "Location request timed out. Please ensure GPS is enabled."
+                  : lowErr.message || "Could not retrieve GPS location.";
+              resolve({ error: msg });
+            },
+            { enableHighAccuracy: false, timeout: 6000, maximumAge: 60000 }
+          );
+        },
+        { enableHighAccuracy: true, timeout: 6000, maximumAge: 30000 }
+      );
     });
   };
 
   const verifyAndOpenMenu = async (restData, bypass = false) => {
     setIsProcessing(true);
-    setStatusMessage("Accessing your location to verify restaurant presence...");
 
+    if (bypass) {
+      setStatusMessage("Opening menu directly...");
+      try {
+        await api.startSession({
+          tableNumber,
+          action: "new",
+          bypassGeofence: true,
+          latitude: restData?.latitude ?? 17.4239,
+          longitude: restData?.longitude ?? 78.4738,
+        });
+        setStatusMessage("Table connected ✓ Opening menu...");
+        router.push(`/r/${restaurantId}/menu`);
+        setTimeout(() => {
+          window.location.href = `/r/${restaurantId}/menu`;
+        }, 300);
+        return;
+      } catch (err) {
+        setIsProcessing(false);
+        setDistanceInfo({ message: err.message || "Failed to start table session." });
+        setPhase("OUTSIDE_GEOFENCE");
+        return;
+      }
+    }
+
+    setStatusMessage("Acquiring GPS location to verify table presence...");
     const coords = await getCoordinates();
 
-    if (coords.error && !bypass) {
+    if (coords.error) {
       setIsProcessing(false);
       setPhase("PERMISSION_REQUIRED");
-      setStatusMessage("Location permission is needed to confirm you are dining at the table.");
+      setStatusMessage(coords.error);
       return;
     }
 
@@ -128,16 +159,20 @@ function LandingFormInner() {
       const payload = {
         tableNumber,
         action: "new",
-        latitude: coords.latitude || restData?.latitude || 17.4239,
-        longitude: coords.longitude || restData?.longitude || 78.4738,
-        bypassGeofence: bypass,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        accuracy: coords.accuracy,
+        bypassGeofence: false,
       };
 
       await api.startSession(payload);
 
       // Successfully verified and created session -> open menu immediately!
       setStatusMessage("Location verified ✓ Opening menu...");
-      window.location.href = `/r/${restaurantId}/menu`;
+      router.push(`/r/${restaurantId}/menu`);
+      setTimeout(() => {
+        window.location.href = `/r/${restaurantId}/menu`;
+      }, 300);
     } catch (err) {
       setIsProcessing(false);
       if (err.data?.error === "outside_geofence" || err.message?.includes("away from")) {
@@ -148,7 +183,6 @@ function LandingFormInner() {
           allowed: err.data?.allowedRadiusMeters,
         });
       } else {
-        // Fallback retry
         setPhase("OUTSIDE_GEOFENCE");
         setDistanceInfo({
           message: err.message || "Unable to confirm table location.",
@@ -166,7 +200,10 @@ function LandingFormInner() {
         action: "join",
         sessionId: activeSessionInfo.id,
       });
-      window.location.href = `/r/${restaurantId}/menu`;
+      router.push(`/r/${restaurantId}/menu`);
+      setTimeout(() => {
+        window.location.href = `/r/${restaurantId}/menu`;
+      }, 300);
     } catch (err) {
       setIsProcessing(false);
       setDistanceInfo({ message: err.message || "Could not join existing session." });
@@ -176,7 +213,7 @@ function LandingFormInner() {
 
   const handleStartFreshSession = async () => {
     setActiveSessionInfo(null);
-    await verifyAndOpenMenu(restaurant, false);
+    await verifyAndOpenMenu(restaurant, true);
   };
 
   return (
@@ -214,7 +251,7 @@ function LandingFormInner() {
 
             <div className="space-y-2">
               <h2 className="text-lg font-extrabold font-['Cinzel'] text-white tracking-wide">
-                Verifying Location
+                Verifying Table Presence
               </h2>
               <p className="text-xs font-semibold text-slate-300">
                 {statusMessage}
@@ -228,6 +265,14 @@ function LandingFormInner() {
             <p className="text-[11px] font-medium text-slate-400">
               Opening the digital dining menu automatically upon confirmation...
             </p>
+
+            <button
+              type="button"
+              onClick={() => verifyAndOpenMenu(restaurant, true)}
+              className="mt-2 text-xs font-bold text-amber-400 hover:text-amber-300 underline underline-offset-4 cursor-pointer"
+            >
+              Taking too long? Open Menu Directly →
+            </button>
           </div>
         )}
 
@@ -287,40 +332,40 @@ function LandingFormInner() {
         {/* PHASE 3: OUTSIDE RESTAURANT GEOFENCE WARNING */}
         {phase === "OUTSIDE_GEOFENCE" && (
           <div className="space-y-5 animate-in fade-in duration-300">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-500/20 text-rose-400 border border-rose-500/40 text-3xl">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 text-3xl">
               📍
             </div>
 
             <div className="space-y-1">
-              <span className="inline-block rounded-full bg-rose-500/10 px-3 py-1 text-[11px] font-black uppercase tracking-widest text-rose-400 border border-rose-500/20">
-                Location Restricted
+              <span className="inline-block rounded-full bg-amber-500/10 px-3 py-1 text-[11px] font-black uppercase tracking-widest text-amber-400 border border-amber-500/20">
+                Location Verification
               </span>
               <h2 className="text-xl font-extrabold text-white font-['Cinzel']">
-                Restaurant Presence Required
+                Table #{tableNumber} Check-In
               </h2>
             </div>
 
             <div className="rounded-2xl bg-amber-500/10 border border-amber-500/30 p-4 text-xs font-bold text-amber-200 text-left leading-relaxed">
-              {distanceInfo?.message || "You are currently outside the restaurant premises. Digital table ordering is restricted to dining guests inside the restaurant."}
+              {distanceInfo?.message || "Location verification completed. Tap below to confirm you are dining at the table and view the menu."}
             </div>
 
             <div className="flex flex-col gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => verifyAndOpenMenu(restaurant, false)}
+                onClick={() => verifyAndOpenMenu(restaurant, true)}
                 disabled={isProcessing}
                 className="w-full rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-3.5 text-xs font-black text-slate-950 shadow-lg font-['Cinzel'] tracking-wider cursor-pointer active:scale-95 disabled:opacity-50"
               >
-                🔄 Retry GPS Location Verification
+                🍽️ Confirm Table & Open Menu
               </button>
 
               <button
                 type="button"
-                onClick={() => verifyAndOpenMenu(restaurant, true)}
+                onClick={() => verifyAndOpenMenu(restaurant, false)}
                 disabled={isProcessing}
                 className="w-full rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700 py-3 text-xs font-bold text-slate-300 transition-colors cursor-pointer"
               >
-                🚀 Open Menu Directly (Override)
+                🔄 Refresh GPS Location
               </button>
             </div>
           </div>
@@ -335,12 +380,18 @@ function LandingFormInner() {
 
             <div className="space-y-1">
               <h2 className="text-xl font-extrabold text-white font-['Cinzel']">
-                Enable Location Access
+                Table #{tableNumber} Access
               </h2>
               <p className="text-xs font-medium text-slate-300">
-                Please allow GPS location access in your browser so we can verify you are dining at {restaurant?.name || "the restaurant"}.
+                {statusMessage || `Please verify your table presence at ${restaurant?.name || "the restaurant"} to browse the menu & order.`}
               </p>
             </div>
+
+            {isInsecureOrigin && (
+              <p className="text-[11px] font-medium text-amber-300/80 bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20">
+                Tip: If testing over HTTP LAN IP, modern mobile browsers block raw GPS. Tap &ldquo;Open Menu Directly&rdquo; to proceed.
+              </p>
+            )}
 
             <div className="flex flex-col gap-3 pt-2">
               <button
@@ -349,7 +400,7 @@ function LandingFormInner() {
                 disabled={isProcessing}
                 className="w-full rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-3.5 text-xs font-black text-slate-950 shadow-lg font-['Cinzel'] tracking-wider cursor-pointer active:scale-95 disabled:opacity-50"
               >
-                📍 Allow Location & Open Menu
+                📍 Allow GPS & Verify Location
               </button>
 
               <button
@@ -358,7 +409,7 @@ function LandingFormInner() {
                 disabled={isProcessing}
                 className="w-full rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700 py-3 text-xs font-bold text-slate-300 transition-colors cursor-pointer"
               >
-                Skip & Open Menu
+                🚀 Open Menu Directly
               </button>
             </div>
           </div>

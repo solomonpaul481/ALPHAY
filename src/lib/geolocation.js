@@ -52,9 +52,9 @@ function distanceInMeters(lat1, lng1, lat2, lng2) {
 
 /**
  * Checks whether a customer's reported position is within the restaurant's
- * geofence.
+ * geofence, accounting for device GPS accuracy and indoor positioning tolerance.
  */
-function isWithinGeofence(customerLat, customerLng, restaurant) {
+function isWithinGeofence(customerLat, customerLng, restaurant, accuracyMeters = 0) {
   const radius = restaurant.geofenceRadiusMeters || 150;
   const distance = distanceInMeters(
     customerLat,
@@ -64,7 +64,12 @@ function isWithinGeofence(customerLat, customerLng, restaurant) {
   );
 
   const roundedDistance = Math.round(distance);
-  const withinRange = distance <= radius;
+  // Device GPS accuracy circle on phones indoors can be 20-80m.
+  // Add a 25m indoor buffer plus device accuracy consideration.
+  const accuracyBuffer = Math.min(Math.max(0, Number(accuracyMeters) || 0), 100);
+  const effectiveDistance = Math.max(0, distance - accuracyBuffer);
+  const allowedRadius = radius + 25; // 25m indoor margin of error
+  const withinRange = distance <= allowedRadius || effectiveDistance <= radius;
 
   return {
     withinRange,
@@ -72,6 +77,7 @@ function isWithinGeofence(customerLat, customerLng, restaurant) {
     formattedDistance: formatDistance(roundedDistance),
     allowedRadiusMeters: radius,
     formattedAllowedRadius: formatDistance(radius),
+    accuracyMeters: Math.round(accuracyBuffer),
   };
 }
 
@@ -81,3 +87,4 @@ module.exports = {
   distanceInMeters,
   isWithinGeofence,
 };
+

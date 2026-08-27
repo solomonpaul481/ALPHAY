@@ -11,7 +11,7 @@ const {
 async function POST(request, { params }) {
   const { restaurantId } = params;
   const body = await request.json().catch(() => ({}));
-  let { tableNumber, latitude, longitude, action, sessionId, bypassGeofence } = body;
+  let { tableNumber, latitude, longitude, accuracy, action, sessionId, bypassGeofence } = body;
 
   if (!tableNumber || !String(tableNumber).trim()) {
     return NextResponse.json(
@@ -95,11 +95,14 @@ async function POST(request, { params }) {
   }
 
   // Validate geofence location
-  const validCoords = isValidCoordinate(latitude, longitude);
+  const parsedLat = typeof latitude === "number" ? latitude : parseFloat(latitude);
+  const parsedLng = typeof longitude === "number" ? longitude : parseFloat(longitude);
+  const parsedAccuracy = typeof accuracy === "number" ? accuracy : parseFloat(accuracy) || 0;
+  const validCoords = isValidCoordinate(parsedLat, parsedLng);
   let distanceMeters = 0;
 
   if (validCoords) {
-    const geoResult = isWithinGeofence(latitude, longitude, restaurant);
+    const geoResult = isWithinGeofence(parsedLat, parsedLng, restaurant, parsedAccuracy);
     distanceMeters = geoResult.distanceMeters ?? 0;
     if (!bypassGeofence && !geoResult.withinRange) {
       return NextResponse.json(
@@ -108,14 +111,15 @@ async function POST(request, { params }) {
           message: `You are currently ${geoResult.formattedDistance} away from ${restaurant.name}. Digital table ordering is only available within ${geoResult.formattedAllowedRadius} of the restaurant premises.`,
           distanceMeters: geoResult.distanceMeters,
           allowedRadiusMeters: geoResult.allowedRadiusMeters,
+          accuracyMeters: parsedAccuracy,
         },
         { status: 403 }
       );
     }
   }
 
-  const effectiveLat = validCoords ? latitude : restaurant.latitude;
-  const effectiveLng = validCoords ? longitude : restaurant.longitude;
+  const effectiveLat = validCoords ? parsedLat : (restaurant.latitude ?? 17.4239);
+  const effectiveLng = validCoords ? parsedLng : (restaurant.longitude ?? 78.4738);
 
   // Close any existing active sessions for this table before starting a new one
   await db.customerSession.updateMany({
@@ -138,9 +142,9 @@ async function POST(request, { params }) {
       restaurantId,
       tableId: table.id,
       token: sessionToken,
-      latitude,
-      longitude,
-      distanceMeters,
+      latitude: effectiveLat,
+      longitude: effectiveLng,
+      distanceMeters: Number(distanceMeters) || 0,
       status: "ACTIVE",
       expiresAt: new Date(Date.now() + SESSION_TTL_SECONDS * 1000),
     },
@@ -170,3 +174,4 @@ async function POST(request, { params }) {
 }
 
 module.exports = { POST };
+
