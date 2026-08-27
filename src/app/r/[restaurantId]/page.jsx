@@ -134,18 +134,21 @@ function LandingFormInner() {
         bypassGeofence: true,
       });
 
-      router.push(`/r/${restaurantId}/menu`);
+      const targetUrl = `/r/${restaurantId}/menu?table=${encodeURIComponent(tableNumber)}`;
+      router.push(targetUrl);
       setTimeout(() => {
-        window.location.href = `/r/${restaurantId}/menu`;
-      }, 300);
+        window.location.href = targetUrl;
+      }, 250);
     } catch {
       // Fallback direct navigation
-      router.push(`/r/${restaurantId}/menu`);
+      const targetUrl = `/r/${restaurantId}/menu?table=${encodeURIComponent(tableNumber)}`;
+      router.push(targetUrl);
       setTimeout(() => {
-        window.location.href = `/r/${restaurantId}/menu`;
-      }, 300);
+        window.location.href = targetUrl;
+      }, 250);
     }
   };
+
 
   return (
     <div className="relative min-h-screen w-full flex flex-col items-center justify-center bg-slate-950 text-white">

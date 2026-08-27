@@ -86,10 +86,11 @@ async function POST(request, { params }) {
       response.cookies.set(SESSION_COOKIE, token, {
         httpOnly: true,
         sameSite: "lax",
-        secure: process.env.NODE_ENV === "production",
+        secure: false,
         maxAge: SESSION_TTL_SECONDS,
         path: "/",
       });
+
       return response;
     }
   }
@@ -155,11 +156,12 @@ async function POST(request, { params }) {
   response.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: false,
     maxAge: SESSION_TTL_SECONDS,
     path: "/",
   });
   return response;
+
 }
 
 module.exports = { POST };

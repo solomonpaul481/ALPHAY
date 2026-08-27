@@ -31,9 +31,12 @@ export function createApiClient(restaurantId) {
         body: JSON.stringify(payload),
       }),
     paySessionCash: () => request(`${base}/session/pay-cash`, { method: "POST" }),
-    getMenu: () => request(`${base}/menu`),
+    getMenu: (params = "") =>
+      request(`${base}/menu${params ? (params.startsWith("?") ? params : `?${params}`) : ""}`),
     createOrder: (payload) =>
       request(`${base}/orders`, { method: "POST", body: JSON.stringify(payload) }),
+
+
     getOrder: (orderId) => request(`${base}/orders/${orderId}`),
     verifyPayment: (orderId, payload) =>
       request(`${base}/orders/${orderId}/verify`, {

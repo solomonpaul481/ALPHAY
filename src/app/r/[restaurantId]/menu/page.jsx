@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useEffect, useMemo, useState, Suspense } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { createApiClient } from "@/lib/api-client";
 import FoodCard from "@/components/FoodCard";
@@ -12,11 +12,15 @@ import CallStaffButton from "@/components/CallStaffButton";
 import { useCart } from "@/lib/cart-context";
 import { IconCart, IconSparkles, IconArrowLeft, IconSearch, IconBook, IconListView, IconCardView } from "@/components/Icons";
 
-export default function MenuPage() {
+function MenuContent() {
+
   const { restaurantId } = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const api = createApiClient(restaurantId);
   const { totalItems } = useCart();
+
+  const urlTable = searchParams ? searchParams.get("table") : null;
 
   const [menu, setMenu] = useState(null);
   const [loadError, setLoadError] = useState(false);
@@ -30,20 +34,19 @@ export default function MenuPage() {
 
   useEffect(() => {
     if (!restaurantId) return;
+    const query = urlTable ? `?table=${encodeURIComponent(urlTable)}` : "";
     api
-      .getMenu()
+      .getMenu(query)
       .then((data) => {
         setMenu(data);
       })
       .catch((err) => {
-        if (err.status === 401) {
-          router.replace(`/r/${restaurantId}`);
-        } else {
-          setLoadError(true);
-        }
+        console.error("Menu fetch error:", err);
+        setLoadError(true);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [restaurantId]);
+  }, [restaurantId, urlTable]);
+
 
   // Intercept browser back button when inside an expanded category view to return to Categories Menu Home
   useEffect(() => {
@@ -387,3 +390,18 @@ export default function MenuPage() {
     </main>
   );
 }
+
+export default function MenuPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-slate-950 text-amber-400 text-sm font-bold font-['Cinzel'] tracking-widest">
+          Loading Menu...
+        </div>
+      }
+    >
+      <MenuContent />
+    </Suspense>
+  );
+}
+
