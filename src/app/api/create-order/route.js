@@ -1,10 +1,10 @@
 const { NextResponse } = require("next/server");
-const { createOnlinePaymentOrder, getActiveGateway } = require("@/lib/payment-gateway");
+const { createOnlinePaymentOrder } = require("@/lib/payment-gateway");
 
 async function POST(request) {
   try {
     const body = await request.json().catch(() => ({}));
-    let { amount, amountInPaise, currency = "INR", receipt, notes, gateway } = body;
+    let { amount, amountInPaise, currency = "INR", receipt, notes } = body;
 
     let finalAmountPaise = amountInPaise || amount;
 
@@ -32,24 +32,28 @@ async function POST(request) {
       amountInRupees,
       receipt: orderReceipt,
       notes: notes || {},
-      forceGateway: gateway,
     });
+
+    const keyId =
+      process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
+      process.env.RAZORPAY_KEY_ID ||
+      "rzp_test_TOtzon9NeyIvZ4";
 
     return NextResponse.json({
       ok: true,
-      gateway: paymentOrder.gateway,
+      gateway: "razorpay",
       order_id: paymentOrder.orderId,
       orderId: paymentOrder.orderId,
-      paymentSessionId: paymentOrder.paymentSessionId,
+      razorpayOrderId: paymentOrder.orderId,
       amount: paymentOrder.amountInPaise,
       amountInRupees,
-      currency: paymentOrder.currency || "INR",
-      env: paymentOrder.env || process.env.NEXT_PUBLIC_CASHFREE_ENV || "sandbox",
+      currency: "INR",
+      keyId,
     });
   } catch (err) {
-    console.error("Create Online Order Error:", err?.message || err);
+    console.error("Create Razorpay Order Error:", err?.message || err);
     return NextResponse.json(
-      { error: err?.message || "Failed to create payment order." },
+      { error: err?.message || "Failed to create Razorpay order." },
       { status: 500 }
     );
   }

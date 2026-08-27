@@ -66,8 +66,9 @@ function SuccessContent() {
           </div>
           <div className="ticket-divider mt-3 flex justify-between pt-3 text-sm text-ink2">
             <span>Transaction ID</span>
-            <span className="font-mono text-xs">{order?.cashfreePaymentId || "—"}</span>
+            <span className="font-mono text-xs">{order?.razorpayPaymentId || order?.paymentId || "—"}</span>
           </div>
+
           <div className="mt-2 flex justify-between font-display text-base font-medium text-ink">
             <span>Amount Paid</span>
             <span className="font-mono tabular-nums">₹{order ? order.total.toFixed(2) : "—"}</span>

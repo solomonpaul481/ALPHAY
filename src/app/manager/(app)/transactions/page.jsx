@@ -142,7 +142,8 @@ export default function ManagerTransactionsPage() {
                 </thead>
                 <tbody className="divide-y divide-amber-100 dark:divide-slate-800/80 font-semibold">
                   {transactions.map((t) => {
-                    const isCash = t.isCash || t.paymentStatus?.includes("CASH") || t.paymentMethod?.includes("Cash") || t.cashfreePaymentId === "Cash";
+                    const txnId = t.razorpayPaymentId || t.cashfreePaymentId || t.paymentId;
+                    const isCash = t.isCash || t.paymentStatus?.includes("CASH") || t.paymentMethod?.includes("Cash") || txnId === "Cash";
                     return (
                       <tr key={t.id} className="hover:bg-amber-50/50 dark:hover:bg-slate-950/40 transition-colors">
                         <td className="px-6 py-4 font-bold text-slate-900 dark:text-white font-mono">{t.orderNumber}</td>
@@ -154,10 +155,11 @@ export default function ManagerTransactionsPage() {
                               Cash
                             </span>
                           ) : (
-                            t.cashfreePaymentId
+                            txnId
                           )}
                         </td>
                         <td className="px-6 py-4 font-medium text-slate-700 dark:text-slate-300 font-sans">{t.paymentMethod}</td>
+
                         <td className="px-6 py-4">
                           <span className={`inline-block rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-wider font-['Cinzel'] ${
                             isCash

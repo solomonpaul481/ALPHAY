@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import CashfreeCheckoutButton from "@/components/CashfreeCheckoutButton";
+import RazorpayCheckoutButton from "@/components/RazorpayCheckoutButton";
 
 export default function CheckoutDemoPage() {
   const [amount, setAmount] = useState(100); // Amount in ₹
@@ -13,10 +13,10 @@ export default function CheckoutDemoPage() {
         <div className="text-center space-y-2 border-b border-amber-500/20 pb-6">
           <span className="text-4xl">💳</span>
           <h1 className="text-2xl font-black text-amber-400 font-['Cinzel'] tracking-wide">
-            Online Payment Checkout Demo
+            Razorpay Checkout Demo
           </h1>
           <p className="text-xs text-slate-400 font-medium">
-            Test Cashfree order creation, payment modal, and backend verification.
+            Test Razorpay order creation, payment modal, and backend signature verification.
           </p>
         </div>
 
@@ -42,8 +42,8 @@ export default function CheckoutDemoPage() {
 
           <div className="rounded-2xl bg-slate-950 p-4 border border-amber-500/20 text-xs font-mono space-y-1">
             <div className="flex justify-between text-slate-400">
-              <span>Active Provider:</span>
-              <span className="text-emerald-400 font-bold uppercase">CASHFREE</span>
+              <span>Payment Gateway:</span>
+              <span className="text-emerald-400 font-bold uppercase">RAZORPAY</span>
             </div>
             <div className="flex justify-between text-slate-400">
               <span>Order Endpoint:</span>
@@ -56,12 +56,12 @@ export default function CheckoutDemoPage() {
           </div>
 
           <div className="pt-2 flex justify-center">
-            <CashfreeCheckoutButton
+            <RazorpayCheckoutButton
               amountInRupees={amount}
-              description={`Test Cashfree Checkout for ₹${amount}`}
+              description={`Test Razorpay Checkout for ₹${amount}`}
               onSuccess={(result) => setPaymentResult(result)}
               onFailure={() => setPaymentResult(null)}
-              buttonText={`Pay ₹${amount} with Cashfree 💳`}
+              buttonText={`Pay ₹${amount} with Razorpay 💳`}
             />
           </div>
         </div>
@@ -73,10 +73,10 @@ export default function CheckoutDemoPage() {
               <span>Payment Verified Successfully!</span>
             </div>
             <div className="space-y-1 text-[11px]">
-              <p><strong className="text-white">Gateway:</strong> {paymentResult.gateway || activeGateway}</p>
+              <p><strong className="text-white">Gateway:</strong> RAZORPAY</p>
               <p><strong className="text-white">Payment ID:</strong> {paymentResult.paymentId}</p>
               <p><strong className="text-white">Order ID:</strong> {paymentResult.orderId}</p>
-              <p><strong className="text-white">Status:</strong> Verified & Confirmed</p>
+              <p><strong className="text-white">Status:</strong> Verified & Signature Matched</p>
             </div>
           </div>
         )}

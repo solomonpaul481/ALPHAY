@@ -1,7 +1,6 @@
 const { NextResponse } = require("next/server");
 const { db } = require("@/lib/db");
-const { verifyOnlinePayment, getActiveGateway } = require("@/lib/payment-gateway");
-
+const { verifyOnlinePayment } = require("@/lib/payment-gateway");
 const { resolveRestaurant } = require("@/lib/resolve-restaurant");
 
 async function POST(request, { params }) {
@@ -9,8 +8,9 @@ async function POST(request, { params }) {
   const body = await request.json().catch(() => ({}));
 
   const sessionId = body.sessionId;
-  const orderId = body.orderId || body.cfOrderId;
-  const paymentId = body.paymentId || body.cfPaymentId;
+  const orderId = body.orderId || body.razorpay_order_id || body.razorpayOrderId;
+  const paymentId = body.paymentId || body.razorpay_payment_id || body.razorpayPaymentId;
+  const signature = body.signature || body.razorpay_signature || body.razorpaySignature;
 
   if (!sessionId) {
     return NextResponse.json({ error: "Missing session ID." }, { status: 400 });
@@ -28,21 +28,22 @@ async function POST(request, { params }) {
     return NextResponse.json({ error: "Session not found." }, { status: 404 });
   }
 
-
-  const targetOrderId = orderId || session.cashfreeOrderId;
+  const targetOrderId = orderId || session.razorpayOrderId;
 
   if (!targetOrderId) {
-    return NextResponse.json({ error: "Missing Cashfree order ID." }, { status: 400 });
+    return NextResponse.json({ error: "Missing Razorpay order ID." }, { status: 400 });
   }
 
   const verifyResult = await verifyOnlinePayment({
     orderId: targetOrderId,
     paymentId,
+    signature,
+    gateway: "razorpay",
   });
 
   if (!verifyResult.success) {
     return NextResponse.json(
-      { error: `Payment not completed. Status: ${verifyResult.status}` },
+      { error: "Payment verification failed. Signature does not match." },
       { status: 400 }
     );
   }
@@ -54,8 +55,9 @@ async function POST(request, { params }) {
       status: "COMPLETED",
       paymentStatus: "PAID",
       paymentMethod: "ONLINE",
-      paymentGateway: "CASHFREE",
-      cashfreePaymentId: verifyResult.paymentId,
+      paymentGateway: "RAZORPAY",
+      razorpayOrderId: targetOrderId,
+      razorpayPaymentId: paymentId,
       endedAt: new Date(),
     },
   });
@@ -63,12 +65,12 @@ async function POST(request, { params }) {
   // Mark all session orders as PAID
   await db.order.updateMany({
     where: { sessionId },
-    data: { status: "PAID", paymentGateway: "CASHFREE" },
+    data: { status: "PAID", paymentGateway: "RAZORPAY" },
   });
 
   return NextResponse.json({
     ok: true,
-    message: "Cashfree payment verified successfully! Session completed.",
+    message: "Razorpay payment verified successfully! Session completed.",
   });
 }
 

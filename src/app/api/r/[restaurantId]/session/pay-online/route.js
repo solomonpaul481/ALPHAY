@@ -1,7 +1,7 @@
 const { NextResponse } = require("next/server");
 const { db } = require("@/lib/db");
 const { getSession } = require("@/lib/get-session");
-const { createOnlinePaymentOrder, getActiveGateway } = require("@/lib/payment-gateway");
+const { createOnlinePaymentOrder } = require("@/lib/payment-gateway");
 
 async function POST(request, { params }) {
   const { restaurantId } = params;
@@ -38,15 +38,13 @@ async function POST(request, { params }) {
   }
 
   try {
-    const activeGateway = "cashfree";
     const paymentOrder = await createOnlinePaymentOrder({
       amountInRupees: totalAmount,
       receipt: `SESS_${session.id.slice(-8)}`,
-      notes: { restaurantId, tableNumber: sessionWithOrders.table.number, sessionId: session.id },
-      customerDetails: {
-        customerId: `sess_${session.id}`,
-        name: `Table ${sessionWithOrders.table.number} Guest`,
-        email: `table${sessionWithOrders.table.number}@alphay.app`,
+      notes: {
+        restaurantId: session.restaurantId,
+        tableNumber: sessionWithOrders.table.number,
+        sessionId: session.id,
       },
     });
 
@@ -55,27 +53,28 @@ async function POST(request, { params }) {
       data: {
         billTotal: totalAmount,
         paymentMethod: "ONLINE",
-        paymentGateway: "CASHFREE",
-        cashfreeOrderId: paymentOrder.orderId,
+        paymentGateway: "RAZORPAY",
+        razorpayOrderId: paymentOrder.orderId,
       },
     });
 
     return NextResponse.json({
       ok: true,
-      gateway: "cashfree",
+      gateway: "razorpay",
       sessionId: session.id,
       orderId: paymentOrder.orderId,
-      paymentSessionId: paymentOrder.paymentSessionId,
-      amount: totalAmount,
-      amountInPaise: Math.round(totalAmount * 100),
-      env: paymentOrder.env || process.env.NEXT_PUBLIC_CASHFREE_ENV || "sandbox",
+      razorpayOrderId: paymentOrder.orderId,
+      amount: paymentOrder.amountInPaise,
+      amountInRupees: totalAmount,
+      currency: "INR",
+      keyId: paymentOrder.keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_TOtzon9NeyIvZ4",
       restaurantName: sessionWithOrders.restaurant.name,
       tableNumber: sessionWithOrders.table.number,
     });
   } catch (err) {
-    console.error("Failed to create online payment session order:", err?.message || err);
+    console.error("Failed to create online Razorpay session order:", err?.message || err);
     return NextResponse.json(
-      { error: err?.message || "Could not initialize online payment." },
+      { error: err?.message || "Could not initialize Razorpay payment." },
       { status: 502 }
     );
   }

@@ -5,14 +5,14 @@ import { useParams, useRouter } from "next/navigation";
 import { createApiClient } from "@/lib/api-client";
 import { IconArrowLeft, IconCheck, IconSparkles } from "@/components/Icons";
 
-function loadCashfreeScript() {
+function loadRazorpayScript() {
   return new Promise((resolve) => {
-    if (typeof window !== "undefined" && window.Cashfree) {
+    if (typeof window !== "undefined" && window.Razorpay) {
       resolve(true);
       return;
     }
     const script = document.createElement("script");
-    script.src = "https://sdk.cashfree.com/js/v3/cashfree.js";
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
     script.async = true;
     script.onload = () => resolve(true);
     script.onerror = () => resolve(false);
@@ -51,8 +51,8 @@ export default function SessionTrackPage() {
     if (!restaurantId) return;
     fetchSession();
 
-    // Preload checkout scripts in background
-    loadCashfreeScript();
+    // Preload Razorpay checkout script in background
+    loadRazorpayScript();
 
     // Auto refresh active session state every 3 seconds
     const interval = setInterval(fetchSession, 3000);
@@ -81,37 +81,54 @@ export default function SessionTrackPage() {
     try {
       const checkoutData = await api.paySessionOnline();
 
-      // Cashfree Flow
-      const isLoaded = await loadCashfreeScript();
-      if (!isLoaded || typeof window === "undefined" || !window.Cashfree) {
-        throw new Error("Could not load Cashfree SDK. Please check your internet connection.");
+      // Razorpay Flow
+      const isLoaded = await loadRazorpayScript();
+      if (!isLoaded || typeof window === "undefined" || !window.Razorpay) {
+        throw new Error("Could not load Razorpay SDK. Please check your internet connection.");
       }
 
-      const cashfree = window.Cashfree({
-        mode: checkoutData.env || "sandbox",
-      });
+      const options = {
+        key: checkoutData.keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_TOtzon9NeyIvZ4",
+        amount: checkoutData.amount,
+        currency: checkoutData.currency || "INR",
+        name: checkoutData.restaurantName || "ALPHAY",
+        description: `Table #${checkoutData.tableNumber} Dining Bill`,
+        order_id: checkoutData.orderId,
+        theme: { color: "#F59E0B" },
+        handler: async function (response) {
+          try {
+            await api.verifySessionPayment({
+              sessionId: sessionData.sessionId,
+              orderId: response.razorpay_order_id,
+              paymentId: response.razorpay_payment_id,
+              signature: response.razorpay_signature,
+            });
+            await fetchSession();
+          } catch (verErr) {
+            setError(verErr.message || "Payment verification failed.");
+          } finally {
+            setPaying(false);
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            setPaying(false);
+          },
+        },
+      };
 
-      const result = await cashfree.checkout({
-        paymentSessionId: checkoutData.paymentSessionId,
-        redirectTarget: "_modal",
+      const rzp = new window.Razorpay(options);
+      rzp.on("payment.failed", function (resp) {
+        setPaying(false);
+        setError(resp.error?.description || "Payment failed. Please try again.");
       });
-
-      if (result?.error) {
-        throw new Error(result.error.message || "Payment cancelled.");
-      }
-
-      await api.verifySessionPayment({
-        sessionId: sessionData.sessionId,
-        orderId: checkoutData.orderId,
-        gateway: "cashfree",
-      });
-      await fetchSession();
+      rzp.open();
     } catch (err) {
       setError(err.message || "Failed to launch online payment.");
-    } finally {
       setPaying(false);
     }
   };
+
 
   const handleCashPayment = async () => {
     if (paying) return;

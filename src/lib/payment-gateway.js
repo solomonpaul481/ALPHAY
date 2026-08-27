@@ -1,15 +1,14 @@
-const cashfreeLib = require("./cashfree");
+const razorpayLib = require("./razorpay");
 
 /**
- * Returns the currently active online payment gateway provider.
- * Always returns "cashfree".
+ * Returns the active payment gateway.
  */
 function getActiveGateway() {
-  return "cashfree";
+  return "razorpay";
 }
 
 /**
- * Online order creator supporting Cashfree payment gateway.
+ * Creates an online payment order with Razorpay.
  */
 async function createOnlinePaymentOrder({
   amountInRupees,
@@ -17,50 +16,47 @@ async function createOnlinePaymentOrder({
   receipt,
   notes = {},
   customerDetails = {},
-  returnUrl,
-  notifyUrl,
 }) {
-  const finalAmountRupees =
-    amountInRupees || (amountInPaise ? amountInPaise / 100 : 0);
+  const finalAmountRupees = amountInRupees || (amountInPaise ? amountInPaise / 100 : 0);
+  const paiseAmount = Math.max(100, Math.round(finalAmountRupees * 100));
 
-  const cfResult = await cashfreeLib.createCashfreeOrder({
-    amountInRupees: finalAmountRupees,
-    customerDetails,
-    returnUrl,
-    notifyUrl,
+  const rzpOrder = await razorpayLib.createRazorpayOrder({
+    amountInPaise: paiseAmount,
+    receipt: receipt || `rec_${Date.now()}`,
     notes,
   });
 
   return {
-    gateway: "cashfree",
-    orderId: cfResult.orderId,
-    paymentSessionId: cfResult.paymentSessionId,
+    gateway: "razorpay",
+    orderId: rzpOrder.id,
+    razorpayOrderId: rzpOrder.id,
     amountInRupees: finalAmountRupees,
-    amountInPaise: Math.round(finalAmountRupees * 100),
-    currency: cfResult.currency || "INR",
-    env: cashfreeLib.getCashfreeConfig().isProduction ? "production" : "sandbox",
+    amountInPaise: paiseAmount,
+    currency: "INR",
+    keyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || "rzp_test_TOtzon9NeyIvZ4",
   };
 }
 
 /**
- * Cashfree payment verifier.
+ * Verifies Razorpay payment signature.
  */
 async function verifyOnlinePayment({
   orderId,
   paymentId,
+  signature,
 }) {
-  const cfOrder = await cashfreeLib.fetchCashfreeOrder(orderId);
-  const isPaid =
-    cfOrder.order_status === "PAID" ||
-    cfOrder.order_status === "SUCCESS" ||
-    cfOrder.order_status === "COMPLETED";
+  const isValid = razorpayLib.verifyPaymentSignature({
+    razorpayOrderId: orderId,
+    razorpayPaymentId: paymentId,
+    signature,
+  });
 
   return {
-    success: isPaid,
-    status: cfOrder.order_status,
-    orderId: cfOrder.order_id,
-    paymentId: paymentId || cfOrder.cf_payment_id || `cf_pay_${cfOrder.order_id}`,
-    gateway: "cashfree",
+    success: isValid,
+    status: isValid ? "PAID" : "FAILED",
+    orderId,
+    paymentId,
+    gateway: "razorpay",
   };
 }
 
@@ -68,5 +64,5 @@ module.exports = {
   getActiveGateway,
   createOnlinePaymentOrder,
   verifyOnlinePayment,
-  cashfreeLib,
+  razorpayLib,
 };

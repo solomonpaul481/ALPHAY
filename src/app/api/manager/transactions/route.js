@@ -73,28 +73,28 @@ async function GET(request) {
 
   const transactions = orders
     .filter((o) => {
-      if (o.status === "PENDING_PAYMENT" && !o.session?.paymentStatus === "PAID") return false;
+      if (o.status === "PENDING_PAYMENT" && o.session?.paymentStatus !== "PAID") return false;
       if (!query) return true;
       const q = query.toLowerCase();
       const orderNo = o.id.slice(-6).toLowerCase();
       const orderSeqStr = o.orderSeq ? String(o.orderSeq) : "";
       const tableNo = o.table?.number.toLowerCase() || "";
-      const pId = (o.cashfreePaymentId || o.payment?.cashfreePaymentId || o.session?.cashfreePaymentId || "").toLowerCase();
+      const pId = (o.razorpayPaymentId || o.payment?.razorpayPaymentId || o.session?.razorpayPaymentId || "").toLowerCase();
       const pMethod = (o.session?.paymentMethod || "").toLowerCase();
       return orderNo.includes(q) || orderSeqStr.includes(q) || tableNo.includes(q) || pId.includes(q) || pMethod.includes(q);
     })
     .map((o) => {
-      const rawTxnId = o.cashfreePaymentId || o.payment?.cashfreePaymentId || o.session?.cashfreePaymentId;
+      const rawTxnId = o.razorpayPaymentId || o.payment?.razorpayPaymentId || o.session?.razorpayPaymentId;
       const isOnline = Boolean(
         (rawTxnId && !["CASH", "CASH_PAYMENT", "Cash"].includes(rawTxnId)) ||
         o.session?.paymentMethod === "ONLINE" ||
         o.session?.paymentMethod === "UPI"
       );
       const isCash = !isOnline;
-      const gateway = "CASHFREE";
-      const methodLabel = isOnline ? "Cashfree Online 💳" : "Cash";
-      const statusLabel = isOnline ? "PAID (CASHFREE)" : "PAID (CASH)";
-      const txnDisplayId = isOnline ? (rawTxnId || `cf_pay_${o.id.slice(-8)}`) : "Cash";
+      const gateway = "RAZORPAY";
+      const methodLabel = isOnline ? "Razorpay Online 💳" : "Cash";
+      const statusLabel = isOnline ? "PAID (RAZORPAY)" : "PAID (CASH)";
+      const txnDisplayId = isOnline ? (rawTxnId || `pay_${o.id.slice(-8)}`) : "Cash";
 
       return {
         id: o.payment?.id || `txn_${o.id}`,
@@ -105,7 +105,7 @@ async function GET(request) {
         paymentMethod: methodLabel,
         paymentStatus: statusLabel,
         paymentGateway: gateway,
-        cashfreePaymentId: txnDisplayId,
+        razorpayPaymentId: txnDisplayId,
         isCash,
         createdAt: o.createdAt,
       };

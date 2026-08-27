@@ -1,7 +1,6 @@
 const { NextResponse } = require("next/server");
 const { db } = require("@/lib/db");
 const { getSession } = require("@/lib/get-session");
-const { getActiveGateway } = require("@/lib/payment-gateway");
 
 async function GET(request, { params }) {
   const { restaurantId } = params;
@@ -48,8 +47,6 @@ async function GET(request, { params }) {
   gstAmount = Math.round(gstAmount * 100) / 100;
   totalAmount = Math.round(totalAmount * 100) / 100;
 
-  const activeGateway = getActiveGateway();
-
   return NextResponse.json({
     sessionId: sessionWithDetails.id,
     status: sessionWithDetails.status,
@@ -60,10 +57,10 @@ async function GET(request, { params }) {
     billSentAt: sessionWithDetails.billSentAt,
     paymentMethod: sessionWithDetails.paymentMethod,
     paymentStatus: sessionWithDetails.paymentStatus,
-    paymentGateway: sessionWithDetails.paymentGateway || "CASHFREE",
-    activeGateway: "cashfree",
-    cashfreeOrderId: sessionWithDetails.cashfreeOrderId,
-    cashfreeEnv: process.env.NEXT_PUBLIC_CASHFREE_ENV || "sandbox",
+    paymentGateway: sessionWithDetails.paymentGateway || "RAZORPAY",
+    activeGateway: "razorpay",
+    razorpayOrderId: sessionWithDetails.razorpayOrderId,
+    keyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || "rzp_test_TOtzon9NeyIvZ4",
     subtotal,
     gstAmount,
     totalAmount,

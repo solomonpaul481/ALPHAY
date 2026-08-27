@@ -21,20 +21,20 @@ async function GET(request, { params }) {
     return NextResponse.json({ error: "Order not found." }, { status: 404 });
   }
 
-  // Fallback: If still pending payment, try fetching status directly from Cashfree
-  if (order.status === "PENDING_PAYMENT" && order.cashfreeOrderId) {
+  // Fallback: If still pending payment, try fetching status directly from Razorpay
+  if (order.status === "PENDING_PAYMENT" && order.razorpayOrderId) {
     try {
-      const { fetchCashfreeOrder } = require("@/lib/cashfree");
-      const cfOrder = await fetchCashfreeOrder(order.cashfreeOrderId);
-      if (cfOrder && (cfOrder.order_status === "PAID" || cfOrder.order_status === "SUCCESS" || cfOrder.order_status === "COMPLETED")) {
+      const { fetchRazorpayOrder } = require("@/lib/razorpay");
+      const rzpOrder = await fetchRazorpayOrder(order.razorpayOrderId);
+      if (rzpOrder && (rzpOrder.status === "paid" || rzpOrder.status === "captured")) {
         await db.$transaction([
           db.order.update({
             where: { id: order.id },
-            data: { status: "CONFIRMED" },
+            data: { status: "CONFIRMED", paymentGateway: "RAZORPAY" },
           }),
           db.payment.updateMany({
             where: { orderId: order.id },
-            data: { status: "verified", verifiedAt: new Date() },
+            data: { status: "verified", paymentGateway: "RAZORPAY", verifiedAt: new Date() },
           }),
         ]);
         order.status = "CONFIRMED";
@@ -43,6 +43,7 @@ async function GET(request, { params }) {
       // Best-effort check during polling
     }
   }
+
 
   let queuePosition = null;
   if (ACTIVE_STATUSES.includes(order.status)) {
