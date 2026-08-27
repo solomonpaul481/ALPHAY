@@ -14,7 +14,7 @@ async function getSession(restaurantId) {
   if (!token) return null;
 
   const payload = verifySessionToken(token);
-  if (!payload || payload.restaurantId !== restaurantId) return null;
+  if (!payload || !payload.sessionId) return null;
 
   const session = await db.customerSession.findUnique({
     where: { id: payload.sessionId },
@@ -24,7 +24,16 @@ async function getSession(restaurantId) {
   if (session.expiresAt < new Date()) return null;
   if (session.endedAt || session.status === "COMPLETED" || session.status === "CLOSED") return null;
 
+  // Validate restaurant match by ID or case-insensitive name
+  if (restaurantId) {
+    const target = decodeURIComponent(restaurantId).trim().toLowerCase();
+    const matchesId = session.restaurantId.toLowerCase() === target;
+    const matchesName = session.restaurant?.name?.toLowerCase() === target;
+    if (!matchesId && !matchesName) return null;
+  }
+
   return session;
 }
 
 module.exports = { getSession };
+

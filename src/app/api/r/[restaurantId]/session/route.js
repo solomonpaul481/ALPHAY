@@ -1,6 +1,7 @@
 const { NextResponse } = require("next/server");
 const crypto = require("crypto");
 const { db } = require("@/lib/db");
+const { resolveRestaurant } = require("@/lib/resolve-restaurant");
 const { isWithinGeofence, isValidCoordinate } = require("@/lib/geolocation");
 const {
   SESSION_COOKIE,
@@ -20,10 +21,12 @@ async function POST(request, { params }) {
     );
   }
 
-  const restaurant = await db.restaurant.findUnique({ where: { id: restaurantId } });
+  const restaurant = await resolveRestaurant(restaurantId);
   if (!restaurant) {
     return NextResponse.json({ error: "Restaurant not found." }, { status: 404 });
   }
+  const resolvedRestaurantId = restaurant.id;
+
   if (restaurant.status === "SUSPENDED") {
     return NextResponse.json(
       { error: "Online ordering is temporarily unavailable here. Please order with staff directly." },
@@ -32,13 +35,13 @@ async function POST(request, { params }) {
   }
 
   let table = await db.diningTable.findUnique({
-    where: { restaurantId_number: { restaurantId, number: String(tableNumber).trim() } },
+    where: { restaurantId_number: { restaurantId: resolvedRestaurantId, number: String(tableNumber).trim() } },
   });
   if (!table) {
     table = await db.diningTable
       .create({
         data: {
-          restaurantId,
+          restaurantId: resolvedRestaurantId,
           number: String(tableNumber).trim(),
         },
       })
@@ -60,7 +63,7 @@ async function POST(request, { params }) {
     if (!targetSession) {
       targetSession = await db.customerSession.findFirst({
         where: {
-          restaurantId,
+          restaurantId: resolvedRestaurantId,
           tableId: table.id,
           endedAt: null,
           status: { in: ["ACTIVE", "BILL_REQUESTED", "BILL_SENT"] },
@@ -72,7 +75,7 @@ async function POST(request, { params }) {
     if (targetSession) {
       const token = signSessionToken({
         sessionId: targetSession.id,
-        restaurantId,
+        restaurantId: resolvedRestaurantId,
         tableId: table.id,
       });
 
@@ -90,7 +93,6 @@ async function POST(request, { params }) {
         maxAge: SESSION_TTL_SECONDS,
         path: "/",
       });
-
       return response;
     }
   }
@@ -110,11 +112,10 @@ async function POST(request, { params }) {
   const effectiveLat = validCoords ? parsedLat : (restaurant.latitude ?? 17.4239);
   const effectiveLng = validCoords ? parsedLng : (restaurant.longitude ?? 78.4738);
 
-
   // Close any existing active sessions for this table before starting a new one
   await db.customerSession.updateMany({
     where: {
-      restaurantId,
+      restaurantId: resolvedRestaurantId,
       tableId: table.id,
       endedAt: null,
       status: { in: ["ACTIVE", "BILL_REQUESTED", "BILL_SENT"] },
@@ -129,7 +130,7 @@ async function POST(request, { params }) {
   const sessionToken = crypto.randomUUID();
   const session = await db.customerSession.create({
     data: {
-      restaurantId,
+      restaurantId: resolvedRestaurantId,
       tableId: table.id,
       token: sessionToken,
       latitude: effectiveLat,
@@ -142,9 +143,10 @@ async function POST(request, { params }) {
 
   const token = signSessionToken({
     sessionId: session.id,
-    restaurantId,
+    restaurantId: resolvedRestaurantId,
     tableId: table.id,
   });
+
 
   const response = NextResponse.json({
     ok: true,

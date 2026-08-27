@@ -1,5 +1,6 @@
 const { NextResponse } = require("next/server");
 const { db } = require("@/lib/db");
+const { resolveRestaurant } = require("@/lib/resolve-restaurant");
 
 async function POST(request, { params }) {
   const { restaurantId } = params;
@@ -10,15 +11,21 @@ async function POST(request, { params }) {
     return NextResponse.json({ error: "Table number is required." }, { status: 400 });
   }
 
+  const restaurant = await resolveRestaurant(restaurantId);
+  if (!restaurant) {
+    return NextResponse.json({ hasActiveSession: false });
+  }
+  const resolvedRestaurantId = restaurant.id;
+
   let table = await db.diningTable.findUnique({
-    where: { restaurantId_number: { restaurantId, number: String(tableNumber).trim() } },
+    where: { restaurantId_number: { restaurantId: resolvedRestaurantId, number: String(tableNumber).trim() } },
   });
 
   if (!table) {
     table = await db.diningTable
       .create({
         data: {
-          restaurantId,
+          restaurantId: resolvedRestaurantId,
           number: String(tableNumber).trim(),
         },
       })
@@ -32,7 +39,7 @@ async function POST(request, { params }) {
   // Find active session on this table that is NOT ended or completed or closed
   const activeSession = await db.customerSession.findFirst({
     where: {
-      restaurantId,
+      restaurantId: resolvedRestaurantId,
       tableId: table.id,
       endedAt: null,
       status: { in: ["ACTIVE", "BILL_REQUESTED", "BILL_SENT"] },
@@ -45,6 +52,7 @@ async function POST(request, { params }) {
     },
     orderBy: { createdAt: "desc" },
   });
+
 
   if (!activeSession) {
     return NextResponse.json({ hasActiveSession: false });

@@ -24,9 +24,10 @@ async function POST(request, { params }) {
   // Always price from the database — never trust amounts sent by the client.
   const menuItemIds = cartItems.map((c) => c.menuItemId);
   const menuItems = await db.menuItem.findMany({
-    where: { id: { in: menuItemIds }, restaurantId, isAvailable: true },
+    where: { id: { in: menuItemIds }, restaurantId: session.restaurantId, isAvailable: true },
   });
   const menuItemsById = Object.fromEntries(menuItems.map((m) => [m.id, m]));
+
 
   let subtotal = 0;
   const orderItemsData = [];
