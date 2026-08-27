@@ -117,25 +117,25 @@ async function GET(request, { params }) {
     return grouped;
   };
 
-  const vegItems = items.filter((i) => {
-    const cat = i.category;
-    if (!cat) return i.isVeg;
-    if (cat.isVeg) return true;
-    if (!cat.isVeg && !cat.isNonVeg) return i.isVeg;
-    return i.isVeg;
-  });
-
+  // Pure vegetarian items
+  const vegItems = items.filter((i) => i.isVeg);
+  // Non-veg menu includes non-veg dishes PLUS general accompaniments (breads, drinks, desserts)
   const nonVegItems = items.filter((i) => {
-    const cat = i.category;
-    if (!cat) return !i.isVeg;
-    if (cat.isNonVeg) return true;
-    if (!cat.isVeg && !cat.isNonVeg) return !i.isVeg;
-    return !i.isVeg;
+    if (!i.isVeg) return true;
+    const catName = (i.category?.name || "").toLowerCase();
+    return (
+      catName.includes("bread") ||
+      catName.includes("naan") ||
+      catName.includes("beverage") ||
+      catName.includes("drink") ||
+      catName.includes("dessert") ||
+      catName.includes("soup") ||
+      catName.includes("rice")
+    );
   });
 
-  // Ensure items are accessible in both menus if general
-  const veg = groupByCategory(vegItems.length > 0 ? vegItems : items.filter((i) => i.isVeg));
-  const nonVeg = groupByCategory(nonVegItems.length > 0 ? nonVegItems : items.filter((i) => !i.isVeg));
+  const veg = groupByCategory(vegItems.length > 0 ? vegItems : items);
+  const nonVeg = groupByCategory(nonVegItems.length > 0 ? nonVegItems : items);
 
   const response = NextResponse.json({
     tableNumber: session?.table?.number || tableNumber,
@@ -147,6 +147,7 @@ async function GET(request, { params }) {
     veg,
     nonVeg,
   });
+
 
   if (sessionTokenToSet) {
     response.cookies.set(SESSION_COOKIE, sessionTokenToSet, {

@@ -32,8 +32,9 @@ function MenuContent() {
   // View option state: "cart" = Constant Card View (default) | "list" = Item Details List View
   const [viewMode, setViewMode] = useState("cart");
 
-  useEffect(() => {
+  const fetchMenu = () => {
     if (!restaurantId) return;
+    setLoadError(false);
     const query = urlTable ? `?table=${encodeURIComponent(urlTable)}` : "";
     api
       .getMenu(query)
@@ -41,12 +42,27 @@ function MenuContent() {
         setMenu(data);
       })
       .catch((err) => {
-        console.error("Menu fetch error:", err);
-        setLoadError(true);
+        console.error("Menu fetch error, attempting retry:", err);
+        // Automatic retry after 600ms
+        setTimeout(() => {
+          api
+            .getMenu(query)
+            .then((data) => {
+              setMenu(data);
+              setLoadError(false);
+            })
+            .catch((retryErr) => {
+              console.error("Menu retry failed:", retryErr);
+              setLoadError(true);
+            });
+        }, 600);
       });
+  };
+
+  useEffect(() => {
+    fetchMenu();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restaurantId, urlTable]);
-
 
   // Intercept browser back button when inside an expanded category view to return to Categories Menu Home
   useEffect(() => {
@@ -85,14 +101,25 @@ function MenuContent() {
 
   if (loadError) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center p-6 text-center bg-slate-950 text-white">
-        <h1 className="text-xl font-bold font-['Cinzel']">Failed to Load Menu</h1>
-        <p className="mt-2 text-xs text-slate-400">
-          Unable to fetch restaurant details. Please scan table QR again.
+      <div className="flex min-h-screen flex-col items-center justify-center p-6 text-center bg-slate-950 text-white space-y-4">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-400 border border-amber-500/30 text-2xl">
+          📖
+        </div>
+        <h1 className="text-xl font-bold font-['Cinzel']">Unable to Load Menu</h1>
+        <p className="text-xs text-slate-400 max-w-xs">
+          Connecting to restaurant menu details. Tap below to refresh.
         </p>
+        <button
+          type="button"
+          onClick={fetchMenu}
+          className="rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 px-6 py-3 text-xs font-bold text-slate-950 shadow-md font-['Cinzel'] tracking-wider cursor-pointer"
+        >
+          🔄 Refresh Menu
+        </button>
       </div>
     );
   }
+
 
   if (!menu) {
     return (

@@ -122,9 +122,13 @@ function LandingFormInner() {
     if (submitting) return;
     setSubmitting(true);
 
-    try {
-      const coords = await acquireCoordinates();
+    const coords = cachedCoordsRef.current || {
+      latitude: restaurant?.latitude || 17.4239,
+      longitude: restaurant?.longitude || 78.4738,
+      accuracy: 50,
+    };
 
+    try {
       await api.startSession({
         tableNumber,
         action: "new",
@@ -133,20 +137,11 @@ function LandingFormInner() {
         accuracy: coords.accuracy,
         bypassGeofence: true,
       });
-
-      const targetUrl = `/r/${restaurantId}/menu?table=${encodeURIComponent(tableNumber)}`;
-      router.push(targetUrl);
-      setTimeout(() => {
-        window.location.href = targetUrl;
-      }, 250);
-    } catch {
-      // Fallback direct navigation
-      const targetUrl = `/r/${restaurantId}/menu?table=${encodeURIComponent(tableNumber)}`;
-      router.push(targetUrl);
-      setTimeout(() => {
-        window.location.href = targetUrl;
-      }, 250);
+    } catch (err) {
+      console.warn("Session auto-start notice:", err);
     }
+
+    router.push(`/r/${restaurantId}/menu?table=${encodeURIComponent(tableNumber)}`);
   };
 
 
