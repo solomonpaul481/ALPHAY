@@ -1,9 +1,9 @@
 "use client";
 
-import { Suspense, useEffect, useState, useRef } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { createApiClient } from "@/lib/api-client";
-import { motion, AnimatePresence } from "framer-motion";
+import LuxuryLandingShowcase from "@/components/LuxuryLandingShowcase";
 
 function LandingFormInner() {
   const { restaurantId } = useParams();
@@ -11,189 +11,136 @@ function LandingFormInner() {
   const router = useRouter();
   const api = createApiClient(restaurantId);
 
-  // Extract table from QR code URL parameter (e.g. ?table=5) or default to "12"
+  // Automatically detect table from QR code URL parameter (e.g. ?table=5) or default to "12"
   const urlTable = searchParams ? searchParams.get("table") : null;
   const tableNumber = urlTable || "12";
 
   const [restaurant, setRestaurant] = useState(null);
-  const [phase, setPhase] = useState("LOCATING"); // LOCATING | ACTIVE_SESSION_FOUND | OUTSIDE_GEOFENCE | PERMISSION_REQUIRED | READY
-  const [statusMessage, setStatusMessage] = useState("Verifying dining location...");
-  const [distanceInfo, setDistanceInfo] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [distanceError, setDistanceError] = useState(null);
   const [activeSessionInfo, setActiveSessionInfo] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isInsecureOrigin, setIsInsecureOrigin] = useState(false);
-
-  const hasInitiatedRef = useRef(false);
 
   useEffect(() => {
-    if (!restaurantId || hasInitiatedRef.current) return;
-    hasInitiatedRef.current = true;
-
-    // Check if running on an insecure non-localhost context where browser blocks Geolocation
-    if (
-      typeof window !== "undefined" &&
-      window.isSecureContext === false &&
-      window.location.hostname !== "localhost" &&
-      window.location.hostname !== "127.0.0.1"
-    ) {
-      setIsInsecureOrigin(true);
-    }
-
-    initiateAutoVerification();
+    if (!restaurantId) return;
+    api
+      .getInfo()
+      .then(setRestaurant)
+      .catch(() => setRestaurant({ name: "ALPHAY", latitude: 17.4239, longitude: 78.4738 }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restaurantId]);
-
-  const initiateAutoVerification = async () => {
-    setPhase("LOCATING");
-    setStatusMessage("Connecting to restaurant & checking table status...");
-    setDistanceInfo(null);
-
-    let restData = null;
-    try {
-      restData = await api.getInfo();
-      setRestaurant(restData);
-    } catch {
-      restData = { name: "ALPHAY", latitude: 17.4239, longitude: 78.4738, geofenceRadiusMeters: 150 };
-      setRestaurant(restData);
-    }
-
-    // Step 1: Check if table has an active session
-    try {
-      const checkRes = await api.checkSession(tableNumber).catch(() => ({ hasActiveSession: false }));
-      if (checkRes.hasActiveSession) {
-        setActiveSessionInfo(checkRes.activeSession);
-        setPhase("ACTIVE_SESSION_FOUND");
-        return;
-      }
-    } catch (err) {
-      console.warn("Session check error:", err);
-    }
-
-    // Step 2: Acquire location and verify presence at restaurant
-    await verifyAndOpenMenu(restData, false);
-  };
 
   const getCoordinates = () => {
     return new Promise((resolve) => {
       if (typeof window === "undefined" || !("geolocation" in navigator)) {
-        resolve({ error: "Geolocation is not supported by your browser." });
+        resolve({
+          latitude: restaurant?.latitude || 17.4239,
+          longitude: restaurant?.longitude || 78.4738,
+          accuracy: 50,
+          fallback: true,
+        });
         return;
       }
 
-      // Try High Accuracy first (GPS)
+      // Try 1: High accuracy GPS with 5s timeout
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
+        (pos) =>
           resolve({
             latitude: pos.coords.latitude,
             longitude: pos.coords.longitude,
-            accuracy: pos.coords.accuracy,
-          });
-        },
-        (highErr) => {
-          // If high-accuracy timed out or had trouble, fallback to standard Wi-Fi/Cell positioning
+            accuracy: pos.coords.accuracy || 0,
+            fallback: false,
+          }),
+        () => {
+          // Try 2: Standard Wi-Fi / Cell positioning with 4s timeout
           navigator.geolocation.getCurrentPosition(
-            (pos) => {
+            (pos) =>
               resolve({
                 latitude: pos.coords.latitude,
                 longitude: pos.coords.longitude,
-                accuracy: pos.coords.accuracy,
+                accuracy: pos.coords.accuracy || 50,
+                fallback: false,
+              }),
+            () => {
+              // Fallback: If device GPS times out or is blocked on HTTP, fallback gracefully
+              resolve({
+                latitude: restaurant?.latitude || 17.4239,
+                longitude: restaurant?.longitude || 78.4738,
+                accuracy: 50,
+                fallback: true,
               });
             },
-            (lowErr) => {
-              const msg =
-                lowErr.code === 1
-                  ? "Location permission was denied. Please allow location to verify table presence."
-                  : lowErr.code === 3
-                  ? "Location request timed out. Please ensure GPS is enabled."
-                  : lowErr.message || "Could not retrieve GPS location.";
-              resolve({ error: msg });
-            },
-            { enableHighAccuracy: false, timeout: 6000, maximumAge: 60000 }
+            { enableHighAccuracy: false, timeout: 4000, maximumAge: 60000 }
           );
         },
-        { enableHighAccuracy: true, timeout: 6000, maximumAge: 30000 }
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 30000 }
       );
     });
   };
 
-  const verifyAndOpenMenu = async (restData, bypass = false) => {
-    setIsProcessing(true);
-
-    if (bypass) {
-      setStatusMessage("Opening menu directly...");
-      try {
-        await api.startSession({
-          tableNumber,
-          action: "new",
-          bypassGeofence: true,
-          latitude: restData?.latitude ?? 17.4239,
-          longitude: restData?.longitude ?? 78.4738,
-        });
-        setStatusMessage("Table connected ✓ Opening menu...");
-        router.push(`/r/${restaurantId}/menu`);
-        setTimeout(() => {
-          window.location.href = `/r/${restaurantId}/menu`;
-        }, 300);
-        return;
-      } catch (err) {
-        setIsProcessing(false);
-        setDistanceInfo({ message: err.message || "Failed to start table session." });
-        setPhase("OUTSIDE_GEOFENCE");
-        return;
-      }
-    }
-
-    setStatusMessage("Acquiring GPS location to verify table presence...");
-    const coords = await getCoordinates();
-
-    if (coords.error) {
-      setIsProcessing(false);
-      setPhase("PERMISSION_REQUIRED");
-      setStatusMessage(coords.error);
-      return;
-    }
-
-    setStatusMessage("Verifying table presence & opening menu...");
+  // Click handler when customer taps EXPLORE MENU
+  const handleExploreMenu = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    setDistanceError(null);
+    setActiveSessionInfo(null);
 
     try {
-      const payload = {
+      // Step 1: Check if table has an active session
+      const checkRes = await api.checkSession(tableNumber).catch(() => ({ hasActiveSession: false }));
+      if (checkRes.hasActiveSession && checkRes.activeSession) {
+        setActiveSessionInfo(checkRes.activeSession);
+        setSubmitting(false);
+        return;
+      }
+
+      // Step 2: No active session -> start new session and open menu
+      await startNewSession(false);
+    } catch (err) {
+      setSubmitting(false);
+      setDistanceError(err.message || "Unable to start dining session.");
+    }
+  };
+
+  const startNewSession = async (bypass = false) => {
+    setSubmitting(true);
+    setDistanceError(null);
+    setActiveSessionInfo(null);
+
+    try {
+      const coords = bypass
+        ? { latitude: restaurant?.latitude || 17.4239, longitude: restaurant?.longitude || 78.4738, accuracy: 50, fallback: true }
+        : await getCoordinates();
+
+      await api.startSession({
         tableNumber,
         action: "new",
         latitude: coords.latitude,
         longitude: coords.longitude,
         accuracy: coords.accuracy,
-        bypassGeofence: false,
-      };
+        bypassGeofence: bypass || coords.fallback,
+      });
 
-      await api.startSession(payload);
-
-      // Successfully verified and created session -> open menu immediately!
-      setStatusMessage("Location verified ✓ Opening menu...");
       router.push(`/r/${restaurantId}/menu`);
       setTimeout(() => {
         window.location.href = `/r/${restaurantId}/menu`;
       }, 300);
     } catch (err) {
-      setIsProcessing(false);
+      setSubmitting(false);
       if (err.data?.error === "outside_geofence" || err.message?.includes("away from")) {
-        setPhase("OUTSIDE_GEOFENCE");
-        setDistanceInfo({
-          message: err.data?.message || err.message || "You are outside the restaurant location.",
-          distance: err.data?.distanceMeters,
-          allowed: err.data?.allowedRadiusMeters,
-        });
+        setDistanceError(
+          err.data?.message ||
+            err.message ||
+            "You are currently outside the restaurant premises. Digital table ordering is restricted to guests inside the restaurant."
+        );
       } else {
-        setPhase("OUTSIDE_GEOFENCE");
-        setDistanceInfo({
-          message: err.message || "Unable to confirm table location.",
-        });
+        setDistanceError(err.message || "Unable to verify table presence.");
       }
     }
   };
 
   const joinExistingSession = async () => {
     if (!activeSessionInfo) return;
-    setIsProcessing(true);
+    setSubmitting(true);
     try {
       await api.startSession({
         tableNumber,
@@ -205,232 +152,134 @@ function LandingFormInner() {
         window.location.href = `/r/${restaurantId}/menu`;
       }, 300);
     } catch (err) {
-      setIsProcessing(false);
-      setDistanceInfo({ message: err.message || "Could not join existing session." });
-      setPhase("OUTSIDE_GEOFENCE");
+      setSubmitting(false);
+      setDistanceError(err.message || "Could not join existing session.");
     }
   };
 
-  const handleStartFreshSession = async () => {
-    setActiveSessionInfo(null);
-    await verifyAndOpenMenu(restaurant, true);
-  };
-
   return (
-    <div className="relative min-h-screen w-full flex flex-col items-center justify-center bg-slate-950 px-4 py-8 text-white overflow-hidden select-none">
-      {/* Background Ambience / Gold Lighting */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 h-96 w-96 rounded-full bg-amber-500/10 blur-3xl pointer-events-none animate-pulse" />
-      <div className="absolute bottom-1/4 left-1/2 -translate-x-1/2 h-80 w-80 rounded-full bg-amber-600/10 blur-3xl pointer-events-none" />
+    <div className="relative min-h-screen w-full flex flex-col items-center justify-center bg-slate-950 text-white">
+      {/* Luxury Landing Showcase Component */}
+      <LuxuryLandingShowcase
+        restaurantName={restaurant?.name}
+        onProceed={handleExploreMenu}
+        submitting={submitting}
+      />
 
-      {/* Brand Header */}
-      <div className="text-center mb-8 z-10 space-y-2">
-        <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-slate-900/80 px-4 py-1.5 backdrop-blur-md shadow-lg">
-          <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping" />
-          <span className="text-[11px] font-black uppercase tracking-widest text-amber-300 font-['Cinzel']">
-            {restaurant?.name || "ALPHAY RESTAURANT"}
-          </span>
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-black font-['Cinzel'] tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-100">
-          Table #{tableNumber}
-        </h1>
-      </div>
-
-      {/* MAIN DYNAMIC CARD */}
-      <div className="w-full max-w-md rounded-3xl bg-slate-900/90 border border-amber-500/40 p-6 sm:p-8 text-center shadow-2xl backdrop-blur-xl relative z-10 space-y-6">
-        
-        {/* PHASE 1: AUTOMATIC LOCATING & OPENING */}
-        {phase === "LOCATING" && (
-          <div className="space-y-6 py-4">
-            <div className="relative mx-auto flex h-24 w-24 items-center justify-center">
-              <div className="absolute inset-0 rounded-full bg-amber-500/20 animate-ping" />
-              <div className="absolute inset-2 rounded-full border border-amber-500/40 animate-spin" />
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/30 text-amber-300 border border-amber-500/50 text-3xl shadow-lg">
-                📍
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <h2 className="text-lg font-extrabold font-['Cinzel'] text-white tracking-wide">
-                Verifying Table Presence
-              </h2>
-              <p className="text-xs font-semibold text-slate-300">
-                {statusMessage}
-              </p>
-            </div>
-
-            <div className="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden border border-amber-500/20">
-              <div className="bg-gradient-to-r from-amber-500 to-amber-300 h-full rounded-full animate-[progress_1.5s_ease-in-out_infinite]" style={{ width: "70%" }} />
-            </div>
-
-            <p className="text-[11px] font-medium text-slate-400">
-              Opening the digital dining menu automatically upon confirmation...
-            </p>
-
-            <button
-              type="button"
-              onClick={() => verifyAndOpenMenu(restaurant, true)}
-              className="mt-2 text-xs font-bold text-amber-400 hover:text-amber-300 underline underline-offset-4 cursor-pointer"
-            >
-              Taking too long? Open Menu Directly →
-            </button>
-          </div>
-        )}
-
-        {/* PHASE 2: ACTIVE SESSION FOUND ON TABLE */}
-        {phase === "ACTIVE_SESSION_FOUND" && activeSessionInfo && (
-          <div className="space-y-5 animate-in fade-in duration-300">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 text-3xl">
+      {/* ACTIVE DINING SESSION MODAL (CONTINUE VS NEW) */}
+      {activeSessionInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/95 backdrop-blur-lg animate-in fade-in duration-300">
+          <div className="w-full max-w-md rounded-3xl bg-slate-900 border border-amber-500/40 p-6 sm:p-7 text-center text-white shadow-2xl relative">
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 text-2xl animate-pulse">
               🍽️
             </div>
 
-            <div className="space-y-1">
-              <span className="inline-block rounded-full bg-amber-500/10 px-3 py-1 text-[11px] font-black uppercase tracking-widest text-amber-400 border border-amber-500/20">
-                Active Dining Found
-              </span>
-              <h2 className="text-xl font-extrabold text-white font-['Cinzel']">
-                Table #{tableNumber} in Progress
-              </h2>
-            </div>
+            <span className="inline-block rounded-full bg-amber-500/10 px-3 py-1 text-[11px] font-black uppercase tracking-widest text-amber-400 border border-amber-500/20 mb-2">
+              Table #{tableNumber} Status
+            </span>
 
-            <div className="rounded-2xl bg-slate-950 border border-amber-500/30 p-4 text-left font-mono text-xs space-y-1.5 text-amber-200">
+            <h2 className="text-xl font-extrabold text-white font-['Cinzel'] tracking-wide">
+              Active Dining Session Found
+            </h2>
+
+            <p className="mt-1 text-xs font-semibold text-slate-300">
+              There is an active dining session in progress on Table #{tableNumber}.
+            </p>
+
+            <div className="my-4 rounded-2xl bg-slate-950 border border-amber-500/30 p-4 text-left font-mono text-xs space-y-1.5 text-amber-200">
               <div className="flex justify-between">
-                <span className="text-slate-400">Orders Placed:</span>
-                <span className="font-bold text-white">{activeSessionInfo.orderCount} Order(s)</span>
+                <span className="text-slate-400">Total Orders Placed:</span>
+                <span className="font-bold text-white">{activeSessionInfo.orderCount} Order{activeSessionInfo.orderCount === 1 ? "" : "s"}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Total Items:</span>
+                <span className="text-slate-400">Dishes Ordered:</span>
                 <span className="font-bold text-white">{activeSessionInfo.totalItemsCount} items</span>
               </div>
               <div className="flex justify-between pt-1 border-t border-slate-800 font-bold text-sm">
-                <span className="text-amber-400 font-['Cinzel']">Current Bill:</span>
-                <span className="text-amber-400">₹{activeSessionInfo.totalAmount.toFixed(2)}</span>
+                <span className="text-amber-400 font-['Cinzel']">Current Bill Amount:</span>
+                <span className="text-amber-400">₹{activeSessionInfo.totalAmount?.toFixed(2) || "0.00"}</span>
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 pt-2">
+            <div className="flex flex-col gap-3">
+              {/* Option 1: Ongoing Dining */}
               <button
                 type="button"
                 onClick={joinExistingSession}
-                disabled={isProcessing}
-                className="w-full rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-3.5 text-xs font-black text-slate-950 shadow-lg font-['Cinzel'] tracking-wider cursor-pointer transition-all active:scale-95 disabled:opacity-50"
+                disabled={submitting}
+                className="w-full rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-3.5 text-xs font-extrabold text-slate-950 shadow-lg font-['Cinzel'] tracking-wider cursor-pointer flex flex-col items-center justify-center transition-all active:scale-95 disabled:opacity-50"
               >
-                1. Continue Dining (View Orders & Menu)
+                <span className="text-sm font-black">1. Ongoing Dining</span>
+                <span className="text-[10px] font-bold opacity-80">Join existing session & view your orders</span>
               </button>
 
+              {/* Option 2: New Dining */}
               <button
                 type="button"
-                onClick={handleStartFreshSession}
-                disabled={isProcessing}
-                className="w-full rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700 py-3 text-xs font-bold text-slate-200 transition-colors cursor-pointer disabled:opacity-50"
+                onClick={() => startNewSession(true)}
+                disabled={submitting}
+                className="w-full rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700 py-3 text-xs font-bold text-slate-200 transition-colors cursor-pointer flex flex-col items-center justify-center disabled:opacity-50"
               >
-                2. Start Fresh New Session
+                <span className="text-xs font-bold">2. Start Fresh Dining</span>
+                <span className="text-[10px] font-medium text-slate-400">Clear old session & start a new visit</span>
               </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* PHASE 3: OUTSIDE RESTAURANT GEOFENCE WARNING */}
-        {phase === "OUTSIDE_GEOFENCE" && (
-          <div className="space-y-5 animate-in fade-in duration-300">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 text-3xl">
+      {/* LOCATION / DISTANCE OVERRIDE MODAL */}
+      {distanceError && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/95 backdrop-blur-lg animate-in fade-in duration-300">
+          <div className="w-full max-w-md rounded-3xl bg-slate-900 border border-amber-500/40 p-7 text-center text-white shadow-2xl relative">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 text-2xl animate-pulse">
               📍
             </div>
 
-            <div className="space-y-1">
-              <span className="inline-block rounded-full bg-amber-500/10 px-3 py-1 text-[11px] font-black uppercase tracking-widest text-amber-400 border border-amber-500/20">
-                Location Verification
-              </span>
-              <h2 className="text-xl font-extrabold text-white font-['Cinzel']">
-                Table #{tableNumber} Check-In
-              </h2>
+            <h2 className="text-xl font-extrabold text-white font-['Cinzel'] tracking-wide">
+              Location Verification
+            </h2>
+
+            <div className="my-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 p-4 text-xs font-bold text-amber-200 leading-relaxed text-left">
+              {distanceError}
             </div>
 
-            <div className="rounded-2xl bg-amber-500/10 border border-amber-500/30 p-4 text-xs font-bold text-amber-200 text-left leading-relaxed">
-              {distanceInfo?.message || "Location verification completed. Tap below to confirm you are dining at the table and view the menu."}
-            </div>
+            <p className="text-xs font-medium text-slate-400 mb-6">
+              Digital table ordering confirms you are dining at {restaurant?.name || "the restaurant"}.
+            </p>
 
-            <div className="flex flex-col gap-3 pt-2">
+            <div className="flex flex-col gap-3">
               <button
                 type="button"
-                onClick={() => verifyAndOpenMenu(restaurant, true)}
-                disabled={isProcessing}
-                className="w-full rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-3.5 text-xs font-black text-slate-950 shadow-lg font-['Cinzel'] tracking-wider cursor-pointer active:scale-95 disabled:opacity-50"
-              >
-                🍽️ Confirm Table & Open Menu
-              </button>
-
-              <button
-                type="button"
-                onClick={() => verifyAndOpenMenu(restaurant, false)}
-                disabled={isProcessing}
-                className="w-full rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700 py-3 text-xs font-bold text-slate-300 transition-colors cursor-pointer"
-              >
-                🔄 Refresh GPS Location
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* PHASE 4: LOCATION PERMISSION PROMPT */}
-        {phase === "PERMISSION_REQUIRED" && (
-          <div className="space-y-5 animate-in fade-in duration-300">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 text-3xl">
-              🛰️
-            </div>
-
-            <div className="space-y-1">
-              <h2 className="text-xl font-extrabold text-white font-['Cinzel']">
-                Table #{tableNumber} Access
-              </h2>
-              <p className="text-xs font-medium text-slate-300">
-                {statusMessage || `Please verify your table presence at ${restaurant?.name || "the restaurant"} to browse the menu & order.`}
-              </p>
-            </div>
-
-            {isInsecureOrigin && (
-              <p className="text-[11px] font-medium text-amber-300/80 bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20">
-                Tip: If testing over HTTP LAN IP, modern mobile browsers block raw GPS. Tap &ldquo;Open Menu Directly&rdquo; to proceed.
-              </p>
-            )}
-
-            <div className="flex flex-col gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => verifyAndOpenMenu(restaurant, false)}
-                disabled={isProcessing}
-                className="w-full rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-3.5 text-xs font-black text-slate-950 shadow-lg font-['Cinzel'] tracking-wider cursor-pointer active:scale-95 disabled:opacity-50"
-              >
-                📍 Allow GPS & Verify Location
-              </button>
-
-              <button
-                type="button"
-                onClick={() => verifyAndOpenMenu(restaurant, true)}
-                disabled={isProcessing}
-                className="w-full rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700 py-3 text-xs font-bold text-slate-300 transition-colors cursor-pointer"
+                onClick={() => startNewSession(true)}
+                disabled={submitting}
+                className="w-full rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-3.5 text-xs font-extrabold text-slate-950 shadow-lg font-['Cinzel'] tracking-wider cursor-pointer active:scale-95 disabled:opacity-50"
               >
                 🚀 Open Menu Directly
               </button>
+
+              <button
+                type="button"
+                onClick={handleExploreMenu}
+                disabled={submitting}
+                className="w-full rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700 py-3 text-xs font-bold text-slate-200 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                🔄 Retry GPS Verification
+              </button>
             </div>
           </div>
-        )}
-
-      </div>
-
-      {/* Security note footer */}
-      <footer className="mt-8 text-center text-[11px] font-medium text-slate-500 z-10">
-        ALPHAY Contactless Dining System • Table #{tableNumber}
-      </footer>
+        </div>
+      )}
     </div>
   );
 }
 
 export default function CustomerLandingPage() {
   return (
-    <main className="min-h-screen w-full bg-slate-950 text-white">
+    <main className="min-h-screen w-full bg-slate-950 text-white transition-colors">
       <Suspense fallback={
         <div className="flex min-h-screen items-center justify-center bg-slate-950 text-amber-400 text-sm font-bold font-['Cinzel'] tracking-widest">
-          Loading Restaurant Experience...
+          Loading ALPHAY Experience...
         </div>
       }>
         <LandingFormInner />
