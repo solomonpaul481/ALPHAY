@@ -88,7 +88,7 @@ export default function SessionTrackPage() {
       }
 
       const options = {
-        key: checkoutData.keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_TOtzon9NeyIvZ4",
+        key: checkoutData.keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_TUtBMqf8GaZllM",
         amount: checkoutData.amount,
         currency: checkoutData.currency || "INR",
         name: checkoutData.restaurantName || "ALPHAY",
@@ -534,7 +534,7 @@ export default function SessionTrackPage() {
                 className="flex-1 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-3.5 text-xs font-extrabold text-slate-950 shadow-lg font-['Cinzel'] tracking-wider disabled:opacity-50 cursor-pointer"
               >
                 {paying
-                  ? "Launching Cashfree..."
+                  ? "Launching Razorpay..."
                   : paymentMethod === "ONLINE"
                   ? `Pay Online ₹${(sessionData?.totalAmount || 0).toFixed(2)}`
                   : `Confirm Cash Payment (₹${(sessionData?.totalAmount || 0).toFixed(2)})`}

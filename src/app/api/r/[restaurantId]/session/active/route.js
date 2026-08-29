@@ -60,7 +60,7 @@ async function GET(request, { params }) {
     paymentGateway: sessionWithDetails.paymentGateway || "RAZORPAY",
     activeGateway: "razorpay",
     razorpayOrderId: sessionWithDetails.razorpayOrderId,
-    keyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || "rzp_test_TOtzon9NeyIvZ4",
+    keyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || "rzp_test_TUtBMqf8GaZllM",
     subtotal,
     gstAmount,
     totalAmount,

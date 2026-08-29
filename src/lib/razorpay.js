@@ -3,11 +3,14 @@ const crypto = require("crypto");
 
 let instance = null;
 
-function getRazorpay() {
-  if (!instance) {
-    const keyId = (process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_TOtzon9NeyIvZ4").trim();
-    const keySecret = (process.env.RAZORPAY_KEY_SECRET || "").trim();
+const DEFAULT_KEY_ID = "rzp_test_TUtBMqf8GaZllM";
+const DEFAULT_KEY_SECRET = "MHXggskii4dwJHqYQhT5wW1r";
 
+function getRazorpay() {
+  const keyId = (process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || DEFAULT_KEY_ID).trim();
+  const keySecret = (process.env.RAZORPAY_KEY_SECRET || DEFAULT_KEY_SECRET).trim();
+
+  if (!instance) {
     instance = new Razorpay({
       key_id: keyId,
       key_secret: keySecret,
@@ -33,20 +36,8 @@ async function createRazorpayOrder({ amountInPaise, receipt, notes = {} }) {
     });
     return order;
   } catch (err) {
-    console.warn("Razorpay order creation fallback:", err?.error?.description || err?.message || err);
-    return {
-      id: `order_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 8)}`,
-      entity: "order",
-      amount: paise,
-      amount_paid: 0,
-      amount_due: paise,
-      currency: "INR",
-      receipt: formattedReceipt,
-      status: "created",
-      attempts: 0,
-      notes,
-      created_at: Math.floor(Date.now() / 1000),
-    };
+    console.error("Razorpay order creation error:", err?.error?.description || err?.message || err);
+    throw new Error(err?.error?.description || err?.message || "Failed to initialize order with Razorpay.");
   }
 }
 
@@ -62,7 +53,7 @@ function verifyCheckoutSignature(params = {}) {
     return false;
   }
 
-  const keySecret = (process.env.RAZORPAY_KEY_SECRET || "").trim();
+  const keySecret = (process.env.RAZORPAY_KEY_SECRET || DEFAULT_KEY_SECRET).trim();
   if (!keySecret || !signature) {
     return Boolean(paymentId);
   }

@@ -198,7 +198,7 @@ export default function ManagerDashboardPage() {
                   {loading ? "..." : `₹${(data?.todayEarnings ?? 0).toLocaleString("en-IN")}`}
                 </h3>
                 <p className="mt-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                  Total revenue generated today (Cashfree & Cash)
+                  Total revenue generated today (Razorpay & Cash)
                 </p>
               </div>
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-slate-950 shadow-lg">
@@ -296,7 +296,7 @@ export default function ManagerDashboardPage() {
                   )}
                 </h2>
                 <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                  Review itemized orders, send bills, and collect Cash / Cashfree payments
+                  Review itemized orders, send bills, and collect Cash / Razorpay payments
                 </p>
               </div>
             </div>

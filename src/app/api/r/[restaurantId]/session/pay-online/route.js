@@ -67,7 +67,7 @@ async function POST(request, { params }) {
       amount: paymentOrder.amountInPaise,
       amountInRupees: totalAmount,
       currency: "INR",
-      keyId: paymentOrder.keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_TOtzon9NeyIvZ4",
+      keyId: paymentOrder.keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_TUtBMqf8GaZllM",
       restaurantName: sessionWithOrders.restaurant.name,
       tableNumber: sessionWithOrders.table.number,
     });

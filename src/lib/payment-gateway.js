@@ -33,7 +33,7 @@ async function createOnlinePaymentOrder({
     amountInRupees: finalAmountRupees,
     amountInPaise: paiseAmount,
     currency: "INR",
-    keyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || "rzp_test_TOtzon9NeyIvZ4",
+    keyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || "rzp_test_TUtBMqf8GaZllM",
   };
 }
 

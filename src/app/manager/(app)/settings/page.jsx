@@ -341,7 +341,7 @@ export default function ManagerSettingsPage() {
               <div className="mt-1 rounded-2xl bg-amber-50 dark:bg-slate-950 p-3 text-xs font-bold text-slate-900 dark:text-white border border-amber-500/30 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span>💳</span>
-                  <span>Cashfree Payment Gateway Enabled</span>
+                  <span>Razorpay Payment Gateway Enabled</span>
                 </div>
                 <span className="rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-black text-emerald-400 border border-emerald-500/30 font-mono">
                   ACTIVE
