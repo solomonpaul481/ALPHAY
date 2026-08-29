@@ -318,7 +318,7 @@ export default function ManagerParcelOrdersPage() {
                           : order.status === "PREPARING"
                           ? "🛍️ Mark Ready"
                           : order.status === "READY"
-                          ? "✓ Hand Over"
+                          ? "📦 Mark as Parceled"
                           : "Advance Order →"}
                       </button>
                     </div>

@@ -478,11 +478,18 @@ export default function SessionTrackPage() {
 
         {/* COMBINED BILL SUMMARY */}
         <section className="mb-6 rounded-2xl bg-slate-900 p-5 shadow-sm border border-amber-500/20">
-          <h2 className="text-xs font-extrabold uppercase tracking-wider text-amber-400 mb-3 font-['Cinzel']">
-            Combined Session Bill
-          </h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xs font-extrabold uppercase tracking-wider text-amber-400 font-['Cinzel']">
+              {sessionData?.isParcel ? "Parcel Order Summary" : "Combined Session Bill"}
+            </h2>
+            {sessionData?.isParcel && (
+              <span className="rounded-full bg-emerald-950/80 px-2.5 py-0.5 text-[10px] font-black text-emerald-400 border border-emerald-500/40 font-['Cinzel']">
+                PAID ONLINE ✓
+              </span>
+            )}
+          </div>
           <div className="flex justify-between text-xs font-bold text-slate-400">
-            <span>Session Items Subtotal</span>
+            <span>{sessionData?.isParcel ? "Items Subtotal" : "Session Items Subtotal"}</span>
             <span className="font-mono tabular-nums text-white">₹{(sessionData?.subtotal || 0).toFixed(2)}</span>
           </div>
           <div className="mt-2 flex justify-between text-xs font-bold text-slate-400">
@@ -490,15 +497,15 @@ export default function SessionTrackPage() {
             <span className="font-mono tabular-nums text-white">₹{(sessionData?.gstAmount || 0).toFixed(2)}</span>
           </div>
           <div className="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center text-base font-extrabold text-white">
-            <span className="font-['Cinzel']">Total Amount Payable</span>
+            <span className="font-['Cinzel']">{sessionData?.isParcel ? "Total Paid" : "Total Amount Payable"}</span>
             <span className="font-mono text-xl font-black text-amber-400 tabular-nums">
               ₹{(sessionData?.totalAmount || 0).toFixed(2)}
             </span>
           </div>
         </section>
 
-        {/* PAYMENT OPTIONS (IF BILL SENT) */}
-        {isBillSent && (
+        {/* PAYMENT OPTIONS (IF BILL SENT AND NOT PARCEL) */}
+        {isBillSent && !sessionData?.isParcel && (
           <section className="mb-6 rounded-2xl bg-slate-900 p-5 border border-amber-500/30 shadow-lg">
             <h2 className="text-xs font-extrabold uppercase tracking-wider text-amber-400 mb-3 font-['Cinzel']">
               Select Payment Option
@@ -559,38 +566,50 @@ export default function SessionTrackPage() {
         {/* BOTTOM ACTION BUTTONS */}
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-amber-500/20 bg-slate-900/95 px-4 py-4 backdrop-blur-md">
           <div className="mx-auto max-w-lg flex gap-3">
-            <button
-              type="button"
-              onClick={() => router.push(`/r/${restaurantId}/menu`)}
-              className="flex-1 rounded-2xl bg-slate-800 border border-amber-500/30 py-3.5 text-xs font-extrabold text-amber-300 hover:bg-slate-700 transition-colors cursor-pointer font-['Cinzel']"
-            >
-              ➕ Order More
-            </button>
-
-            {!isBillRequested && !isBillSent && (
+            {sessionData?.isParcel ? (
               <button
                 type="button"
-                onClick={handleRequestBill}
-                disabled={requestingBill || (sessionData?.orders?.length || 0) === 0}
-                className="flex-1 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-3.5 text-xs font-extrabold text-slate-950 shadow-lg font-['Cinzel'] tracking-wider disabled:opacity-50 cursor-pointer"
+                onClick={() => router.push(`/r/${restaurantId}/menu`)}
+                className="w-full rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-4 text-xs font-black text-slate-950 shadow-lg font-['Cinzel'] tracking-wider cursor-pointer transition-all active:scale-[0.98]"
               >
-                {requestingBill ? "Requesting..." : "🧾 Request Bill"}
+                ➕ Add More Items to Parcel
               </button>
-            )}
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => router.push(`/r/${restaurantId}/menu`)}
+                  className="flex-1 rounded-2xl bg-slate-800 border border-amber-500/30 py-3.5 text-xs font-extrabold text-amber-300 hover:bg-slate-700 transition-colors cursor-pointer font-['Cinzel']"
+                >
+                  ➕ Order More
+                </button>
 
-            {isBillSent && (
-              <button
-                type="button"
-                onClick={paymentMethod === "ONLINE" ? handleOnlinePayment : handleCashPayment}
-                disabled={paying}
-                className="flex-1 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-3.5 text-xs font-extrabold text-slate-950 shadow-lg font-['Cinzel'] tracking-wider disabled:opacity-50 cursor-pointer"
-              >
-                {paying
-                  ? "Launching Razorpay..."
-                  : paymentMethod === "ONLINE"
-                    ? `Pay Online ₹${(sessionData?.totalAmount || 0).toFixed(2)}`
-                    : `Confirm Cash Payment (₹${(sessionData?.totalAmount || 0).toFixed(2)})`}
-              </button>
+                {!isBillRequested && !isBillSent && (
+                  <button
+                    type="button"
+                    onClick={handleRequestBill}
+                    disabled={requestingBill || (sessionData?.orders?.length || 0) === 0}
+                    className="flex-1 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-3.5 text-xs font-extrabold text-slate-950 shadow-lg font-['Cinzel'] tracking-wider disabled:opacity-50 cursor-pointer"
+                  >
+                    {requestingBill ? "Requesting..." : "🧾 Request Bill"}
+                  </button>
+                )}
+
+                {isBillSent && (
+                  <button
+                    type="button"
+                    onClick={paymentMethod === "ONLINE" ? handleOnlinePayment : handleCashPayment}
+                    disabled={paying}
+                    className="flex-1 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-3.5 text-xs font-extrabold text-slate-950 shadow-lg font-['Cinzel'] tracking-wider disabled:opacity-50 cursor-pointer"
+                  >
+                    {paying
+                      ? "Launching Razorpay..."
+                      : paymentMethod === "ONLINE"
+                        ? `Pay Online ₹${(sessionData?.totalAmount || 0).toFixed(2)}`
+                        : `Confirm Cash Payment (₹${(sessionData?.totalAmount || 0).toFixed(2)})`}
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>

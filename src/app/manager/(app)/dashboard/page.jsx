@@ -128,18 +128,18 @@ export default function ManagerDashboardPage() {
     }
   };
 
-  const getNextActionButton = (orderId, status) => {
+  const getNextActionButton = (orderId, status, isParcel = false) => {
     let label = "";
     let btnStyle = "";
 
-    if (status === "CONFIRMED") {
-      label = "Start Preparing 🍳";
+    if (status === "CONFIRMED" || status === "PENDING" || status === "PAID") {
+      label = isParcel ? "Start Packing 👨‍🍳" : "Start Preparing 🍳";
       btnStyle = "bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white";
     } else if (status === "PREPARING") {
-      label = "Mark Ready 🔔";
+      label = isParcel ? "Mark Ready for Pickup 🛍️" : "Mark Ready 🔔";
       btnStyle = "bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-black";
     } else if (status === "READY") {
-      label = "Mark Served ✓";
+      label = isParcel ? "Mark as Parceled 📦" : "Mark as Served 🍽️";
       btnStyle = "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black";
     } else {
       return null;
@@ -557,7 +557,7 @@ export default function ManagerDashboardPage() {
                       </div>
 
                       <div>
-                        {getNextActionButton(order.id, order.status)}
+                        {getNextActionButton(order.id, order.status, true)}
                       </div>
                     </div>
                   </div>

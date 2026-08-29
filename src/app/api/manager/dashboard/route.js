@@ -64,6 +64,7 @@ async function GET() {
             { table: { number: "P" } },
             { specialInstructions: { contains: "PARCEL" } },
           ],
+          status: { in: ["PENDING_PAYMENT", "PAID", "CONFIRMED", "PREPARING", "READY"] },
           createdAt: { gte: startOfDay() },
         },
         include: { items: true, table: true, session: true },

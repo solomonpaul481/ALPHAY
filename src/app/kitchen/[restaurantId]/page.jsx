@@ -448,7 +448,7 @@ export default function KitchenDisplayPage() {
                     onClick={() => updateStatus(order.id, "SERVED")}
                     className="w-full rounded-2xl bg-purple-600 hover:bg-purple-500 text-white py-4 text-lg font-black tracking-wider uppercase shadow-xl transition-all active:scale-95 cursor-pointer"
                   >
-                    🍽️ MARK SERVED
+                    {order.isParcel || String(order.tableNumber).toUpperCase().includes("PARCEL") ? "📦 MARK AS PARCELED" : "🍽️ MARK SERVED"}
                   </button>
                 </div>
               ))
