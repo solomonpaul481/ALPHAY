@@ -54,47 +54,74 @@ async function POST(request, { params }) {
     );
   }
 
-  // Handle Joining Existing Session
-  if (action === "join") {
-    let targetSession = null;
-    if (sessionId) {
-      targetSession = await db.customerSession.findUnique({ where: { id: sessionId } });
+  // Check for any ongoing active dine-in session on this table that has not been completed / paid
+  let existingSession = null;
+  if (sessionId) {
+    existingSession = await db.customerSession.findUnique({
+      where: { id: sessionId },
+      include: {
+        table: true,
+        orders: { include: { items: true } },
+      },
+    });
+    if (existingSession && (existingSession.endedAt || existingSession.status === "COMPLETED" || existingSession.status === "CLOSED")) {
+      existingSession = null;
     }
-    if (!targetSession) {
-      targetSession = await db.customerSession.findFirst({
-        where: {
-          restaurantId: resolvedRestaurantId,
-          tableId: table.id,
-          endedAt: null,
-          status: { in: ["ACTIVE", "BILL_REQUESTED", "BILL_SENT"] },
-        },
-        orderBy: { createdAt: "desc" },
-      });
-    }
+  }
 
-    if (targetSession) {
-      const token = signSessionToken({
-        sessionId: targetSession.id,
+  if (!existingSession) {
+    existingSession = await db.customerSession.findFirst({
+      where: {
         restaurantId: resolvedRestaurantId,
         tableId: table.id,
-      });
+        endedAt: null,
+        status: { in: ["ACTIVE", "BILL_REQUESTED", "BILL_SENT"] },
+      },
+      include: {
+        table: true,
+        orders: { include: { items: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  }
 
-      const response = NextResponse.json({
-        ok: true,
-        joined: true,
-        sessionId: targetSession.id,
-        table: { number: table.number, id: table.id },
-        restaurant: { name: restaurant.name, logoUrl: restaurant.logoUrl },
+  // If ongoing dine-in session exists on this table and caller didn't force a brand new session
+  if (existingSession && action !== "force_new") {
+    const token = signSessionToken({
+      sessionId: existingSession.id,
+      restaurantId: resolvedRestaurantId,
+      tableId: table.id,
+    });
+
+    let totalAmount = 0;
+    let totalItemsCount = 0;
+    (existingSession.orders || []).forEach((ord) => {
+      totalAmount += ord.total;
+      (ord.items || []).forEach((it) => {
+        totalItemsCount += it.quantity;
       });
-      response.cookies.set(SESSION_COOKIE, token, {
-        httpOnly: true,
-        sameSite: "lax",
-        secure: false,
-        maxAge: SESSION_TTL_SECONDS,
-        path: "/",
-      });
-      return response;
-    }
+    });
+
+    const response = NextResponse.json({
+      ok: true,
+      joined: true,
+      hasActiveSession: true,
+      sessionId: existingSession.id,
+      orderCount: existingSession.orders?.length || 0,
+      totalItemsCount,
+      totalAmount: Math.round(totalAmount * 100) / 100,
+      status: existingSession.status,
+      table: { number: table.number, id: table.id },
+      restaurant: { name: restaurant.name, logoUrl: restaurant.logoUrl },
+    });
+    response.cookies.set(SESSION_COOKIE, token, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: false,
+      maxAge: SESSION_TTL_SECONDS,
+      path: "/",
+    });
+    return response;
   }
 
   // Validate and record geofence location
@@ -112,7 +139,7 @@ async function POST(request, { params }) {
   const effectiveLat = validCoords ? parsedLat : (restaurant.latitude ?? 17.4239);
   const effectiveLng = validCoords ? parsedLng : (restaurant.longitude ?? 78.4738);
 
-  // Close any existing active sessions for this table before starting a new one
+  // Close any stale active sessions for this table before starting a new one
   await db.customerSession.updateMany({
     where: {
       restaurantId: resolvedRestaurantId,
@@ -147,10 +174,11 @@ async function POST(request, { params }) {
     tableId: table.id,
   });
 
-
   const response = NextResponse.json({
     ok: true,
     joined: false,
+    hasActiveSession: false,
+    orderCount: 0,
     sessionId: session.id,
     table: { number: table.number, id: table.id },
     restaurant: { name: restaurant.name, logoUrl: restaurant.logoUrl },

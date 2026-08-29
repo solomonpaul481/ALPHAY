@@ -28,6 +28,27 @@ function LandingFormInner() {
       .then(setRestaurant)
       .catch(() => setRestaurant({ name: "ALPHAY", latitude: 17.4239, longitude: 78.4738 }));
 
+    // Auto-detect if this table has an ongoing dine-in session that hasn't been paid/completed
+    api
+      .checkSession(tableNumber)
+      .then(async (res) => {
+        if (res?.hasActiveSession && (res.activeSession?.orderCount > 0 || res.activeSession?.totalItemsCount > 0)) {
+          // Join the active session to bind/refresh browser cookie and show the previous ordered list
+          try {
+            await api.startSession({
+              tableNumber,
+              action: "join",
+              sessionId: res.activeSession.id,
+              bypassGeofence: true,
+            });
+          } catch (joinErr) {
+            console.warn("Session auto-join notice:", joinErr);
+          }
+          router.replace(`/r/${restaurantId}/track`);
+        }
+      })
+      .catch(() => {});
+
     // Quietly detect and cache customer GPS coordinates in the background
     if (typeof window !== "undefined" && "geolocation" in navigator) {
       try {
@@ -60,7 +81,7 @@ function LandingFormInner() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [restaurantId]);
+  }, [restaurantId, tableNumber]);
 
   const acquireCoordinates = () => {
     if (cachedCoordsRef.current) return Promise.resolve(cachedCoordsRef.current);
@@ -117,7 +138,7 @@ function LandingFormInner() {
     });
   };
 
-  // Direct 1-Click Action: Start session and immediately open menu
+  // Direct 1-Click Action: Start session and immediately open menu or return to previous orders
   const handleExploreMenu = async () => {
     if (submitting) return;
     setSubmitting(true);
@@ -129,14 +150,19 @@ function LandingFormInner() {
     };
 
     try {
-      await api.startSession({
+      const res = await api.startSession({
         tableNumber,
-        action: "new",
+        action: "join",
         latitude: coords.latitude,
         longitude: coords.longitude,
         accuracy: coords.accuracy,
         bypassGeofence: true,
       });
+
+      if (res?.hasActiveSession && (res.orderCount > 0 || res.totalItemsCount > 0)) {
+        router.push(`/r/${restaurantId}/track`);
+        return;
+      }
     } catch (err) {
       console.warn("Session auto-start notice:", err);
     }
