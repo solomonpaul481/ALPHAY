@@ -11,52 +11,74 @@ async function POST(request, { params }) {
     return NextResponse.json({ error: "session_required" }, { status: 401 });
   }
 
-  const order = await db.order.findUnique({ where: { id: orderId } });
+  const order = await db.order.findUnique({
+    where: { id: orderId },
+    include: { table: true },
+  });
   if (!order || order.restaurantId !== session.restaurantId || order.sessionId !== session.id) {
     return NextResponse.json({ error: "Order not found." }, { status: 404 });
   }
 
+  const tokenStr = String(order.orderSeq || 1001).slice(-4).padStart(4, "0");
 
   // Idempotent: if order is already confirmed or further along, return success
   if (
     order.status === "CONFIRMED" ||
     order.status === "PREPARING" ||
     order.status === "READY" ||
-    order.status === "SERVED"
+    order.status === "SERVED" ||
+    order.status === "PAID"
   ) {
-    return NextResponse.json({ success: true, status: order.status });
+    return NextResponse.json({ success: true, status: order.status, token: tokenStr });
   }
 
-  const targetOrderId = order.cashfreeOrderId || orderId;
+  const body = await request.json().catch(() => ({}));
+  const razorpayOrderId = body.razorpay_order_id || body.razorpayOrderId || order.razorpayOrderId;
+  const razorpayPaymentId = body.razorpay_payment_id || body.razorpayPaymentId || body.paymentId;
+  const razorpaySignature = body.razorpay_signature || body.razorpaySignature || body.signature;
+
+  if (!razorpayOrderId) {
+    return NextResponse.json({ error: "Missing Razorpay order ID." }, { status: 400 });
+  }
 
   const verifyResult = await verifyOnlinePayment({
-    orderId: targetOrderId,
+    orderId: razorpayOrderId,
+    paymentId: razorpayPaymentId,
+    signature: razorpaySignature,
   });
 
   if (!verifyResult.success) {
-    return NextResponse.json({ error: "Payment verification failed or unpaid." }, { status: 400 });
+    return NextResponse.json({ error: "Payment verification failed or invalid signature." }, { status: 400 });
   }
 
-  // Transactionally confirm order and payment
+  // Confirm order & mark as paid
   await db.$transaction([
     db.order.update({
       where: { id: order.id },
-      data: { status: "CONFIRMED", cashfreePaymentId: verifyResult.paymentId, paymentGateway: "CASHFREE" },
-    }),
-    db.payment.updateMany({
-      where: { orderId: order.id },
       data: {
-        status: "verified",
-        cashfreePaymentId: verifyResult.paymentId,
-        paymentGateway: "CASHFREE",
-        verifiedAt: new Date(),
+        status: "CONFIRMED",
+        razorpayPaymentId,
+        paymentGateway: "RAZORPAY",
+      },
+    }),
+    db.customerSession.update({
+      where: { id: session.id },
+      data: {
+        paymentStatus: "PAID",
+        paymentMethod: "ONLINE",
+        paymentGateway: "RAZORPAY",
+        razorpayOrderId,
+        razorpayPaymentId,
       },
     }),
   ]);
 
-  console.log(`[Verify API] Order ${order.id} verified & confirmed with Cashfree payment ID ${verifyResult.paymentId}`);
-
-  return NextResponse.json({ success: true, status: "CONFIRMED" });
+  return NextResponse.json({
+    success: true,
+    status: "CONFIRMED",
+    token: tokenStr,
+    message: "Parcel payment verified! Order confirmed.",
+  });
 }
 
 module.exports = { POST };

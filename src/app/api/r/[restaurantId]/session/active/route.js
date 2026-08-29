@@ -47,10 +47,20 @@ async function GET(request, { params }) {
   gstAmount = Math.round(gstAmount * 100) / 100;
   totalAmount = Math.round(totalAmount * 100) / 100;
 
+  const isParcel =
+    sessionWithDetails.table.isParcelCounter ||
+    String(sessionWithDetails.table.number).toUpperCase() === "PARCEL" ||
+    String(sessionWithDetails.table.number).toUpperCase() === "P";
+
+  const firstOrder = sessionWithDetails.orders[0];
+  const pickupToken = firstOrder?.orderSeq ? String(firstOrder.orderSeq).slice(-4).padStart(4, "0") : null;
+
   return NextResponse.json({
     sessionId: sessionWithDetails.id,
     status: sessionWithDetails.status,
     tableNumber: sessionWithDetails.table.number,
+    isParcel,
+    pickupToken,
     restaurantName: sessionWithDetails.restaurant.name,
     gstPercent: sessionWithDetails.restaurant.gstPercent,
     billRequestedAt: sessionWithDetails.billRequestedAt,
@@ -68,6 +78,8 @@ async function GET(request, { params }) {
     orders: sessionWithDetails.orders.map((o) => ({
       id: o.id,
       status: o.status,
+      orderSeq: o.orderSeq,
+      token: o.orderSeq ? String(o.orderSeq).slice(-4).padStart(4, "0") : null,
       createdAt: o.createdAt,
       subtotal: o.subtotal,
       gstAmount: o.gstAmount,

@@ -431,7 +431,7 @@ export default function ManagerDashboardPage() {
                   </span>
                 </h2>
                 <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                  Real-time takeaway parcel queue, packaging status, and customer pickup dispatch
+                  Customer takeaway parcel queue with individual 4-digit pickup tokens
                 </p>
               </div>
             </div>
@@ -465,46 +465,59 @@ export default function ManagerDashboardPage() {
             <div className="py-12 text-center text-xs font-mono text-slate-400">
               Fetching live parcel orders...
             </div>
-          ) : !data?.liveOrders || data.liveOrders.length === 0 ? (
+          ) : !data?.parcelOrders || data.parcelOrders.length === 0 ? (
             <div className="py-12 text-center space-y-2">
               <p className="text-3xl">📦</p>
               <h4 className="text-sm font-extrabold text-slate-700 dark:text-slate-300 font-['Cinzel']">
                 No Active Parcel Orders Right Now
               </h4>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                New incoming takeaway parcel orders will automatically appear here live.
+                New incoming takeaway parcel orders from Parcel QR scans will appear here with their 4-digit pickup token.
               </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {data.liveOrders.map((order) => {
-                const isParcel =
-                  String(order.table).toUpperCase().includes("PARCEL") ||
-                  String(order.table).toUpperCase() === "P";
+              {data.parcelOrders.map((order) => {
+                const isPaid = order.paymentStatus === "PAID" || order.status !== "PENDING_PAYMENT";
+                const token = order.token || String(order.orderSeq || "1024").slice(-4).padStart(4, "0");
 
                 return (
                   <div
                     key={order.id}
-                    className="rounded-2xl bg-slate-50 dark:bg-slate-950 p-4 border border-amber-500/20 shadow-md flex flex-col justify-between space-y-4 hover:border-amber-500/40 transition-all"
+                    className="rounded-2xl bg-slate-50 dark:bg-slate-950 p-4 border border-amber-500/30 shadow-lg flex flex-col justify-between space-y-4 hover:border-amber-500/60 transition-all"
                   >
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between border-b border-amber-500/10 pb-2.5">
-                        <div className="flex items-center gap-2">
-                          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/20 text-amber-500 text-xs">
-                            📦
-                          </span>
-                          <div>
-                            <span className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 font-['Cinzel']">
-                              {isParcel ? "Parcel Counter" : "Table Order"}
+                      {/* TOKEN & HEADER */}
+                      <div className="flex items-center justify-between border-b border-amber-500/20 pb-2.5">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-500/20 text-amber-500 text-sm font-bold">
+                              📦
                             </span>
-                            <h4 className="text-base font-extrabold text-slate-900 dark:text-white font-mono">
-                              {isParcel ? "PARCEL" : `Table #${order.table}`}
-                            </h4>
+                            <div>
+                              <span className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 font-['Cinzel']">
+                                Pickup Token
+                              </span>
+                              <h4 className="text-lg font-black text-amber-600 dark:text-amber-300 font-mono tracking-wider">
+                                #{token}
+                              </h4>
+                            </div>
                           </div>
                         </div>
-                        <div>{getStatusBadge(order.status)}</div>
+
+                        <div className="text-right space-y-1">
+                          <div>{getStatusBadge(order.status)}</div>
+                          <span className={`inline-block rounded-md px-2 py-0.5 text-[9px] font-black uppercase font-['Cinzel'] ${
+                            isPaid
+                              ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                              : "bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30"
+                          }`}>
+                            {isPaid ? "PAID (Razorpay) ✓" : "UNPAID"}
+                          </span>
+                        </div>
                       </div>
 
+                      {/* ORDER ITEMS LIST */}
                       <div>
                         <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1 font-['Cinzel']">
                           Parcel Items ({order.items.reduce((acc, i) => acc + i.quantity, 0)})
@@ -525,12 +538,18 @@ export default function ManagerDashboardPage() {
                           ))}
                         </ul>
                       </div>
+
+                      {order.specialInstructions && (
+                        <p className="text-[10px] text-amber-600 dark:text-amber-300 bg-amber-500/10 p-2 rounded-xl border border-amber-500/20 font-medium">
+                          Note: {order.specialInstructions}
+                        </p>
+                      )}
                     </div>
 
-                    <div className="pt-3 border-t border-amber-500/10 flex items-center justify-between">
+                    <div className="pt-3 border-t border-amber-500/20 flex items-center justify-between">
                       <div>
                         <span className="text-[10px] font-black uppercase text-slate-400 font-['Cinzel']">
-                          Total
+                          Bill Total
                         </span>
                         <p className="font-mono text-base font-black text-amber-600 dark:text-amber-400">
                           ₹{order.total.toFixed(2)}

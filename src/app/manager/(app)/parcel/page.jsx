@@ -267,13 +267,13 @@ export default function ManagerParcelOrdersPage() {
                 >
                   <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-3.5">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono text-xs font-black shadow-inner">
-                        📦 P#{order.tableNumber || "PARCEL"}
+                      <div className="flex h-12 w-16 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono text-xs font-black shadow-inner">
+                        #{String(order.orderSeq || order.orderNumber || "1024").slice(-4).padStart(4, "0")}
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-sm font-black text-amber-400">
-                            {order.orderNumber}
+                            Token #{String(order.orderSeq || order.orderNumber || "1024").slice(-4).padStart(4, "0")}
                           </span>
                           <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-400 border border-amber-500/30 font-['Cinzel']">
                             Takeaway Parcel

@@ -51,8 +51,83 @@ async function POST(request, { params }) {
   }
 
   const restaurant = session.restaurant;
+  const isParcel =
+    session.table?.isParcelCounter ||
+    String(session.table?.number).toUpperCase() === "PARCEL" ||
+    String(session.table?.number).toUpperCase() === "P";
 
-  // Check if an open unpaid order exists for this dining session to aggregate items in ONE order list
+  const { createOnlinePaymentOrder } = require("@/lib/payment-gateway");
+
+  if (isParcel) {
+    // PARCEL ORDER FLOW: Requires payment upfront to confirm order
+    const totalOrderCount = await db.order.count({ where: { restaurantId } });
+    const random4Digit = Math.floor(1000 + Math.random() * 9000);
+    const orderSeq = random4Digit;
+
+    const gstAmount = Math.round(subtotal * (restaurant.gstPercent / 100) * 100) / 100;
+    const total = Math.round((subtotal + gstAmount) * 100) / 100;
+
+    const order = await db.order.create({
+      data: {
+        restaurantId,
+        tableId: session.tableId,
+        sessionId: session.id,
+        status: "PENDING_PAYMENT",
+        subtotal,
+        gstAmount,
+        total,
+        specialInstructions: specialInstructions ? `[PARCEL] ${specialInstructions}` : "[PARCEL]",
+        orderSeq,
+        paymentGateway: "RAZORPAY",
+        items: { create: orderItemsData },
+      },
+      include: { items: true },
+    });
+
+    let paymentOrder;
+    try {
+      paymentOrder = await createOnlinePaymentOrder({
+        amountInRupees: total,
+        receipt: `PRCL_${order.id.slice(-6)}`,
+        notes: {
+          restaurantId,
+          orderId: order.id,
+          token: String(orderSeq),
+          type: "PARCEL",
+        },
+      });
+
+      await db.order.update({
+        where: { id: order.id },
+        data: { razorpayOrderId: paymentOrder.orderId },
+      });
+    } catch (payErr) {
+      console.error("Razorpay order creation error for parcel:", payErr);
+      return NextResponse.json(
+        { error: "Could not initialize online payment for parcel order. Please try again." },
+        { status: 502 }
+      );
+    }
+
+    return NextResponse.json({
+      ok: true,
+      isParcel: true,
+      requiresPayment: true,
+      orderId: order.id,
+      orderSeq,
+      token: String(orderSeq),
+      amount: total,
+      amountInPaise: paymentOrder.amountInPaise,
+      razorpayOrderId: paymentOrder.orderId,
+      keyId: paymentOrder.keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_TUtBMqf8GaZllM",
+      currency: "INR",
+      restaurantName: restaurant.name,
+      tableNumber: "PARCEL",
+      message: "Please complete payment to confirm your parcel order.",
+    });
+  }
+
+  // DINE-IN FLOW: Orders are confirmed immediately and paid after the meal
   const existingActiveOrder = await db.order.findFirst({
     where: {
       sessionId: session.id,
@@ -129,8 +204,11 @@ async function POST(request, { params }) {
 
   return NextResponse.json({
     ok: true,
+    isParcel: false,
+    requiresPayment: false,
     orderId: order.id,
     orderSeq: order.orderSeq || 1001,
+    token: String(order.orderSeq || 1001).slice(-4).padStart(4, "0"),
     amount: order.total,
     restaurantName: restaurant.name,
     tableNumber: session.table.number,

@@ -17,7 +17,7 @@ async function GET() {
     }
     const restaurantId = manager.restaurantId;
 
-    const [summary, liveOrders, completedToday, staffCalls, restaurant, activeSessions] = await Promise.all([
+    const [summary, liveOrders, completedToday, staffCalls, restaurant, activeSessions, parcelOrdersList] = await Promise.all([
       getRevenueSummary(restaurantId),
       db.order.findMany({
         where: {
@@ -55,6 +55,20 @@ async function GET() {
         },
         orderBy: { createdAt: "desc" },
       }),
+      db.order.findMany({
+        where: {
+          restaurantId,
+          OR: [
+            { table: { isParcelCounter: true } },
+            { table: { number: "PARCEL" } },
+            { table: { number: "P" } },
+            { specialInstructions: { contains: "PARCEL" } },
+          ],
+          createdAt: { gte: startOfDay() },
+        },
+        include: { items: true, table: true, session: true },
+        orderBy: { createdAt: "desc" },
+      }),
     ]);
 
     if (!restaurant) {
@@ -64,8 +78,15 @@ async function GET() {
     const activeCount = liveOrders.filter((o) => o.status === "CONFIRMED" || o.status === "PREPARING" || o.status === "PAID").length;
     const readyCount = liveOrders.filter((o) => o.status === "READY").length;
 
-    // Aggregate active sessions data (only show when items are selected/ordered)
+    // Filter active sessions to ONLY include DINE-IN tables (exclude parcel counter)
     const formattedActiveSessions = activeSessions
+      .filter((sess) => {
+        const isParcel =
+          sess.table?.isParcelCounter ||
+          String(sess.table?.number).toUpperCase() === "PARCEL" ||
+          String(sess.table?.number).toUpperCase() === "P";
+        return !isParcel;
+      })
       .map((sess) => {
         let sessionTotal = 0;
         const allItems = [];
@@ -98,6 +119,34 @@ async function GET() {
       })
       .filter((sess) => sess.items.length > 0);
 
+    // Format dedicated Parcel orders for the Manager Dashboard feed
+    const formattedParcelOrders = parcelOrdersList.map((po) => {
+      const tokenStr = String(po.orderSeq || 1001).slice(-4).padStart(4, "0");
+      return {
+        id: po.id,
+        orderNumber: `ORD-${tokenStr}`,
+        token: tokenStr,
+        orderSeq: po.orderSeq,
+        status: po.status,
+        table: "PARCEL",
+        total: po.total,
+        subtotal: po.subtotal,
+        gstAmount: po.gstAmount,
+        createdAt: po.createdAt,
+        paymentStatus: po.status === "PENDING_PAYMENT" ? "UNPAID" : "PAID",
+        paymentGateway: po.paymentGateway || "RAZORPAY",
+        razorpayPaymentId: po.razorpayPaymentId,
+        specialInstructions: po.specialInstructions,
+        items: (po.items || []).map((i) => ({
+          id: i.id,
+          name: i.name,
+          quantity: i.quantity,
+          price: i.price,
+          notes: i.notes,
+        })),
+      };
+    });
+
     return NextResponse.json({
       restaurantId: restaurant.id,
       restaurantName: restaurant.name,
@@ -118,15 +167,24 @@ async function GET() {
       completedToday,
       allToday: summary.today.count,
       activeSessions: formattedActiveSessions,
-      liveOrders: liveOrders.map((o) => ({
-        id: o.id,
-        status: o.status === "PAID" ? "CONFIRMED" : o.status,
-        table: o.table ? o.table.number : "12",
-        total: o.total,
-        createdAt: o.createdAt,
-        cashfreePaymentId: o.cashfreePaymentId,
-        items: o.items.map((i) => ({ name: i.name, quantity: i.quantity, price: i.price })),
-      })),
+      parcelOrders: formattedParcelOrders,
+      liveOrders: liveOrders.map((o) => {
+        const isParcel =
+          o.table?.isParcelCounter ||
+          String(o.table?.number).toUpperCase() === "PARCEL" ||
+          String(o.table?.number).toUpperCase() === "P";
+        const tokenStr = String(o.orderSeq || 1001).slice(-4).padStart(4, "0");
+        return {
+          id: o.id,
+          status: o.status === "PAID" ? "CONFIRMED" : o.status,
+          table: isParcel ? "PARCEL" : (o.table ? o.table.number : "12"),
+          isParcel,
+          token: tokenStr,
+          total: o.total,
+          createdAt: o.createdAt,
+          items: o.items.map((i) => ({ name: i.name, quantity: i.quantity, price: i.price })),
+        };
+      }),
       staffCalls: staffCalls.map((c) => ({
         id: c.id,
         type: c.type,

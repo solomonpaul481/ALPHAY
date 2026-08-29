@@ -6,9 +6,23 @@ import { useCart } from "@/lib/cart-context";
 import QuantitySelector from "@/components/QuantitySelector";
 import VegDot from "@/components/VegDot";
 import { createApiClient } from "@/lib/api-client";
-import { IconArrowLeft, IconCart, IconArrowRight } from "@/components/Icons";
+import { IconArrowLeft, IconCart, IconArrowRight, IconSparkles } from "@/components/Icons";
 
 const QUICK_NOTES = ["Less spicy", "No onion", "Extra gravy", "No garlic", "Make it crispy"];
+
+function loadRazorpayScript() {
+  return new Promise((resolve) => {
+    if (typeof window !== "undefined" && window.Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
 
 export default function CartPage() {
   const { restaurantId } = useParams();
@@ -26,6 +40,8 @@ export default function CartPage() {
 
   const [gstPercent, setGstPercent] = useState(5);
   const [restaurantName, setRestaurantName] = useState("");
+  const [isParcel, setIsParcel] = useState(false);
+  const [parcelToken, setParcelToken] = useState(null);
 
   useEffect(() => {
     if (!restaurantId) return;
@@ -34,6 +50,17 @@ export default function CartPage() {
       .then((info) => {
         setGstPercent(info.gstPercent ?? 5);
         setRestaurantName(info.name ?? "");
+      })
+      .catch(() => {});
+
+    // Check if customer is on a Parcel Takeaway session
+    fetch(`/api/r/${restaurantId}/session/active`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data) {
+          setIsParcel(!!data.isParcel);
+          if (data.pickupToken) setParcelToken(data.pickupToken);
+        }
       })
       .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -63,10 +90,69 @@ export default function CartPage() {
     setError("");
 
     try {
-      await api.createOrder({
+      const res = await api.createOrder({
         items: items.map((i) => ({ menuItemId: i.menuItemId, quantity: i.quantity, notes: i.notes })),
         specialInstructions,
       });
+
+      // If this is a Parcel Order, launch Razorpay upfront
+      if (res.isParcel && res.requiresPayment) {
+        const isLoaded = await loadRazorpayScript();
+        if (!isLoaded || typeof window === "undefined" || !window.Razorpay) {
+          throw new Error("Could not load Razorpay SDK. Please check internet connection.");
+        }
+
+        const options = {
+          key: res.keyId || "rzp_test_TUtBMqf8GaZllM",
+          amount: res.amountInPaise || Math.round(res.amount * 100),
+          currency: res.currency || "INR",
+          name: res.restaurantName || "ALPHAY",
+          description: `Parcel Pickup Token #${res.token || res.orderSeq}`,
+          order_id: res.razorpayOrderId,
+          theme: { color: "#F59E0B" },
+          handler: async function (payResponse) {
+            try {
+              // Verify payment on backend
+              const verifyRes = await fetch(`/api/r/${restaurantId}/orders/${res.orderId}/verify`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  razorpay_payment_id: payResponse.razorpay_payment_id,
+                  razorpay_order_id: payResponse.razorpay_order_id,
+                  razorpay_signature: payResponse.razorpay_signature,
+                }),
+              });
+              const verifyData = await verifyRes.json();
+              if (!verifyRes.ok || !verifyData.success) {
+                throw new Error(verifyData.error || "Payment signature verification failed.");
+              }
+
+              setParcelToken(verifyData.token || res.token || String(res.orderSeq));
+              setOrderSuccess(true);
+              clearCart();
+            } catch (err) {
+              setError(err.message || "Payment verification failed.");
+            } finally {
+              setSubmitting(false);
+            }
+          },
+          modal: {
+            ondismiss: function () {
+              setSubmitting(false);
+            },
+          },
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.on("payment.failed", function (failResp) {
+          setSubmitting(false);
+          setError(failResp.error?.description || "Payment failed. Please try again.");
+        });
+        rzp.open();
+        return;
+      }
+
+      // Dine-in Immediate Confirmation
       setOrderSuccess(true);
       setSubmitting(false);
       clearCart();
@@ -87,36 +173,54 @@ export default function CartPage() {
 
         <div className="w-full max-w-md rounded-3xl bg-slate-900 border border-amber-500/40 p-7 text-center shadow-2xl relative z-10 space-y-6">
           <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-amber-500/20 text-amber-400 border border-amber-500/40 text-4xl shadow-lg animate-bounce">
-            👨‍🍳
+            {isParcel ? "📦" : "👨‍🍳"}
           </div>
 
           <div>
             <span className="inline-block rounded-full bg-emerald-950/80 px-3.5 py-1 text-xs font-black uppercase tracking-widest text-emerald-400 border border-emerald-500/40 font-['Cinzel']">
-              Order Placed ✓
+              {isParcel ? "Payment Verified ✓ Order Confirmed" : "Order Placed ✓"}
             </span>
             <h1 className="mt-3 text-2xl font-extrabold text-white font-['Cinzel'] tracking-wider">
-              Order Sent to Kitchen!
+              {isParcel ? "Parcel Order Confirmed!" : "Order Sent to Kitchen!"}
             </h1>
             <p className="mt-2 text-xs font-medium text-slate-300">
-              Your delicious items have been placed and the kitchen team is preparing them now.
+              {isParcel
+                ? "Your payment is verified. The kitchen has begun packing your order."
+                : "Your delicious items have been placed and the kitchen team is preparing them now."}
             </p>
           </div>
+
+          {/* 4-DIGIT PARCEL PICKUP TOKEN DISPLAY */}
+          {isParcel && (
+            <div className="rounded-3xl bg-slate-950/90 border-2 border-amber-400 p-5 shadow-2xl space-y-2 text-center relative overflow-hidden">
+              <div className="absolute right-0 top-0 -mr-4 -mt-4 h-16 w-16 rounded-full bg-amber-500/20 blur-lg" />
+              <p className="text-[11px] font-black uppercase tracking-widest text-amber-400 font-['Cinzel']">
+                Your 4-Digit Pickup Token
+              </p>
+              <div className="font-mono text-4xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-100 tracking-wider">
+                #{parcelToken || "1024"}
+              </div>
+              <p className="text-[11px] text-slate-400 font-medium pt-1">
+                Show this 4-digit number at the Parcel Counter to collect your packaged food.
+              </p>
+            </div>
+          )}
 
           <div className="pt-2 space-y-3">
             <button
               type="button"
-              onClick={() => router.push(`/r/${restaurantId}/menu`)}
+              onClick={() => router.push(`/r/${restaurantId}/track`)}
               className="w-full rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-4 text-xs font-extrabold text-slate-950 shadow-lg shadow-amber-500/25 font-['Cinzel'] tracking-wider cursor-pointer transition-all active:scale-[0.98]"
             >
-              ➕ Continue Ordering
+              📋 {isParcel ? "Track Parcel Preparation Status" : "View Order Status & Bill"}
             </button>
 
             <button
               type="button"
-              onClick={() => router.push(`/r/${restaurantId}/track`)}
+              onClick={() => router.push(`/r/${restaurantId}/menu`)}
               className="w-full rounded-2xl bg-slate-800 border border-amber-500/30 py-3.5 text-xs font-extrabold text-amber-300 hover:bg-slate-700 font-['Cinzel'] cursor-pointer transition-all"
             >
-              📋 View Order Status & Bill
+              ➕ Browse Menu
             </button>
           </div>
         </div>
@@ -159,7 +263,14 @@ export default function CartPage() {
             <IconArrowLeft className="h-5 w-5" />
           </button>
           <div>
-            <h1 className="text-xl font-extrabold font-['Cinzel'] tracking-wider">Order Summary</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-extrabold font-['Cinzel'] tracking-wider">Order Summary</h1>
+              {isParcel && (
+                <span className="rounded-full bg-amber-500/20 px-2.5 py-0.5 text-[10px] font-black text-amber-400 border border-amber-500/40 font-['Cinzel']">
+                  📦 PARCEL
+                </span>
+              )}
+            </div>
             {restaurantName && (
               <p className="text-xs font-bold text-amber-400">{restaurantName}</p>
             )}
@@ -192,7 +303,7 @@ export default function CartPage() {
         {/* Special Instructions */}
         <section className="mt-6 rounded-2xl bg-slate-900 p-5 shadow-sm border border-amber-500/20">
           <h2 className="text-xs font-extrabold uppercase tracking-wider text-amber-400 font-['Cinzel']">
-            Special Instructions for Kitchen
+            {isParcel ? "Parcel & Packaging Notes" : "Special Instructions for Kitchen"}
           </h2>
           <div className="mt-3 flex flex-wrap gap-2">
             {QUICK_NOTES.map((note) => (
@@ -213,7 +324,7 @@ export default function CartPage() {
           <textarea
             value={specialInstructions}
             onChange={(e) => setSpecialInstructions(e.target.value)}
-            placeholder="Add any specific notes for the chef..."
+            placeholder={isParcel ? "Add parcel packing notes or pickup preferences..." : "Add any specific notes for the chef..."}
             rows={2}
             className="mt-3.5 w-full rounded-xl border border-amber-500/20 bg-slate-950 p-3 text-xs font-semibold text-white placeholder:text-slate-500 focus:border-amber-400 focus:outline-none"
           />
@@ -222,7 +333,7 @@ export default function CartPage() {
         {/* Bill Summary */}
         <section className="mt-6 rounded-2xl bg-slate-900 p-5 shadow-sm border border-amber-500/20">
           <h2 className="text-xs font-extrabold uppercase tracking-wider text-amber-400 mb-3 font-['Cinzel']">
-            Current Order Summary
+            {isParcel ? "Parcel Bill Summary" : "Current Order Summary"}
           </h2>
           <div className="flex justify-between text-xs font-bold text-slate-400">
             <span>Item Subtotal</span>
@@ -233,11 +344,17 @@ export default function CartPage() {
             <span className="font-mono tabular-nums text-white">₹{gstAmount.toFixed(2)}</span>
           </div>
           <div className="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center text-base font-extrabold text-white">
-            <span className="font-['Cinzel']">Order Total</span>
+            <span className="font-['Cinzel']">Total Amount</span>
             <span className="font-mono text-lg font-black text-amber-400 tabular-nums">
               ₹{grandTotal.toFixed(2)}
             </span>
           </div>
+
+          {isParcel && (
+            <p className="mt-3 rounded-xl bg-amber-500/10 border border-amber-500/20 p-2.5 text-[11px] text-amber-300 font-medium">
+              💳 <strong>Pay-First Parcel:</strong> Instant online payment via Razorpay confirms your order and generates your individual 4-digit pickup token.
+            </p>
+          )}
         </section>
 
         {error && (
@@ -256,7 +373,13 @@ export default function CartPage() {
             disabled={items.length === 0 || submitting}
             className="flex w-full items-center justify-between rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 px-6 py-4 text-sm font-extrabold text-slate-950 shadow-lg shadow-amber-500/25 transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer font-['Cinzel'] tracking-wider"
           >
-            <span>{submitting ? "Sending to Kitchen..." : "Place Order & Send to Kitchen"}</span>
+            <span>
+              {submitting
+                ? "Processing..."
+                : isParcel
+                ? "💳 Pay & Confirm Parcel Order"
+                : "Place Order & Send to Kitchen"}
+            </span>
             <span className="font-mono text-base font-black flex items-center gap-1">
               ₹{grandTotal.toFixed(2)} <IconArrowRight className="h-4 w-4 text-slate-950" />
             </span>

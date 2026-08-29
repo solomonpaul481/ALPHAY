@@ -282,8 +282,8 @@ export default function SessionTrackPage() {
             <h1 className="text-lg font-black font-['Cinzel'] tracking-wider text-amber-200">
               {sessionData?.restaurantName || "ALPHAY"}
             </h1>
-            <span className="inline-block rounded-md bg-gradient-to-r from-amber-500 to-amber-600 px-2 py-0.5 text-[10px] font-black text-slate-950">
-              TABLE #{sessionData?.tableNumber || "1"}
+            <span className="inline-block rounded-md bg-gradient-to-r from-amber-500 to-amber-600 px-2.5 py-0.5 text-[10px] font-black text-slate-950">
+              {sessionData?.isParcel ? "📦 PARCEL COUNTER" : `TABLE #${sessionData?.tableNumber || "1"}`}
             </span>
           </div>
 
@@ -292,16 +292,32 @@ export default function SessionTrackPage() {
             onClick={() => router.push(`/r/${restaurantId}/menu`)}
             className="flex items-center gap-1.5 rounded-2xl bg-amber-500/15 border border-amber-500/30 px-3 py-2 text-xs font-extrabold text-amber-400 hover:bg-amber-500/30 transition-all cursor-pointer font-['Cinzel']"
           >
-            <span>➕</span> Continue Ordering
+            <span>➕</span> {sessionData?.isParcel ? "Add Items" : "Continue"}
           </button>
         </div>
+
+        {/* 4-DIGIT PARCEL PICKUP TOKEN CARD IF PARCEL */}
+        {sessionData?.isParcel && (
+          <div className="mb-6 rounded-3xl bg-slate-900 border-2 border-amber-400 p-5 text-center shadow-2xl space-y-2 relative overflow-hidden">
+            <div className="absolute right-0 top-0 -mr-6 -mt-6 h-20 w-20 rounded-full bg-amber-500/20 blur-xl" />
+            <p className="text-[10px] font-black uppercase tracking-widest text-amber-400 font-['Cinzel']">
+              Your Parcel Pickup Token
+            </p>
+            <div className="font-mono text-4xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-100 tracking-wider">
+              #{sessionData?.pickupToken || sessionData?.orders?.[0]?.token || "1024"}
+            </div>
+            <p className="text-xs text-slate-300 font-medium pt-1">
+              Please quote this 4-digit number at the Parcel Counter to collect your packed order.
+            </p>
+          </div>
+        )}
 
         {/* SESSION STATUS BANNER */}
         <div className="mb-6 rounded-3xl bg-slate-900/95 p-6 border border-amber-500/30 shadow-2xl backdrop-blur-xl text-center relative overflow-hidden">
           <div className="absolute -right-6 -top-6 h-28 w-28 rounded-full bg-amber-500/10 blur-2xl pointer-events-none" />
           <div className="absolute -left-6 -bottom-6 h-28 w-28 rounded-full bg-emerald-500/10 blur-2xl pointer-events-none" />
 
-          {isBillSent ? (
+          {isBillSent && !sessionData?.isParcel ? (
             <div className="space-y-3">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 text-2xl shadow-lg animate-bounce">
                 🧾
@@ -318,7 +334,7 @@ export default function SessionTrackPage() {
                 </p>
               </div>
             </div>
-          ) : isBillRequested ? (
+          ) : isBillRequested && !sessionData?.isParcel ? (
             <div className="space-y-3">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 text-2xl shadow-lg animate-pulse">
                 ⏳
@@ -338,35 +354,39 @@ export default function SessionTrackPage() {
           ) : (
             <div className="space-y-4">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-2xl shadow-lg shadow-emerald-500/15">
-                👨‍🍳
+                {sessionData?.isParcel ? "📦" : "👨‍🍳"}
               </div>
 
               <div>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-950/80 px-3.5 py-1 text-[11px] font-black uppercase tracking-widest text-emerald-400 border border-emerald-500/40 font-['Cinzel'] shadow-sm">
                   <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-                  Order Confirmed & Kitchen Preparing!
+                  {sessionData?.isParcel
+                    ? "Parcel Confirmed & Kitchen Packing"
+                    : "Order Confirmed & Kitchen Preparing!"}
                 </span>
                 <h2 className="mt-2 text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-100 font-['Cinzel'] tracking-wide">
-                  Your Order is Being Prepared
+                  {sessionData?.isParcel ? "Preparing Your Takeaway" : "Your Order is Being Prepared"}
                 </h2>
                 <p className="mt-1 text-xs text-slate-300 font-medium">
-                  The kitchen team has confirmed your table order and is cooking your dishes now.
+                  {sessionData?.isParcel
+                    ? "Kitchen team is packaging your fresh dishes for pickup."
+                    : "The kitchen team has confirmed your table order and is cooking your dishes now."}
                 </p>
               </div>
 
               {/* 3-STEP REAL-TIME PROGRESS INDICATOR */}
               <div className="pt-2 grid grid-cols-3 gap-2 text-center text-[10px] font-bold font-['Cinzel']">
                 <div className="rounded-xl bg-slate-950/80 border border-emerald-500/30 p-2 text-emerald-400">
-                  <span className="block text-sm mb-0.5">📝</span>
-                  <span>Order Placed ✓</span>
+                  <span className="block text-sm mb-0.5">💳</span>
+                  <span>{sessionData?.isParcel ? "Paid & Placed ✓" : "Order Placed ✓"}</span>
                 </div>
                 <div className="rounded-xl bg-amber-500/15 border border-amber-500/40 p-2 text-amber-300 ring-1 ring-amber-400/30">
                   <span className="block text-sm mb-0.5">🔥</span>
-                  <span>Cooking Live</span>
+                  <span>{sessionData?.isParcel ? "Kitchen Packing" : "Cooking Live"}</span>
                 </div>
                 <div className="rounded-xl bg-slate-950/60 border border-slate-800 p-2 text-slate-400">
-                  <span className="block text-sm mb-0.5">🍽️</span>
-                  <span>Served to Table</span>
+                  <span className="block text-sm mb-0.5">{sessionData?.isParcel ? "🛍️" : "🍽️"}</span>
+                  <span>{sessionData?.isParcel ? "Ready for Pickup" : "Served to Table"}</span>
                 </div>
               </div>
             </div>
