@@ -157,6 +157,22 @@ export default function ManagerDashboardPage() {
     );
   };
 
+  const handleDeleteOrder = async (orderId) => {
+    setBusyOrderId(orderId);
+    try {
+      const res = await fetch(`/api/manager/orders/${orderId}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        await fetchDashboardData();
+      }
+    } catch (err) {
+      console.error("Failed to remove order:", err);
+    } finally {
+      setBusyOrderId(null);
+    }
+  };
+
   const activeSessionsList = data?.activeSessions || [];
   const billRequestedSessions = activeSessionsList.filter(
     (s) => s.status === "BILL_REQUESTED" || s.status === "BILL_SENT"
@@ -466,13 +482,15 @@ export default function ManagerDashboardPage() {
               Fetching live parcel orders...
             </div>
           ) : !data?.parcelOrders || data.parcelOrders.length === 0 ? (
-            <div className="py-12 text-center space-y-2">
-              <p className="text-3xl">📦</p>
-              <h4 className="text-sm font-extrabold text-slate-700 dark:text-slate-300 font-['Cinzel']">
-                No Active Parcel Orders Right Now
+            <div className="py-14 text-center rounded-3xl bg-slate-50 dark:bg-slate-950/60 border border-dashed border-amber-500/30 p-8 space-y-3">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500 text-3xl border border-amber-500/20 shadow-inner">
+                📦
+              </div>
+              <h4 className="text-base font-extrabold text-slate-900 dark:text-white font-['Cinzel'] tracking-wide">
+                No Live Parcel Orders
               </h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                New incoming takeaway parcel orders from Parcel QR scans will appear here with their 4-digit pickup token.
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                All takeaway orders are currently packed and handed over. New orders will appear here automatically in real-time.
               </p>
             </div>
           ) : (
@@ -546,7 +564,7 @@ export default function ManagerDashboardPage() {
                       )}
                     </div>
 
-                    <div className="pt-3 border-t border-amber-500/20 flex items-center justify-between">
+                    <div className="pt-3 border-t border-amber-500/20 flex items-center justify-between gap-2">
                       <div>
                         <span className="text-[10px] font-black uppercase text-slate-400 font-['Cinzel']">
                           Bill Total
@@ -556,8 +574,17 @@ export default function ManagerDashboardPage() {
                         </p>
                       </div>
 
-                      <div>
+                      <div className="flex items-center gap-2">
                         {getNextActionButton(order.id, order.status, true)}
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteOrder(order.id)}
+                          disabled={busyOrderId === order.id}
+                          className="rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 dark:text-rose-400 border border-rose-500/30 px-2.5 py-2 text-xs font-bold font-['Cinzel'] cursor-pointer transition-all disabled:opacity-50"
+                          title="Remove this order"
+                        >
+                          ✕
+                        </button>
                       </div>
                     </div>
                   </div>

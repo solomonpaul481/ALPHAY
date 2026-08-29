@@ -3,6 +3,8 @@ const { db } = require("@/lib/db");
 const { getManagerSession } = require("@/lib/manager-auth");
 
 const NEXT_STATUS = {
+  PENDING_PAYMENT: "CONFIRMED",
+  PAID: "CONFIRMED",
   CONFIRMED: "PREPARING",
   PREPARING: "READY",
   READY: "SERVED",
@@ -19,15 +21,13 @@ async function POST(request, { params }) {
     return NextResponse.json({ error: "Order not found." }, { status: 404 });
   }
 
-  const next = NEXT_STATUS[order.status];
-  if (!next) {
-    return NextResponse.json(
-      { error: `Order is already ${order.status.toLowerCase()}.` },
-      { status: 400 }
-    );
-  }
+  const next = NEXT_STATUS[order.status] || "SERVED";
 
-  const updated = await db.order.update({ where: { id: order.id }, data: { status: next } });
+  const updated = await db.order.update({
+    where: { id: order.id },
+    data: { status: next },
+  });
+
   return NextResponse.json({ ok: true, status: updated.status });
 }
 

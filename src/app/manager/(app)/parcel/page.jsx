@@ -59,6 +59,18 @@ export default function ManagerParcelOrdersPage() {
     }
   };
 
+  const removeOrder = async (orderId, e) => {
+    e.stopPropagation();
+    if (!confirm("Are you sure you want to remove this parcel order?")) return;
+    setBusyId(orderId);
+    try {
+      await fetch(`/api/manager/orders/${orderId}`, { method: "DELETE" });
+      await loadOrders();
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const allOrders = ordersData?.orders || [];
   
   // Filter exclusively for Parcel orders (table is PARCEL / isParcelCounter)
@@ -302,23 +314,35 @@ export default function ManagerParcelOrdersPage() {
                         </p>
                       </div>
 
-                      {/* QUICK ACTION BUTTON */}
-                      <button
-                        type="button"
-                        onClick={(e) => advanceOrder(order.id, e)}
-                        disabled={busyId === order.id}
-                        className="rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 px-4 py-2.5 text-xs font-black text-slate-950 shadow-md font-['Cinzel'] cursor-pointer transition-all active:scale-95 disabled:opacity-50"
-                      >
-                        {busyId === order.id
-                          ? "Updating..."
-                          : order.status === "PENDING"
-                          ? "👨‍🍳 Start Preparing"
-                          : order.status === "PREPARING"
-                          ? "🛍️ Mark Ready"
-                          : order.status === "READY"
-                          ? "📦 Mark as Parceled"
-                          : "Advance Order →"}
-                      </button>
+                      {/* QUICK ACTION BUTTONS */}
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => advanceOrder(order.id, e)}
+                          disabled={busyId === order.id}
+                          className="rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 px-4 py-2.5 text-xs font-black text-slate-950 shadow-md font-['Cinzel'] cursor-pointer transition-all active:scale-95 disabled:opacity-50"
+                        >
+                          {busyId === order.id
+                            ? "Updating..."
+                            : order.status === "PENDING"
+                            ? "👨‍🍳 Start Preparing"
+                            : order.status === "PREPARING"
+                            ? "🛍️ Mark Ready"
+                            : order.status === "READY"
+                            ? "📦 Mark as Parceled"
+                            : "Advance Order →"}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={(e) => removeOrder(order.id, e)}
+                          disabled={busyId === order.id}
+                          className="rounded-2xl bg-rose-500/15 hover:bg-rose-500/30 text-rose-400 border border-rose-500/40 px-3 py-2.5 text-xs font-bold font-['Cinzel'] cursor-pointer transition-all disabled:opacity-50"
+                          title="Remove Order"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </div>
                   </div>
 
