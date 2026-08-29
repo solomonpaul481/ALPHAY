@@ -62,12 +62,12 @@ export default function FloatingCart({ restaurantId }) {
             📋
           </div>
           <span className="text-xs font-extrabold font-['Cinzel'] tracking-wider text-amber-200">
-            Order Details & Session Bill
+            Track Order & Table Bill
           </span>
         </div>
 
         <div className="flex items-center gap-1 text-[11px] font-bold text-amber-400">
-          <span>View Session</span>
+          <span>Track Now</span>
           <IconArrowRight className="h-3.5 w-3.5 text-amber-400" />
         </div>
       </motion.button>

@@ -325,11 +325,10 @@ export default function ManagerDashboardPage() {
                 return (
                   <div
                     key={sess.id}
-                    className={`rounded-2xl p-5 border shadow-lg flex flex-col justify-between space-y-4 transition-all ${
-                      isBillReq
+                    className={`rounded-2xl p-5 border shadow-lg flex flex-col justify-between space-y-4 transition-all ${isBillReq
                         ? "bg-rose-500/5 dark:bg-rose-950/20 border-rose-500/50 shadow-rose-500/10"
                         : "bg-slate-50 dark:bg-slate-950 border-amber-500/20 hover:border-amber-500/40"
-                    }`}
+                      }`}
                   >
                     <div className="space-y-3">
                       <div className="flex items-center justify-between border-b border-amber-500/10 pb-3">
@@ -441,11 +440,10 @@ export default function ManagerDashboardPage() {
               <button
                 type="button"
                 onClick={() => setAutoRefresh(!autoRefresh)}
-                className={`flex items-center gap-2 rounded-2xl px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer border ${
-                  autoRefresh
+                className={`flex items-center gap-2 rounded-2xl px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer border ${autoRefresh
                     ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/40"
                     : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700"
-                }`}
+                  }`}
               >
                 <span className={`h-2 w-2 rounded-full ${autoRefresh ? "bg-emerald-500 animate-ping" : "bg-slate-400"}`} />
                 <span className="font-['Cinzel']">

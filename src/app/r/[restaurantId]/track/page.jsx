@@ -297,44 +297,78 @@ export default function SessionTrackPage() {
         </div>
 
         {/* SESSION STATUS BANNER */}
-        <div className="mb-6 rounded-3xl bg-slate-900 p-5 border border-amber-500/30 shadow-xl text-center relative overflow-hidden">
-          <div className="absolute right-0 top-0 -mr-6 -mt-6 h-24 w-24 rounded-full bg-amber-500/10 blur-xl pointer-events-none" />
+        <div className="mb-6 rounded-3xl bg-slate-900/95 p-6 border border-amber-500/30 shadow-2xl backdrop-blur-xl text-center relative overflow-hidden">
+          <div className="absolute -right-6 -top-6 h-28 w-28 rounded-full bg-amber-500/10 blur-2xl pointer-events-none" />
+          <div className="absolute -left-6 -bottom-6 h-28 w-28 rounded-full bg-emerald-500/10 blur-2xl pointer-events-none" />
 
           {isBillSent ? (
-            <div>
-              <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 text-xl animate-bounce">
+            <div className="space-y-3">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 text-2xl shadow-lg animate-bounce">
                 🧾
               </div>
-              <h2 className="text-lg font-black text-amber-400 font-['Cinzel']">
-                Bill Received!
-              </h2>
-              <p className="mt-1 text-xs text-slate-300">
-                Manager has dispatched your bill. Select your payment method below to complete dining.
-              </p>
+              <div>
+                <span className="inline-block rounded-full bg-amber-500/15 px-3 py-0.5 text-[10px] font-black uppercase tracking-widest text-amber-400 border border-amber-500/30 font-['Cinzel']">
+                  Bill Ready for Payment
+                </span>
+                <h2 className="text-xl font-extrabold text-amber-300 font-['Cinzel'] tracking-wide mt-1.5">
+                  Dining Bill Received!
+                </h2>
+                <p className="mt-1 text-xs text-slate-300">
+                  Manager has dispatched your table bill. Select your payment method below to complete dining.
+                </p>
+              </div>
             </div>
           ) : isBillRequested ? (
-            <div>
-              <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 text-xl animate-pulse">
+            <div className="space-y-3">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 text-2xl shadow-lg animate-pulse">
                 ⏳
               </div>
-              <h2 className="text-lg font-black text-amber-400 font-['Cinzel']">
-                Bill Requested
-              </h2>
-              <p className="mt-1 text-xs text-slate-300">
-                Manager has been notified to review and send your final bill.
-              </p>
+              <div>
+                <span className="inline-block rounded-full bg-amber-500/15 px-3 py-0.5 text-[10px] font-black uppercase tracking-widest text-amber-400 border border-amber-500/30 font-['Cinzel']">
+                  Bill Requested
+                </span>
+                <h2 className="text-xl font-extrabold text-amber-300 font-['Cinzel'] tracking-wide mt-1.5">
+                  Requesting Final Bill...
+                </h2>
+                <p className="mt-1 text-xs text-slate-300">
+                  Manager has been notified to review and dispatch your table bill.
+                </p>
+              </div>
             </div>
           ) : (
-            <div>
-              <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-xl">
-                🍽️
+            <div className="space-y-4">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-2xl shadow-lg shadow-emerald-500/15">
+                👨‍🍳
               </div>
-              <h2 className="text-lg font-black text-white font-['Cinzel']">
-                Order Confirmed & Kitchen Preparing!
-              </h2>
-              <p className="mt-1 text-xs text-slate-400">
-                Your order is confirmed. You can order more dishes anytime or cancel items if needed.
-              </p>
+
+              <div>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-950/80 px-3.5 py-1 text-[11px] font-black uppercase tracking-widest text-emerald-400 border border-emerald-500/40 font-['Cinzel'] shadow-sm">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+                  Order Confirmed & Kitchen Preparing!
+                </span>
+                <h2 className="mt-2 text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-100 font-['Cinzel'] tracking-wide">
+                  Your Order is Being Prepared
+                </h2>
+                <p className="mt-1 text-xs text-slate-300 font-medium">
+                  The kitchen team has confirmed your table order and is cooking your dishes now.
+                </p>
+              </div>
+
+              {/* 3-STEP REAL-TIME PROGRESS INDICATOR */}
+              <div className="pt-2 grid grid-cols-3 gap-2 text-center text-[10px] font-bold font-['Cinzel']">
+                <div className="rounded-xl bg-slate-950/80 border border-emerald-500/30 p-2 text-emerald-400">
+                  <span className="block text-sm mb-0.5">📝</span>
+                  <span>Order Placed ✓</span>
+                </div>
+                <div className="rounded-xl bg-amber-500/15 border border-amber-500/40 p-2 text-amber-300 ring-1 ring-amber-400/30">
+                  <span className="block text-sm mb-0.5">🔥</span>
+                  <span>Cooking Live</span>
+                </div>
+                <div className="rounded-xl bg-slate-950/60 border border-slate-800 p-2 text-slate-400">
+                  <span className="block text-sm mb-0.5">🍽️</span>
+                  <span>Served to Table</span>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -454,11 +488,10 @@ export default function SessionTrackPage() {
               <button
                 type="button"
                 onClick={() => setPaymentMethod("ONLINE")}
-                className={`relative flex flex-col items-center justify-center p-3.5 rounded-2xl border-2 transition-all cursor-pointer ${
-                  paymentMethod === "ONLINE"
+                className={`relative flex flex-col items-center justify-center p-3.5 rounded-2xl border-2 transition-all cursor-pointer ${paymentMethod === "ONLINE"
                     ? "border-amber-400 bg-amber-500/10 text-amber-300"
                     : "border-slate-800 bg-slate-950 text-slate-400"
-                }`}
+                  }`}
               >
                 {paymentMethod === "ONLINE" && (
                   <span className="absolute right-2 top-2 h-4 w-4 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center text-[10px]">
@@ -473,11 +506,10 @@ export default function SessionTrackPage() {
               <button
                 type="button"
                 onClick={() => setPaymentMethod("CASH")}
-                className={`relative flex flex-col items-center justify-center p-3.5 rounded-2xl border-2 transition-all cursor-pointer ${
-                  paymentMethod === "CASH"
+                className={`relative flex flex-col items-center justify-center p-3.5 rounded-2xl border-2 transition-all cursor-pointer ${paymentMethod === "CASH"
                     ? "border-emerald-400 bg-emerald-500/10 text-emerald-300"
                     : "border-slate-800 bg-slate-950 text-slate-400"
-                }`}
+                  }`}
               >
                 {paymentMethod === "CASH" && (
                   <span className="absolute right-2 top-2 h-4 w-4 rounded-full bg-emerald-400 text-slate-950 flex items-center justify-center text-[10px]">
@@ -536,8 +568,8 @@ export default function SessionTrackPage() {
                 {paying
                   ? "Launching Razorpay..."
                   : paymentMethod === "ONLINE"
-                  ? `Pay Online ₹${(sessionData?.totalAmount || 0).toFixed(2)}`
-                  : `Confirm Cash Payment (₹${(sessionData?.totalAmount || 0).toFixed(2)})`}
+                    ? `Pay Online ₹${(sessionData?.totalAmount || 0).toFixed(2)}`
+                    : `Confirm Cash Payment (₹${(sessionData?.totalAmount || 0).toFixed(2)})`}
               </button>
             )}
           </div>

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import ThemeSwitcher from "@/components/ThemeSwitcher";
 import { IconUser, IconSparkles } from "@/components/Icons";
 
 function AdminProfileModal({ data, onClose }) {
@@ -215,8 +214,6 @@ export default function Topbar({ title, right }) {
               {isAdmin ? adminData?.name || "Admin" : managerData?.managerName || "Manager"}
             </span>
           </button>
-
-          <ThemeSwitcher />
           {right}
         </div>
       </header>

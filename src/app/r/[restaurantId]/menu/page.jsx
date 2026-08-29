@@ -163,6 +163,17 @@ function MenuContent() {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* TRACK ORDER BUTTON */}
+            <button
+              type="button"
+              onClick={() => router.push(`/r/${restaurantId}/track`)}
+              className="flex items-center gap-1.5 rounded-2xl bg-slate-900 border border-amber-500/40 px-3 py-1.5 text-xs font-bold text-amber-300 hover:bg-slate-800 hover:border-amber-400 transition-all cursor-pointer font-['Cinzel'] shadow-md active:scale-95"
+              title="Track Placed Orders & Live Bill"
+            >
+              <span>📋</span>
+              <span className="hidden sm:inline">Track Order</span>
+            </button>
+
             {/* TOP RIGHT VEG / NON-VEG SWITCH TOGGLE */}
             <div className="flex items-center gap-1.5 rounded-2xl bg-slate-950 p-1 border border-amber-500/30">
               <span className={`text-[10px] font-black px-1 ${isVegOnly ? "text-emerald-400" : "text-rose-400"}`}>
@@ -188,7 +199,7 @@ function MenuContent() {
             <button
               type="button"
               onClick={() => router.push(`/r/${restaurantId}/cart`)}
-              className="relative flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-500 text-slate-950 shadow-md hover:bg-amber-400 transition-all cursor-pointer"
+              className="relative flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-500 text-slate-950 shadow-md hover:bg-amber-400 transition-all cursor-pointer active:scale-95"
               aria-label="View Cart"
             >
               <IconCart className="h-4 w-4 text-slate-950" />

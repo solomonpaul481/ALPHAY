@@ -23,7 +23,7 @@ export default function ManagerSettingsPage() {
           });
         }
       })
-      .catch(() => {});
+      .catch(() => { });
 
     const saved = localStorage.getItem("alphay_theme_mode") || "dark";
     setActiveTheme(saved);
@@ -123,13 +123,12 @@ export default function ManagerSettingsPage() {
           <form onSubmit={handleSaveLocation} className="space-y-4 pt-2">
             {locMessage && (
               <div
-                className={`p-3 rounded-2xl text-xs font-bold ${
-                  locMessage.type === "success"
+                className={`p-3 rounded-2xl text-xs font-bold ${locMessage.type === "success"
                     ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
                     : locMessage.type === "error"
-                    ? "bg-rose-500/10 text-rose-400 border border-rose-500/30"
-                    : "bg-amber-500/10 text-amber-300 border border-amber-500/30"
-                }`}
+                      ? "bg-rose-500/10 text-rose-400 border border-rose-500/30"
+                      : "bg-amber-500/10 text-amber-300 border border-amber-500/30"
+                  }`}
               >
                 {locMessage.text}
               </div>
@@ -186,11 +185,10 @@ export default function ManagerSettingsPage() {
                       key={r}
                       type="button"
                       onClick={() => setLocForm({ ...locForm, geofenceRadiusMeters: r })}
-                      className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-colors ${
-                        Number(locForm.geofenceRadiusMeters) === r
+                      className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-colors ${Number(locForm.geofenceRadiusMeters) === r
                           ? "bg-amber-500 text-slate-950 border-amber-400 font-black"
                           : "bg-slate-800 text-slate-300 border-slate-700 hover:border-amber-500/40"
-                      }`}
+                        }`}
                     >
                       {r}m
                     </button>
@@ -243,11 +241,10 @@ export default function ManagerSettingsPage() {
             <button
               type="button"
               onClick={() => selectTheme("dark")}
-              className={`rounded-2xl p-4 border text-left transition-all cursor-pointer ${
-                activeTheme === "dark"
+              className={`rounded-2xl p-4 border text-left transition-all cursor-pointer ${activeTheme === "dark"
                   ? "border-amber-400 bg-slate-950 ring-2 ring-amber-400/40 shadow-lg"
                   : "border-slate-800 bg-slate-900 hover:border-amber-500/50"
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between">
                 <span className="font-['Cinzel'] text-sm font-black text-amber-400">👑 Black & Gold</span>
@@ -262,11 +259,10 @@ export default function ManagerSettingsPage() {
             <button
               type="button"
               onClick={() => selectTheme("light")}
-              className={`rounded-2xl p-4 border text-left transition-all cursor-pointer ${
-                activeTheme === "light"
+              className={`rounded-2xl p-4 border text-left transition-all cursor-pointer ${activeTheme === "light"
                   ? "border-amber-500 bg-amber-50 ring-2 ring-amber-500/40 shadow-lg"
                   : "border-amber-300/40 bg-white hover:border-amber-500"
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between">
                 <span className="font-['Cinzel'] text-sm font-black text-amber-700">☀️ White & Gold</span>
@@ -281,11 +277,10 @@ export default function ManagerSettingsPage() {
             <button
               type="button"
               onClick={() => selectTheme("aquarium")}
-              className={`rounded-2xl p-4 border text-left transition-all cursor-pointer ${
-                activeTheme === "aquarium"
+              className={`rounded-2xl p-4 border text-left transition-all cursor-pointer ${activeTheme === "aquarium"
                   ? "border-cyan-400 bg-cyan-950/80 ring-2 ring-cyan-400/50 shadow-lg shadow-cyan-500/20"
                   : "border-cyan-900/60 bg-slate-900 hover:border-cyan-400/50"
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between">
                 <span className="font-['Cinzel'] text-sm font-black text-cyan-300">🐠 Aquarium Theme</span>
