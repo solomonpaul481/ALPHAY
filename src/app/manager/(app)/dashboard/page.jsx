@@ -415,23 +415,23 @@ export default function ManagerDashboardPage() {
           )}
         </section>
 
-        {/* LIVE ORDERS FEED */}
+        {/* PARCEL & TAKEAWAY ORDERS FEED */}
         <section className="rounded-3xl bg-white dark:bg-slate-900 p-6 border border-amber-500/30 shadow-2xl space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-amber-500/20 pb-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                <IconChef className="h-5 w-5" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xl">
+                📦
               </div>
               <div>
                 <h2 className="text-lg font-extrabold font-['Cinzel'] text-slate-900 dark:text-white tracking-wide flex items-center gap-2">
-                  Live Kitchen Orders
-                  <span className="flex items-center gap-1.5 rounded-full bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-400 px-2.5 py-0.5 text-[10px] font-black border border-rose-400/40 shadow-xs">
-                    <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />
-                    LIVE FEED
+                  Parcel & Takeaway Orders
+                  <span className="flex items-center gap-1.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 px-2.5 py-0.5 text-[10px] font-black border border-amber-400/40 shadow-xs">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                    LIVE COUNTER
                   </span>
                 </h2>
                 <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                  Real-time updates as customers order at table
+                  Real-time takeaway parcel queue, packaging status, and customer pickup dispatch
                 </p>
               </div>
             </div>
@@ -463,76 +463,87 @@ export default function ManagerDashboardPage() {
 
           {loading && !data ? (
             <div className="py-12 text-center text-xs font-mono text-slate-400">
-              Fetching live customer orders...
+              Fetching live parcel orders...
             </div>
           ) : !data?.liveOrders || data.liveOrders.length === 0 ? (
             <div className="py-12 text-center space-y-2">
-              <p className="text-3xl">🍽️</p>
+              <p className="text-3xl">📦</p>
               <h4 className="text-sm font-extrabold text-slate-700 dark:text-slate-300 font-['Cinzel']">
-                No Active Live Orders Right Now
+                No Active Parcel Orders Right Now
               </h4>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                New incoming orders from customer tables will automatically appear here live.
+                New incoming takeaway parcel orders will automatically appear here live.
               </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {data.liveOrders.map((order) => (
-                <div
-                  key={order.id}
-                  className="rounded-2xl bg-slate-50 dark:bg-slate-950 p-4 border border-amber-500/20 shadow-md flex flex-col justify-between space-y-4 hover:border-amber-500/40 transition-all"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between border-b border-amber-500/10 pb-2.5">
-                      <div>
-                        <span className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 font-['Cinzel']">
-                          Table
-                        </span>
-                        <h4 className="text-base font-extrabold text-slate-900 dark:text-white font-mono">
-                          Table #{order.table}
-                        </h4>
+              {data.liveOrders.map((order) => {
+                const isParcel =
+                  String(order.table).toUpperCase().includes("PARCEL") ||
+                  String(order.table).toUpperCase() === "P";
+
+                return (
+                  <div
+                    key={order.id}
+                    className="rounded-2xl bg-slate-50 dark:bg-slate-950 p-4 border border-amber-500/20 shadow-md flex flex-col justify-between space-y-4 hover:border-amber-500/40 transition-all"
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between border-b border-amber-500/10 pb-2.5">
+                        <div className="flex items-center gap-2">
+                          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/20 text-amber-500 text-xs">
+                            📦
+                          </span>
+                          <div>
+                            <span className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 font-['Cinzel']">
+                              {isParcel ? "Parcel Counter" : "Table Order"}
+                            </span>
+                            <h4 className="text-base font-extrabold text-slate-900 dark:text-white font-mono">
+                              {isParcel ? "PARCEL" : `Table #${order.table}`}
+                            </h4>
+                          </div>
+                        </div>
+                        <div>{getStatusBadge(order.status)}</div>
                       </div>
-                      <div>{getStatusBadge(order.status)}</div>
+
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1 font-['Cinzel']">
+                          Parcel Items ({order.items.reduce((acc, i) => acc + i.quantity, 0)})
+                        </p>
+                        <ul className="space-y-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                          {order.items.map((item, idx) => (
+                            <li key={idx} className="flex justify-between items-center">
+                              <span className="font-['Cinzel']">
+                                <strong className="text-amber-600 dark:text-amber-400 font-mono mr-1">
+                                  {item.quantity}x
+                                </strong>
+                                {item.name}
+                              </span>
+                              <span className="font-mono text-amber-700 dark:text-amber-300 font-bold">
+                                ₹{(item.price * item.quantity).toFixed(0)}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     </div>
 
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1 font-['Cinzel']">
-                        Order Items ({order.items.reduce((acc, i) => acc + i.quantity, 0)})
-                      </p>
-                      <ul className="space-y-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200">
-                        {order.items.map((item, idx) => (
-                          <li key={idx} className="flex justify-between items-center">
-                            <span className="font-['Cinzel']">
-                              <strong className="text-amber-600 dark:text-amber-400 font-mono mr-1">
-                                {item.quantity}x
-                              </strong>
-                              {item.name}
-                            </span>
-                            <span className="font-mono text-amber-700 dark:text-amber-300 font-bold">
-                              ₹{(item.price * item.quantity).toFixed(0)}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
+                    <div className="pt-3 border-t border-amber-500/10 flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] font-black uppercase text-slate-400 font-['Cinzel']">
+                          Total
+                        </span>
+                        <p className="font-mono text-base font-black text-amber-600 dark:text-amber-400">
+                          ₹{order.total.toFixed(2)}
+                        </p>
+                      </div>
+
+                      <div>
+                        {getNextActionButton(order.id, order.status)}
+                      </div>
                     </div>
                   </div>
-
-                  <div className="pt-3 border-t border-amber-500/10 flex items-center justify-between">
-                    <div>
-                      <span className="text-[10px] font-black uppercase text-slate-400 font-['Cinzel']">
-                        Total
-                      </span>
-                      <p className="font-mono text-base font-black text-amber-600 dark:text-amber-400">
-                        ₹{order.total.toFixed(2)}
-                      </p>
-                    </div>
-
-                    <div>
-                      {getNextActionButton(order.id, order.status)}
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </section>
