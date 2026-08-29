@@ -48,27 +48,38 @@ async function GET(request) {
     orderBy: { createdAt: "desc" },
   });
 
-  const formattedOrders = orders.map((o) => ({
-    id: o.id,
-    orderNumber: o.orderSeq ? `#${o.orderSeq}` : `#${o.id.slice(-4).toUpperCase()}`,
-    tableNumber: o.table ? o.table.number : "1",
-    status: o.status,
-    createdAt: o.createdAt,
-    subtotal: o.subtotal,
-    gstAmount: o.gstAmount,
-    total: o.total,
-    specialInstructions: o.specialInstructions,
-    cashfreePaymentId: o.cashfreePaymentId,
-    paymentMethod: o.session ? o.session.paymentMethod || "CASH" : "CASH",
-    paymentStatus: o.session ? o.session.paymentStatus : (o.status === "PAID" ? "PAID" : "UNPAID"),
-    items: o.items.map((i) => ({
-      id: i.id,
-      name: i.name,
-      price: i.price,
-      quantity: i.quantity,
-      notes: i.notes,
-    })),
-  }));
+  const formattedOrders = orders.map((o) => {
+    const isParcel = o.table
+      ? (o.table.isParcelCounter || String(o.table.number).toUpperCase() === "PARCEL" || String(o.table.number).toUpperCase() === "P")
+      : false;
+    const tokenStr = String(o.orderSeq || 1001).slice(-4).padStart(4, "0");
+
+    return {
+      id: o.id,
+      orderNumber: `#${tokenStr}`,
+      orderSeq: o.orderSeq,
+      token: tokenStr,
+      tableNumber: isParcel ? "PARCEL" : (o.table ? o.table.number : "1"),
+      isParcel,
+      status: o.status,
+      createdAt: o.createdAt,
+      subtotal: o.subtotal,
+      gstAmount: o.gstAmount,
+      total: o.total,
+      specialInstructions: o.specialInstructions,
+      paymentGateway: o.paymentGateway || "RAZORPAY",
+      razorpayPaymentId: o.razorpayPaymentId,
+      paymentMethod: o.session ? o.session.paymentMethod || "CASH" : "ONLINE",
+      paymentStatus: o.status === "PENDING_PAYMENT" ? "UNPAID" : "PAID",
+      items: o.items.map((i) => ({
+        id: i.id,
+        name: i.name,
+        price: i.price,
+        quantity: i.quantity,
+        notes: i.notes,
+      })),
+    };
+  });
 
   return NextResponse.json({
     range,

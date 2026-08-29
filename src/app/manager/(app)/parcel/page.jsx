@@ -61,19 +61,17 @@ export default function ManagerParcelOrdersPage() {
 
   const allOrders = ordersData?.orders || [];
   
-  // Filter for Parcel orders (either tableNumber is PARCEL or takeaway)
+  // Filter exclusively for Parcel orders (table is PARCEL / isParcelCounter)
   const parcelOrders = allOrders.filter((o) => {
-    const isParcel =
+    return (
       String(o.tableNumber).toUpperCase().includes("PARCEL") ||
       String(o.tableNumber).toUpperCase() === "P" ||
-      o.table?.isParcelCounter;
-
-    // If there are explicit parcel orders, use them; if none are explicitly tagged, show all orders with parcel filter
-    return isParcel;
+      o.table?.isParcelCounter ||
+      o.isParcel
+    );
   });
 
-  // If no explicit PARCEL table orders exist in mock/test data, also support showing all orders tagged for takeaway
-  const displayList = parcelOrders.length > 0 ? parcelOrders : allOrders;
+  const displayList = parcelOrders;
 
   const filteredOrders = displayList.filter((o) => {
     if (statusFilter === "ALL") return true;
