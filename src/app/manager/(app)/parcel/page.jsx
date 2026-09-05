@@ -120,23 +120,34 @@ export default function ManagerParcelOrdersPage() {
               </div>
             </div>
 
-            {/* DATE RANGE FILTERS */}
-            <div className="flex flex-wrap items-center gap-1.5 rounded-2xl bg-slate-950/80 p-1.5 border border-amber-500/30 shadow-inner">
-              <span className="text-[11px] font-black text-amber-400 px-2 font-['Cinzel'] uppercase">Time:</span>
-              {["today", "yesterday", "week", "month"].map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => setRange(r)}
-                  className={`rounded-xl px-3.5 py-1.5 text-xs font-black transition-all cursor-pointer font-['Cinzel'] ${
-                    range === r
-                      ? "bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 text-slate-950 shadow-md"
-                      : "text-slate-400 hover:text-white hover:bg-slate-800"
-                  }`}
-                >
-                  {RANGE_LABELS[r]}
-                </button>
-              ))}
+            <div className="flex flex-wrap items-center gap-3">
+              <a
+                href="/api/manager/qr/image?type=parcel&table=PARCEL"
+                download="QR-Parcel-Takeaway.png"
+                className="flex items-center gap-1.5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 px-3.5 py-2 text-xs font-black font-['Cinzel'] shadow-md transition-all cursor-pointer"
+                title="Download Parcel Takeaway QR Code Sticker"
+              >
+                <span>📦</span> Get Parcel QR Sticker
+              </a>
+
+              {/* DATE RANGE FILTERS */}
+              <div className="flex flex-wrap items-center gap-1.5 rounded-2xl bg-slate-950/80 p-1.5 border border-amber-500/30 shadow-inner">
+                <span className="text-[11px] font-black text-amber-400 px-2 font-['Cinzel'] uppercase">Time:</span>
+                {["today", "yesterday", "week", "month"].map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setRange(r)}
+                    className={`rounded-xl px-3.5 py-1.5 text-xs font-black transition-all cursor-pointer font-['Cinzel'] ${
+                      range === r
+                        ? "bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 text-slate-950 shadow-md"
+                        : "text-slate-400 hover:text-white hover:bg-slate-800"
+                    }`}
+                  >
+                    {RANGE_LABELS[r]}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 

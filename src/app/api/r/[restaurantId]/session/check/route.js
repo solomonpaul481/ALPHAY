@@ -17,6 +17,17 @@ async function POST(request, { params }) {
   }
   const resolvedRestaurantId = restaurant.id;
 
+  const isParcelReq =
+    Boolean(body.isParcel) ||
+    String(body.type).toLowerCase() === "parcel" ||
+    String(tableNumber).trim().toUpperCase() === "PARCEL" ||
+    String(tableNumber).trim().toUpperCase() === "P";
+
+  // Parcel / Takeaway customers must never auto-join another customer's previous session
+  if (isParcelReq) {
+    return NextResponse.json({ hasActiveSession: false, isParcel: true });
+  }
+
   let table = await db.diningTable.findUnique({
     where: { restaurantId_number: { restaurantId: resolvedRestaurantId, number: String(tableNumber).trim() } },
   });
@@ -27,13 +38,14 @@ async function POST(request, { params }) {
         data: {
           restaurantId: resolvedRestaurantId,
           number: String(tableNumber).trim(),
+          isParcelCounter: isParcelReq,
         },
       })
       .catch(() => null);
   }
 
-  if (!table) {
-    return NextResponse.json({ hasActiveSession: false });
+  if (!table || table.isParcelCounter) {
+    return NextResponse.json({ hasActiveSession: false, isParcel: Boolean(table?.isParcelCounter) });
   }
 
   // Find active session on this table that is NOT ended or completed or closed

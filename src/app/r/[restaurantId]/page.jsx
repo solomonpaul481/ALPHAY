@@ -11,43 +11,34 @@ function LandingFormInner() {
   const router = useRouter();
   const api = createApiClient(restaurantId);
 
-  // Automatically detect table number from QR code URL parameter or default to "12"
-  const urlTable = searchParams ? searchParams.get("table") : null;
-  const tableNumber = urlTable || "12";
+  // Detect table number and parcel mode from QR code URL parameters
+  const rawTable = searchParams ? searchParams.get("table") : null;
+  const isParcel =
+    searchParams?.get("type") === "parcel" ||
+    searchParams?.get("parcel") === "true" ||
+    String(rawTable).trim().toUpperCase() === "PARCEL" ||
+    String(rawTable).trim().toUpperCase() === "P";
 
-  const [restaurant, setRestaurant] = useState(null);
+  const tableNumber = isParcel ? "PARCEL" : (rawTable || "12");
+
+  const [restaurant, setRestaurant] = useState({ name: "ALPHAY", latitude: 17.4239, longitude: 78.4738 });
   const [submitting, setSubmitting] = useState(false);
   const cachedCoordsRef = useRef(null);
+  const hasLoadedInfoRef = useRef(false);
 
   useEffect(() => {
     if (!restaurantId) return;
 
-    // Fetch restaurant information
-    api
-      .getInfo()
-      .then(setRestaurant)
-      .catch(() => setRestaurant({ name: "ALPHAY", latitude: 17.4239, longitude: 78.4738 }));
-
-    // Auto-detect if this table has an ongoing dine-in session that hasn't been paid/completed
-    api
-      .checkSession(tableNumber)
-      .then(async (res) => {
-        if (res?.hasActiveSession && (res.activeSession?.orderCount > 0 || res.activeSession?.totalItemsCount > 0)) {
-          // Join the active session to bind/refresh browser cookie and show the previous ordered list
-          try {
-            await api.startSession({
-              tableNumber,
-              action: "join",
-              sessionId: res.activeSession.id,
-              bypassGeofence: true,
-            });
-          } catch (joinErr) {
-            console.warn("Session auto-join notice:", joinErr);
-          }
-          router.replace(`/r/${restaurantId}/track`);
-        }
-      })
-      .catch(() => {});
+    // Fetch restaurant information once without double-rendering or flashing
+    if (!hasLoadedInfoRef.current) {
+      hasLoadedInfoRef.current = true;
+      api
+        .getInfo()
+        .then((data) => {
+          if (data?.name) setRestaurant(data);
+        })
+        .catch(() => {});
+    }
 
     // Quietly detect and cache customer GPS coordinates in the background
     if (typeof window !== "undefined" && "geolocation" in navigator) {
@@ -81,64 +72,9 @@ function LandingFormInner() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [restaurantId, tableNumber]);
+  }, [restaurantId]);
 
-  const acquireCoordinates = () => {
-    if (cachedCoordsRef.current) return Promise.resolve(cachedCoordsRef.current);
-
-    return new Promise((resolve) => {
-      if (typeof window === "undefined" || !("geolocation" in navigator)) {
-        resolve({
-          latitude: restaurant?.latitude || 17.4239,
-          longitude: restaurant?.longitude || 78.4738,
-          accuracy: 50,
-        });
-        return;
-      }
-
-      let settled = false;
-      const timer = setTimeout(() => {
-        if (!settled) {
-          settled = true;
-          resolve({
-            latitude: restaurant?.latitude || 17.4239,
-            longitude: restaurant?.longitude || 78.4738,
-            accuracy: 50,
-          });
-        }
-      }, 2500);
-
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          if (!settled) {
-            settled = true;
-            clearTimeout(timer);
-            const coords = {
-              latitude: pos.coords.latitude,
-              longitude: pos.coords.longitude,
-              accuracy: pos.coords.accuracy || 0,
-            };
-            cachedCoordsRef.current = coords;
-            resolve(coords);
-          }
-        },
-        () => {
-          if (!settled) {
-            settled = true;
-            clearTimeout(timer);
-            resolve({
-              latitude: restaurant?.latitude || 17.4239,
-              longitude: restaurant?.longitude || 78.4738,
-              accuracy: 50,
-            });
-          }
-        },
-        { enableHighAccuracy: false, timeout: 2500, maximumAge: 60000 }
-      );
-    });
-  };
-
-  // Direct 1-Click Action: Start session and immediately open menu or return to previous orders
+  // Direct 1-Click Action: Start session and immediately direct customer to the menu page
   const handleExploreMenu = async () => {
     if (submitting) return;
     setSubmitting(true);
@@ -149,27 +85,28 @@ function LandingFormInner() {
       accuracy: 50,
     };
 
+    const navUrl = isParcel
+      ? `/r/${restaurantId}/menu?type=parcel&table=PARCEL`
+      : `/r/${restaurantId}/menu?table=${encodeURIComponent(tableNumber)}`;
+
     try {
-      const res = await api.startSession({
+      await api.startSession({
         tableNumber,
-        action: "join",
+        isParcel,
+        type: isParcel ? "parcel" : "dine_in",
+        action: isParcel ? "force_new" : "join",
         latitude: coords.latitude,
         longitude: coords.longitude,
         accuracy: coords.accuracy,
         bypassGeofence: true,
       });
-
-      if (res?.hasActiveSession && (res.orderCount > 0 || res.totalItemsCount > 0)) {
-        router.push(`/r/${restaurantId}/track`);
-        return;
-      }
     } catch (err) {
       console.warn("Session auto-start notice:", err);
     }
 
-    router.push(`/r/${restaurantId}/menu?table=${encodeURIComponent(tableNumber)}`);
+    // Directly direct the customer straight to the menu page
+    router.push(navUrl);
   };
-
 
   return (
     <div className="relative min-h-screen w-full flex flex-col items-center justify-center bg-slate-950 text-white">
@@ -177,6 +114,7 @@ function LandingFormInner() {
         restaurantName={restaurant?.name}
         onProceed={handleExploreMenu}
         submitting={submitting}
+        isParcel={isParcel}
       />
     </div>
   );
@@ -187,9 +125,7 @@ export default function CustomerLandingPage() {
     <main className="min-h-screen w-full bg-slate-950 text-white transition-colors">
       <Suspense
         fallback={
-          <div className="flex min-h-screen items-center justify-center bg-slate-950 text-amber-400 text-sm font-bold font-['Cinzel'] tracking-widest">
-            Loading ALPHAY Experience...
-          </div>
+          <div className="min-h-screen w-full bg-slate-950 flex items-center justify-center" />
         }
       >
         <LandingFormInner />

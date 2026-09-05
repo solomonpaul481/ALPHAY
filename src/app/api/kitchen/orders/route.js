@@ -68,8 +68,14 @@ async function GET(request) {
 
   const cancelledList = [];
   cancelledOrdersAndItems.forEach((ord) => {
-    const orderNo = ord.orderSeq ? `#${ord.orderSeq}` : `#${ord.id.slice(-4).toUpperCase()}`;
-    const tableNo = ord.table ? ord.table.number : "1";
+    const isParcel =
+      ord.table?.isParcelCounter ||
+      String(ord.table?.number).toUpperCase().includes("PARCEL") ||
+      String(ord.table?.number).toUpperCase() === "P" ||
+      Boolean(ord.specialInstructions?.includes("[PARCEL]"));
+    const token = ord.orderSeq ? String(ord.orderSeq).slice(-4).padStart(4, "0") : String(ord.id.slice(-4)).toUpperCase();
+    const orderNo = ord.orderSeq ? `#${token}` : `#${ord.id.slice(-4).toUpperCase()}`;
+    const tableNo = isParcel ? "PARCEL" : (ord.table ? ord.table.number : "1");
 
     ord.items.forEach((it) => {
       if (it.isCancelled || ord.status === "CANCELLED") {
@@ -78,6 +84,8 @@ async function GET(request) {
           orderId: ord.id,
           orderNumber: orderNo,
           tableNumber: tableNo,
+          isParcel,
+          token,
           name: it.name,
           quantity: it.quantity,
           cancelledAt: ord.updatedAt,
@@ -88,11 +96,19 @@ async function GET(request) {
 
   const formattedOrders = activeOrders
     .map((order) => {
+      const isParcel =
+        order.table?.isParcelCounter ||
+        String(order.table?.number).toUpperCase().includes("PARCEL") ||
+        String(order.table?.number).toUpperCase() === "P" ||
+        Boolean(order.specialInstructions?.includes("[PARCEL]"));
+      const token = order.orderSeq ? String(order.orderSeq).slice(-4).padStart(4, "0") : String(order.id.slice(-4)).toUpperCase();
       const activeItems = order.items.filter((item) => !item.isCancelled);
       return {
         id: order.id,
-        orderNumber: order.orderSeq ? `#${order.orderSeq}` : `#${order.id.slice(-4).toUpperCase()}`,
-        tableNumber: order.table ? order.table.number : "1",
+        orderNumber: `#${token}`,
+        token,
+        isParcel,
+        tableNumber: isParcel ? "PARCEL" : (order.table ? order.table.number : "1"),
         status: order.status === "PAID" ? "CONFIRMED" : order.status,
         createdAt: order.createdAt,
         specialInstructions: order.specialInstructions,

@@ -76,16 +76,32 @@ async function GET() {
       return NextResponse.json({ error: "Restaurant record not found" }, { status: 404 });
     }
 
-    const activeCount = liveOrders.filter((o) => o.status === "CONFIRMED" || o.status === "PREPARING" || o.status === "PAID").length;
-    const readyCount = liveOrders.filter((o) => o.status === "READY").length;
+    const activeCount = liveOrders.filter((o) => {
+      const isParcel =
+        o.table?.isParcelCounter ||
+        String(o.table?.number).toUpperCase().includes("PARCEL") ||
+        String(o.table?.number).toUpperCase() === "P" ||
+        Boolean(o.specialInstructions?.includes("[PARCEL]"));
+      return !isParcel && (o.status === "CONFIRMED" || o.status === "PREPARING" || o.status === "PAID");
+    }).length;
 
-    // Filter active sessions to ONLY include DINE-IN tables (exclude parcel counter)
+    const readyCount = liveOrders.filter((o) => {
+      const isParcel =
+        o.table?.isParcelCounter ||
+        String(o.table?.number).toUpperCase().includes("PARCEL") ||
+        String(o.table?.number).toUpperCase() === "P" ||
+        Boolean(o.specialInstructions?.includes("[PARCEL]"));
+      return !isParcel && o.status === "READY";
+    }).length;
+
+    // Filter active sessions to ONLY include physical DINE-IN tables (strictly exclude parcel counter)
     const formattedActiveSessions = activeSessions
       .filter((sess) => {
         const isParcel =
           sess.table?.isParcelCounter ||
-          String(sess.table?.number).toUpperCase() === "PARCEL" ||
-          String(sess.table?.number).toUpperCase() === "P";
+          String(sess.table?.number).toUpperCase().includes("PARCEL") ||
+          String(sess.table?.number).toUpperCase() === "P" ||
+          sess.orders?.some((o) => o.specialInstructions?.includes("[PARCEL]"));
         return !isParcel;
       })
       .map((sess) => {

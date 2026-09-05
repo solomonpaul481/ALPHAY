@@ -19,7 +19,15 @@ async function GET(request, { params }) {
   let sessionTokenToSet = null;
 
   const { searchParams } = new URL(request.url);
-  const tableNumber = searchParams.get("table") || "12";
+  const rawTable = searchParams.get("table");
+  const isParcelReq =
+    searchParams.get("type") === "parcel" ||
+    searchParams.get("parcel") === "true" ||
+    String(rawTable).trim().toUpperCase() === "PARCEL" ||
+    String(rawTable).trim().toUpperCase() === "P" ||
+    Boolean(session?.table?.isParcelCounter);
+
+  const tableNumber = isParcelReq ? "PARCEL" : (rawTable || "12");
 
   let table = await db.diningTable.findUnique({
     where: { restaurantId_number: { restaurantId: resolvedRestaurantId, number: String(tableNumber).trim() } },
@@ -27,21 +35,35 @@ async function GET(request, { params }) {
   if (!table) {
     table = await db.diningTable
       .create({
-        data: { restaurantId: resolvedRestaurantId, number: String(tableNumber).trim() },
+        data: {
+          restaurantId: resolvedRestaurantId,
+          number: String(tableNumber).trim(),
+          isParcelCounter: isParcelReq,
+        },
       })
       .catch(() => null);
+  } else if (isParcelReq && !table.isParcelCounter) {
+    table = await db.diningTable.update({
+      where: { id: table.id },
+      data: { isParcelCounter: true },
+    }).catch(() => table);
   }
 
   if (table) {
-    let activeSession = await db.customerSession.findFirst({
-      where: {
-        restaurantId: resolvedRestaurantId,
-        tableId: table.id,
-        endedAt: null,
-        status: { in: ["ACTIVE", "BILL_REQUESTED", "BILL_SENT"] },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    let activeSession = null;
+    if (session && session.tableId === table.id) {
+      activeSession = session;
+    } else if (!isParcelReq) {
+      activeSession = await db.customerSession.findFirst({
+        where: {
+          restaurantId: resolvedRestaurantId,
+          tableId: table.id,
+          endedAt: null,
+          status: { in: ["ACTIVE", "BILL_REQUESTED", "BILL_SENT"] },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+    }
 
     if (!activeSession) {
       activeSession = await db.customerSession.create({
@@ -138,7 +160,8 @@ async function GET(request, { params }) {
   const nonVeg = groupByCategory(nonVegItems.length > 0 ? nonVegItems : items);
 
   const response = NextResponse.json({
-    tableNumber: session?.table?.number || tableNumber,
+    tableNumber: isParcelReq ? "PARCEL" : (session?.table?.number || tableNumber),
+    isParcel: Boolean(isParcelReq),
     restaurantName: restaurant.name || "ALPHAY",
     logoUrl: restaurant.logoUrl,
     todaysSpecial,

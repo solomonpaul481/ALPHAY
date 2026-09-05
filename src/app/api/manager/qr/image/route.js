@@ -24,11 +24,16 @@ async function GET(request) {
   const table = searchParams.get("table");
   const type = searchParams.get("type");
 
+  const isParcelReq =
+    type === "parcel" ||
+    String(table).trim().toUpperCase() === "PARCEL" ||
+    String(table).trim().toUpperCase() === "P";
+
   let targetUrl = appUrl(`/r/${manager.restaurantId}`);
-  if (table) {
+  if (isParcelReq) {
+    targetUrl = appUrl(`/r/${manager.restaurantId}?type=parcel&table=PARCEL`);
+  } else if (table) {
     targetUrl = appUrl(`/r/${manager.restaurantId}?table=${encodeURIComponent(table.trim())}`);
-  } else if (type === "parcel") {
-    targetUrl = appUrl(`/r/${manager.restaurantId}?table=PARCEL`);
   }
 
   const buffer = await QRCode.toBuffer(targetUrl, {

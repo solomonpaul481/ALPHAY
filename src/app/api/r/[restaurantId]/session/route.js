@@ -34,6 +34,12 @@ async function POST(request, { params }) {
     );
   }
 
+  const isParcelReq =
+    Boolean(body.isParcel) ||
+    String(body.type).toLowerCase() === "parcel" ||
+    String(tableNumber).trim().toUpperCase() === "PARCEL" ||
+    String(tableNumber).trim().toUpperCase() === "P";
+
   let table = await db.diningTable.findUnique({
     where: { restaurantId_number: { restaurantId: resolvedRestaurantId, number: String(tableNumber).trim() } },
   });
@@ -43,10 +49,17 @@ async function POST(request, { params }) {
         data: {
           restaurantId: resolvedRestaurantId,
           number: String(tableNumber).trim(),
+          isParcelCounter: isParcelReq,
         },
       })
       .catch(() => null);
+  } else if (isParcelReq && !table.isParcelCounter) {
+    table = await db.diningTable.update({
+      where: { id: table.id },
+      data: { isParcelCounter: true },
+    }).catch(() => table);
   }
+
   if (!table) {
     return NextResponse.json(
       { error: "Unable to initialize table number. Please try again." },
@@ -54,7 +67,7 @@ async function POST(request, { params }) {
     );
   }
 
-  // Check for any ongoing active dine-in session on this table that has not been completed / paid
+  // For Parcel orders, each customer must get an isolated session (never auto-join another parcel customer)
   let existingSession = null;
   if (sessionId) {
     existingSession = await db.customerSession.findUnique({
@@ -69,7 +82,8 @@ async function POST(request, { params }) {
     }
   }
 
-  if (!existingSession) {
+  // Only auto-join by tableId for DINE-IN tables. Never for PARCEL!
+  if (!existingSession && !isParcelReq && !table.isParcelCounter) {
     existingSession = await db.customerSession.findFirst({
       where: {
         restaurantId: resolvedRestaurantId,
@@ -139,19 +153,22 @@ async function POST(request, { params }) {
   const effectiveLat = validCoords ? parsedLat : (restaurant.latitude ?? 17.4239);
   const effectiveLng = validCoords ? parsedLng : (restaurant.longitude ?? 78.4738);
 
-  // Close any stale active sessions for this table before starting a new one
-  await db.customerSession.updateMany({
-    where: {
-      restaurantId: resolvedRestaurantId,
-      tableId: table.id,
-      endedAt: null,
-      status: { in: ["ACTIVE", "BILL_REQUESTED", "BILL_SENT"] },
-    },
-    data: {
-      status: "CLOSED",
-      endedAt: new Date(),
-    },
-  });
+  // Close any stale active sessions for DINE-IN tables only before starting a new one.
+  // Multiple customers can place parcel orders at the same time, so never close other parcel sessions!
+  if (!isParcelReq && !table.isParcelCounter) {
+    await db.customerSession.updateMany({
+      where: {
+        restaurantId: resolvedRestaurantId,
+        tableId: table.id,
+        endedAt: null,
+        status: { in: ["ACTIVE", "BILL_REQUESTED", "BILL_SENT"] },
+      },
+      data: {
+        status: "CLOSED",
+        endedAt: new Date(),
+      },
+    });
+  }
 
   // Create Brand New Customer Session
   const sessionToken = crypto.randomUUID();
@@ -178,9 +195,10 @@ async function POST(request, { params }) {
     ok: true,
     joined: false,
     hasActiveSession: false,
+    isParcel: Boolean(isParcelReq || table.isParcelCounter),
     orderCount: 0,
     sessionId: session.id,
-    table: { number: table.number, id: table.id },
+    table: { number: table.number, id: table.id, isParcelCounter: Boolean(table.isParcelCounter || isParcelReq) },
     restaurant: { name: restaurant.name, logoUrl: restaurant.logoUrl },
   });
   response.cookies.set(SESSION_COOKIE, token, {

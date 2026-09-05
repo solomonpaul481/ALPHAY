@@ -12,6 +12,7 @@ const RANGE_LABELS = {
 
 export default function ManagerOrdersPage() {
   const [range, setRange] = useState("today"); // today | yesterday | week | month
+  const [categoryFilter, setCategoryFilter] = useState("ALL"); // ALL | DINEIN | PARCEL
   const [ordersData, setOrdersData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
@@ -57,7 +58,18 @@ export default function ManagerOrdersPage() {
     }
   };
 
-  const ordersList = ordersData?.orders || [];
+  const allOrders = ordersData?.orders || [];
+  const ordersList = allOrders.filter((o) => {
+    const isP = Boolean(
+      o.isParcel ||
+      String(o.tableNumber).toUpperCase().includes("PARCEL") ||
+      String(o.tableNumber).toUpperCase() === "P" ||
+      o.table?.isParcelCounter
+    );
+    if (categoryFilter === "DINEIN") return !isP;
+    if (categoryFilter === "PARCEL") return isP;
+    return true;
+  });
 
   return (
     <>
@@ -68,17 +80,17 @@ export default function ManagerOrdersPage() {
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-amber-500/20 pb-4">
             <div>
               <h2 className="font-['Cinzel'] text-xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2 tracking-wide">
-                <span>📦</span>
-                <span>Orders</span>
+                <span>📋</span>
+                <span>Orders Management</span>
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-                All customer dining orders grouped by session. Click any order list to expand itemized breakdown.
+                Customer dining and parcel orders grouped by session. Click any order to expand breakdown.
               </p>
             </div>
 
-            {/* TOP RIGHT DATE RANGE FILTERS: TODAY | YESTERDAY | THIS WEEK | THIS MONTH */}
+            {/* TOP RIGHT DATE RANGE FILTERS */}
             <div className="flex flex-wrap items-center gap-1.5 rounded-2xl bg-amber-50/50 dark:bg-slate-950 p-1.5 border border-amber-500/30 shadow-inner">
-              <span className="text-[11px] font-black text-amber-600 dark:text-amber-400 px-2 font-['Cinzel'] uppercase">Filter:</span>
+              <span className="text-[11px] font-black text-amber-600 dark:text-amber-400 px-2 font-['Cinzel'] uppercase">Time:</span>
               {["today", "yesterday", "week", "month"].map((r) => (
                 <button
                   key={r}
@@ -96,9 +108,47 @@ export default function ManagerOrdersPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-xs font-mono font-bold text-amber-600 dark:text-amber-400">
-            <span>Showing {ordersList.length} Order List{ordersList.length === 1 ? "" : "s"}</span>
-            <span>Active Filter: {RANGE_LABELS[range]}</span>
+          <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-mono font-bold">
+            {/* CATEGORY FILTER BUTTONS */}
+            <div className="flex items-center gap-2 font-['Cinzel']">
+              <button
+                type="button"
+                onClick={() => setCategoryFilter("ALL")}
+                className={`rounded-xl px-3 py-1.5 transition-all cursor-pointer ${
+                  categoryFilter === "ALL"
+                    ? "bg-amber-500 text-slate-950 font-black shadow-md"
+                    : "bg-amber-50 text-slate-700 dark:bg-slate-950 dark:text-slate-300 border border-amber-500/20"
+                }`}
+              >
+                All Orders ({allOrders.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setCategoryFilter("DINEIN")}
+                className={`rounded-xl px-3 py-1.5 transition-all cursor-pointer ${
+                  categoryFilter === "DINEIN"
+                    ? "bg-amber-500 text-slate-950 font-black shadow-md"
+                    : "bg-amber-50 text-slate-700 dark:bg-slate-950 dark:text-slate-300 border border-amber-500/20"
+                }`}
+              >
+                🍽️ Dine-In Tables
+              </button>
+              <button
+                type="button"
+                onClick={() => setCategoryFilter("PARCEL")}
+                className={`rounded-xl px-3 py-1.5 transition-all cursor-pointer ${
+                  categoryFilter === "PARCEL"
+                    ? "bg-amber-500 text-slate-950 font-black shadow-md"
+                    : "bg-amber-50 text-slate-700 dark:bg-slate-950 dark:text-slate-300 border border-amber-500/20"
+                }`}
+              >
+                📦 Takeaway Parcels
+              </button>
+            </div>
+
+            <span className="text-amber-600 dark:text-amber-400">
+              Showing {ordersList.length} Order{ordersList.length === 1 ? "" : "s"}
+            </span>
           </div>
         </div>
 
@@ -109,13 +159,20 @@ export default function ManagerOrdersPage() {
           </div>
         ) : ordersList.length === 0 ? (
           <div className="rounded-3xl bg-white dark:bg-slate-900 p-10 text-center text-xs font-bold text-slate-500 dark:text-slate-400 shadow-xl border border-amber-500/30 font-['Cinzel']">
-            No orders found for {RANGE_LABELS[range]}.
+            No orders found for {RANGE_LABELS[range]} in this category.
           </div>
         ) : (
           <div className="space-y-3.5">
             {ordersList.map((order) => {
               const isExpanded = !!expandedOrderIds[order.id];
               const totalItems = order.items.reduce((acc, it) => acc + it.quantity, 0);
+              const isParcel = Boolean(
+                order.isParcel ||
+                String(order.tableNumber).toUpperCase().includes("PARCEL") ||
+                String(order.tableNumber).toUpperCase() === "P" ||
+                order.table?.isParcelCounter
+              );
+              const parcelToken = order.token || String(order.orderSeq || order.orderNumber || "").slice(-4).padStart(4, "0");
 
               return (
                 <div
@@ -130,14 +187,25 @@ export default function ManagerOrdersPage() {
                   {/* COMPACT HEADER CARD */}
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-900 dark:bg-amber-500/20 border border-amber-300 dark:border-amber-500/40 font-mono text-xs font-black dark:text-amber-300 shadow-xs">
-                        T#{order.tableNumber}
+                      <div
+                        className={`flex h-11 ${isParcel ? "px-3" : "w-11"} items-center justify-center rounded-2xl font-mono text-xs font-black shadow-xs ${
+                          isParcel
+                            ? "bg-amber-500/20 text-amber-400 border border-amber-500/40"
+                            : "bg-amber-100 text-amber-900 dark:bg-amber-500/20 border border-amber-300 dark:border-amber-500/40 dark:text-amber-300"
+                        }`}
+                      >
+                        {isParcel ? `📦 #${parcelToken}` : `T#${order.tableNumber}`}
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-xs font-black text-amber-600 dark:text-amber-400">
-                            {order.orderNumber}
+                            {isParcel ? `TOKEN #${parcelToken}` : order.orderNumber}
                           </span>
+                          {isParcel && (
+                            <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-400 border border-amber-500/30 font-['Cinzel']">
+                              Takeaway Parcel
+                            </span>
+                          )}
                           <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${
                             order.paymentStatus === "PAID"
                               ? "bg-emerald-100 text-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-400 border border-emerald-400 dark:border-emerald-500/30"

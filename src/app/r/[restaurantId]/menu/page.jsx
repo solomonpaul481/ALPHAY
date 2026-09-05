@@ -20,10 +20,19 @@ function MenuContent() {
   const api = createApiClient(restaurantId);
   const { totalItems } = useCart();
 
+  const urlType = searchParams ? searchParams.get("type") : null;
+  const urlParcel = searchParams ? searchParams.get("parcel") : null;
   const urlTable = searchParams ? searchParams.get("table") : null;
 
   const [menu, setMenu] = useState(null);
   const [loadError, setLoadError] = useState(false);
+
+  const isParcel =
+    urlType === "parcel" ||
+    urlParcel === "true" ||
+    String(urlTable).trim().toUpperCase() === "PARCEL" ||
+    String(urlTable).trim().toUpperCase() === "P" ||
+    Boolean(menu?.isParcel);
 
   // Toggle state: false = 🔴 NON-VEG ONLY (default opening page) | true = 🟢 VEG ONLY
   const [isVegOnly, setIsVegOnly] = useState(false);
@@ -35,7 +44,13 @@ function MenuContent() {
   const fetchMenu = () => {
     if (!restaurantId) return;
     setLoadError(false);
-    const query = urlTable ? `?table=${encodeURIComponent(urlTable)}` : "";
+    const params = new URLSearchParams();
+    if (urlType) params.set("type", urlType);
+    if (urlParcel) params.set("parcel", urlParcel);
+    if (urlTable) params.set("table", urlTable);
+    else if (isParcel) params.set("table", "PARCEL");
+    const query = params.toString() ? `?${params.toString()}` : "";
+
     api
       .getMenu(query)
       .then((data) => {
@@ -62,7 +77,7 @@ function MenuContent() {
   useEffect(() => {
     fetchMenu();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [restaurantId, urlTable]);
+  }, [restaurantId, urlTable, urlType, urlParcel]);
 
   // Intercept browser back button when inside an expanded category view to return to Categories Menu Home
   useEffect(() => {
@@ -155,10 +170,17 @@ function MenuContent() {
               <h1 className="text-sm sm:text-base font-extrabold leading-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-100 font-['Cinzel'] tracking-wider">
                 {menu.restaurantName}
               </h1>
-              <div className="flex items-center gap-2 text-[11px] font-bold text-amber-400 font-mono">
-                <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
-                <span>TABLE #{menu.tableNumber || "1"}</span>
-              </div>
+              {isParcel ? (
+                <div className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-500/20 to-amber-600/20 px-2.5 py-0.5 text-[10px] sm:text-[11px] font-black uppercase text-amber-300 border border-amber-500/40 font-['Cinzel'] tracking-wider shadow-sm">
+                  <span>📦</span>
+                  <span>TAKEAWAY / PARCEL</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-[11px] font-bold text-amber-400 font-mono">
+                  <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
+                  <span>TABLE #{menu.tableNumber || "1"}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -166,12 +188,12 @@ function MenuContent() {
             {/* TRACK ORDER BUTTON */}
             <button
               type="button"
-              onClick={() => router.push(`/r/${restaurantId}/track`)}
+              onClick={() => router.push(`/r/${restaurantId}/track${isParcel ? "?type=parcel&table=PARCEL" : ""}`)}
               className="flex items-center gap-1.5 rounded-2xl bg-slate-900 border border-amber-500/40 px-3 py-1.5 text-xs font-bold text-amber-300 hover:bg-slate-800 hover:border-amber-400 transition-all cursor-pointer font-['Cinzel'] shadow-md active:scale-95"
-              title="Track Placed Orders & Live Bill"
+              title={isParcel ? "Track Parcel Status & Pickup Token" : "Track Placed Orders & Live Bill"}
             >
-              <span>📋</span>
-              <span className="hidden sm:inline">Track Order</span>
+              <span>{isParcel ? "📦" : "📋"}</span>
+              <span className="hidden sm:inline">{isParcel ? "Track Parcel" : "Track Order"}</span>
             </button>
 
             {/* TOP RIGHT VEG / NON-VEG SWITCH TOGGLE */}
@@ -198,7 +220,7 @@ function MenuContent() {
             {/* CART ICON BUTTON */}
             <button
               type="button"
-              onClick={() => router.push(`/r/${restaurantId}/cart`)}
+              onClick={() => router.push(`/r/${restaurantId}/cart${isParcel ? "?type=parcel&table=PARCEL" : ""}`)}
               className="relative flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-500 text-slate-950 shadow-md hover:bg-amber-400 transition-all cursor-pointer active:scale-95"
               aria-label="View Cart"
             >
@@ -417,14 +439,14 @@ function MenuContent() {
             </div>
 
             {/* PERSISTENT FLOATING CART OPTION INSIDE EXPANDED CATEGORY PAGE */}
-            <FloatingCart restaurantId={restaurantId} />
+            <FloatingCart restaurantId={restaurantId} isParcel={isParcel} />
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* PERSISTENT FLOATING CART OPTION ON CATEGORIES MENU PAGE */}
-      <FloatingCart restaurantId={restaurantId} />
-      <CallStaffButton restaurantId={restaurantId} />
+      <FloatingCart restaurantId={restaurantId} isParcel={isParcel} />
+      {!isParcel && <CallStaffButton restaurantId={restaurantId} />}
     </main>
   );
 }

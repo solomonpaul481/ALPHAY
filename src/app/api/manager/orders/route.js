@@ -50,8 +50,8 @@ async function GET(request) {
 
   const formattedOrders = orders.map((o) => {
     const isParcel = o.table
-      ? (o.table.isParcelCounter || String(o.table.number).toUpperCase() === "PARCEL" || String(o.table.number).toUpperCase() === "P")
-      : false;
+      ? (o.table.isParcelCounter || String(o.table.number).toUpperCase().includes("PARCEL") || String(o.table.number).toUpperCase() === "P" || Boolean(o.specialInstructions?.includes("[PARCEL]")))
+      : Boolean(o.specialInstructions?.includes("[PARCEL]"));
     const tokenStr = String(o.orderSeq || 1001).slice(-4).padStart(4, "0");
 
     return {

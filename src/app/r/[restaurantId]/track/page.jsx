@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState, useRef, Suspense } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { createApiClient } from "@/lib/api-client";
 import { IconArrowLeft, IconCheck, IconSparkles } from "@/components/Icons";
 
@@ -20,10 +20,18 @@ function loadRazorpayScript() {
   });
 }
 
-export default function SessionTrackPage() {
+function SessionTrackContent() {
   const { restaurantId } = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const api = createApiClient(restaurantId);
+
+  const urlType = searchParams ? searchParams.get("type") : null;
+  const urlTable = searchParams ? searchParams.get("table") : null;
+  const isParcelUrl =
+    urlType === "parcel" ||
+    String(urlTable).trim().toUpperCase() === "PARCEL" ||
+    String(urlTable).trim().toUpperCase() === "P";
 
   const [sessionData, setSessionData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -153,7 +161,10 @@ export default function SessionTrackPage() {
     );
   }
 
-  const isCompleted = sessionData?.status === "COMPLETED" || sessionData?.paymentStatus === "PAID";
+  const isParcel = Boolean(sessionData?.isParcel || isParcelUrl);
+  const isParcelHandedOver = isParcel && sessionData?.orders?.length > 0 && sessionData.orders.every((o) => o.status === "SERVED" || o.status === "COMPLETED");
+  const isDineInCompleted = !isParcel && (sessionData?.status === "COMPLETED" || sessionData?.paymentStatus === "PAID");
+  const isCompleted = isParcelHandedOver || isDineInCompleted;
   const isBillSent = sessionData?.status === "BILL_SENT";
   const isBillRequested = sessionData?.status === "BILL_REQUESTED";
 
@@ -168,22 +179,24 @@ export default function SessionTrackPage() {
         <div className="w-full max-w-md rounded-3xl bg-slate-900/90 border border-amber-500/40 p-7 text-center shadow-2xl backdrop-blur-xl relative z-10 space-y-5">
           {/* Golden Badge Logo */}
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/15 border border-amber-500/40 text-amber-400 shadow-lg text-3xl">
-            👑
+            {isParcel ? "🛍️" : "👑"}
           </div>
 
           <div>
             <span className="inline-block rounded-full bg-amber-500/10 px-3.5 py-1 text-[10px] font-black uppercase tracking-widest text-amber-400 border border-amber-500/30">
-              Payment Verified ✓
+              {isParcel ? "Order Handed Over ✓" : "Payment Verified ✓"}
             </span>
             <h1 className="mt-3 text-2xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-100 font-['Cinzel'] tracking-wider leading-snug">
-              Thank you for visiting!
+              {isParcel ? "Enjoy Your Meal!" : "Thank you for visiting!"}
             </h1>
           </div>
 
           {/* Core Thank You Text requested by user */}
           <div className="rounded-2xl bg-slate-950/80 border border-amber-500/30 p-5 shadow-inner">
             <p className="text-sm font-bold text-amber-200 leading-relaxed font-['Cinzel'] tracking-wide">
-              "We hope you enjoyed and loved the meal. Come back again!"
+              {isParcel
+                ? "Your takeaway parcel has been picked up. We hope you relish every bite!"
+                : '"We hope you enjoyed and loved the meal. Come back again!"'}
             </p>
           </div>
 
@@ -194,8 +207,12 @@ export default function SessionTrackPage() {
               <span className="font-bold text-amber-300">{sessionData?.restaurantName || "ALPHAY"}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-500">Table Number:</span>
-              <span className="font-bold text-white">Table #{sessionData?.tableNumber}</span>
+              <span className="text-slate-500">{isParcel ? "Order Type:" : "Table Number:"}</span>
+              <span className="font-bold text-white">
+                {isParcel
+                  ? `📦 Takeaway Parcel (Token #${sessionData?.pickupToken || sessionData?.orders?.[0]?.token || "1024"})`
+                  : `Table #${sessionData?.tableNumber}`}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">Payment Status:</span>
@@ -271,7 +288,7 @@ export default function SessionTrackPage() {
         <div className="flex items-center justify-between mb-5">
           <button
             type="button"
-            onClick={() => router.push(`/r/${restaurantId}/menu`)}
+            onClick={() => router.push(`/r/${restaurantId}/menu${isParcel ? "?type=parcel&table=PARCEL" : ""}`)}
             className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-900 border border-amber-500/30 text-amber-400 shadow-xs hover:bg-slate-800 cursor-pointer"
             aria-label="Menu"
           >
@@ -282,17 +299,23 @@ export default function SessionTrackPage() {
             <h1 className="text-lg font-black font-['Cinzel'] tracking-wider text-amber-200">
               {sessionData?.restaurantName || "ALPHAY"}
             </h1>
-            <span className="inline-block rounded-md bg-gradient-to-r from-amber-500 to-amber-600 px-2.5 py-0.5 text-[10px] font-black text-slate-950">
-              {sessionData?.isParcel ? "📦 PARCEL COUNTER" : `TABLE #${sessionData?.tableNumber || "1"}`}
-            </span>
+            {isParcel ? (
+              <span className="inline-block rounded-md bg-gradient-to-r from-amber-500 to-amber-600 px-3 py-1 text-xs font-black text-slate-950 font-['Cinzel'] tracking-wider shadow-sm">
+                📦 TAKEAWAY / PARCEL
+              </span>
+            ) : (
+              <span className="inline-block rounded-md bg-gradient-to-r from-amber-500 to-amber-600 px-2.5 py-0.5 text-[10px] font-black text-slate-950 font-mono">
+                TABLE #{sessionData?.tableNumber || "1"}
+              </span>
+            )}
           </div>
 
           <button
             type="button"
-            onClick={() => router.push(`/r/${restaurantId}/menu`)}
+            onClick={() => router.push(`/r/${restaurantId}/menu${isParcel ? "?type=parcel&table=PARCEL" : ""}`)}
             className="flex items-center gap-1.5 rounded-2xl bg-amber-500/15 border border-amber-500/30 px-3 py-2 text-xs font-extrabold text-amber-400 hover:bg-amber-500/30 transition-all cursor-pointer font-['Cinzel']"
           >
-            <span>➕</span> {sessionData?.isParcel ? "Add Items" : "Continue"}
+            <span>➕</span> {isParcel ? "Add Items" : "Continue"}
           </button>
         </div>
 
@@ -569,7 +592,7 @@ export default function SessionTrackPage() {
             {sessionData?.isParcel ? (
               <button
                 type="button"
-                onClick={() => router.push(`/r/${restaurantId}/menu`)}
+                onClick={() => router.push(`/r/${restaurantId}/menu?type=parcel&table=PARCEL`)}
                 className="w-full rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-4 text-xs font-black text-slate-950 shadow-lg font-['Cinzel'] tracking-wider cursor-pointer transition-all active:scale-[0.98]"
               >
                 ➕ Add More Items to Parcel
@@ -615,5 +638,19 @@ export default function SessionTrackPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function SessionTrackPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-slate-950 text-amber-400 font-['Cinzel'] font-bold text-sm">
+          Loading Parcel & Session...
+        </main>
+      }
+    >
+      <SessionTrackContent />
+    </Suspense>
   );
 }

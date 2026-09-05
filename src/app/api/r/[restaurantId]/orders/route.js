@@ -52,37 +52,64 @@ async function POST(request, { params }) {
 
   const restaurant = session.restaurant;
   const isParcel =
+    Boolean(body.isParcel) ||
+    String(body.type).toLowerCase() === "parcel" ||
     session.table?.isParcelCounter ||
     String(session.table?.number).toUpperCase() === "PARCEL" ||
     String(session.table?.number).toUpperCase() === "P";
 
+  if (isParcel && session.table && !session.table.isParcelCounter) {
+    await db.diningTable.update({
+      where: { id: session.table.id },
+      data: { isParcelCounter: true },
+    }).catch(() => {});
+  }
+
   const { createOnlinePaymentOrder } = require("@/lib/payment-gateway");
 
   if (isParcel) {
-    // PARCEL ORDER FLOW: Requires payment upfront to confirm order
-    const totalOrderCount = await db.order.count({ where: { restaurantId } });
+    // Generate unique 4-digit pickup code
     const random4Digit = Math.floor(1000 + Math.random() * 9000);
     const orderSeq = random4Digit;
+    const tokenStr = String(orderSeq);
 
     const gstAmount = Math.round(subtotal * (restaurant.gstPercent / 100) * 100) / 100;
     const total = Math.round((subtotal + gstAmount) * 100) / 100;
+
+    const isCashOrder = String(body.paymentMethod).toUpperCase() === "CASH" || body.payAtCounter === true;
 
     const order = await db.order.create({
       data: {
         restaurantId,
         tableId: session.tableId,
         sessionId: session.id,
-        status: "PENDING_PAYMENT",
+        status: isCashOrder ? "CONFIRMED" : "PENDING_PAYMENT",
         subtotal,
         gstAmount,
         total,
         specialInstructions: specialInstructions ? `[PARCEL] ${specialInstructions}` : "[PARCEL]",
         orderSeq,
-        paymentGateway: "RAZORPAY",
+        paymentGateway: isCashOrder ? "CASH" : "RAZORPAY",
         items: { create: orderItemsData },
       },
       include: { items: true },
     });
+
+    if (isCashOrder) {
+      return NextResponse.json({
+        ok: true,
+        isParcel: true,
+        requiresPayment: false,
+        orderId: order.id,
+        orderSeq,
+        token: tokenStr,
+        amount: total,
+        currency: "INR",
+        restaurantName: restaurant.name,
+        tableNumber: "PARCEL",
+        message: "Parcel order placed! Pay at counter when collecting.",
+      });
+    }
 
     let paymentOrder;
     try {
@@ -92,7 +119,7 @@ async function POST(request, { params }) {
         notes: {
           restaurantId,
           orderId: order.id,
-          token: String(orderSeq),
+          token: tokenStr,
           type: "PARCEL",
         },
       });
@@ -103,10 +130,24 @@ async function POST(request, { params }) {
       });
     } catch (payErr) {
       console.error("Razorpay order creation error for parcel:", payErr);
-      return NextResponse.json(
-        { error: "Could not initialize online payment for parcel order. Please try again." },
-        { status: 502 }
-      );
+      // If online gateway creation fails, fallback gracefully to pay at counter so the parcel order is not lost
+      await db.order.update({
+        where: { id: order.id },
+        data: { status: "CONFIRMED", paymentGateway: "CASH" },
+      });
+      return NextResponse.json({
+        ok: true,
+        isParcel: true,
+        requiresPayment: false,
+        orderId: order.id,
+        orderSeq,
+        token: tokenStr,
+        amount: total,
+        currency: "INR",
+        restaurantName: restaurant.name,
+        tableNumber: "PARCEL",
+        message: "Order placed! Please pay at the counter when picking up.",
+      });
     }
 
     return NextResponse.json({
@@ -115,7 +156,7 @@ async function POST(request, { params }) {
       requiresPayment: true,
       orderId: order.id,
       orderSeq,
-      token: String(orderSeq),
+      token: tokenStr,
       amount: total,
       amountInPaise: paymentOrder.amountInPaise,
       razorpayOrderId: paymentOrder.orderId,

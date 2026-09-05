@@ -5,9 +5,12 @@ import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
 import { IconCart, IconArrowRight, IconSparkles } from "./Icons";
 
-export default function FloatingCart({ restaurantId }) {
+export default function FloatingCart({ restaurantId, isParcel = false }) {
   const { totalItems, subtotal } = useCart();
   const router = useRouter();
+
+  const cartUrl = `/r/${restaurantId}/cart${isParcel ? "?type=parcel&table=PARCEL" : ""}`;
+  const trackUrl = `/r/${restaurantId}/track${isParcel ? "?type=parcel" : ""}`;
 
   return (
     <div className="fixed inset-x-3 sm:inset-x-4 bottom-3 z-40 mx-auto max-w-lg flex flex-col gap-2 pointer-events-none">
@@ -16,7 +19,7 @@ export default function FloatingCart({ restaurantId }) {
         {totalItems > 0 && (
           <motion.button
             type="button"
-            onClick={() => router.push(`/r/${restaurantId}/cart`)}
+            onClick={() => router.push(cartUrl)}
             initial={{ y: 30, opacity: 0, scale: 0.95 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 30, opacity: 0, scale: 0.95 }}
@@ -52,17 +55,17 @@ export default function FloatingCart({ restaurantId }) {
       {/* 2. Floating Order Details / My Session Button at Bottom of Screen */}
       <motion.button
         type="button"
-        onClick={() => router.push(`/r/${restaurantId}/track`)}
+        onClick={() => router.push(trackUrl)}
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className="pointer-events-auto w-full flex items-center justify-between rounded-2xl bg-slate-900/95 border border-amber-500/40 px-4 py-2.5 text-amber-300 shadow-xl backdrop-blur-md hover:bg-slate-900 active:scale-[0.98] transition-all cursor-pointer"
       >
         <div className="flex items-center gap-2.5">
           <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs">
-            📋
+            {isParcel ? "📦" : "📋"}
           </div>
           <span className="text-xs font-extrabold font-['Cinzel'] tracking-wider text-amber-200">
-            Track Order & Table Bill
+            {isParcel ? "Track Parcel Status & Token" : "Track Order & Table Bill"}
           </span>
         </div>
 

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
 import QuantitySelector from "@/components/QuantitySelector";
 import VegDot from "@/components/VegDot";
@@ -24,10 +24,19 @@ function loadRazorpayScript() {
   });
 }
 
-export default function CartPage() {
+function CartContent() {
   const { restaurantId } = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const api = createApiClient(restaurantId);
+
+  const urlType = searchParams ? searchParams.get("type") : null;
+  const urlTable = searchParams ? searchParams.get("table") : null;
+  const isParcelFromUrl =
+    urlType === "parcel" ||
+    String(urlTable).trim().toUpperCase() === "PARCEL" ||
+    String(urlTable).trim().toUpperCase() === "P";
+
   const {
     items,
     setQuantity,
@@ -40,7 +49,7 @@ export default function CartPage() {
 
   const [gstPercent, setGstPercent] = useState(5);
   const [restaurantName, setRestaurantName] = useState("");
-  const [isParcel, setIsParcel] = useState(false);
+  const [isParcel, setIsParcel] = useState(isParcelFromUrl);
   const [parcelToken, setParcelToken] = useState(null);
 
   useEffect(() => {
@@ -58,13 +67,13 @@ export default function CartPage() {
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data) {
-          setIsParcel(!!data.isParcel);
+          setIsParcel(Boolean(data.isParcel || isParcelFromUrl));
           if (data.pickupToken) setParcelToken(data.pickupToken);
         }
       })
       .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [restaurantId]);
+  }, [restaurantId, isParcelFromUrl]);
 
   const gstAmount = Math.round(subtotal * (gstPercent / 100) * 100) / 100;
   const grandTotal = Math.round((subtotal + gstAmount) * 100) / 100;
@@ -93,7 +102,13 @@ export default function CartPage() {
       const res = await api.createOrder({
         items: items.map((i) => ({ menuItemId: i.menuItemId, quantity: i.quantity, notes: i.notes })),
         specialInstructions,
+        isParcel,
+        type: isParcel ? "parcel" : "dine_in",
       });
+
+      if (res.token || res.orderSeq) {
+        setParcelToken(res.token || String(res.orderSeq));
+      }
 
       // If this is a Parcel Order, launch Razorpay upfront
       if (res.isParcel && res.requiresPayment) {
@@ -209,7 +224,7 @@ export default function CartPage() {
           <div className="pt-2 space-y-3">
             <button
               type="button"
-              onClick={() => router.push(`/r/${restaurantId}/track`)}
+              onClick={() => router.push(`/r/${restaurantId}/track${isParcel ? "?type=parcel&table=PARCEL" : ""}`)}
               className="w-full rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-4 text-xs font-extrabold text-slate-950 shadow-lg shadow-amber-500/25 font-['Cinzel'] tracking-wider cursor-pointer transition-all active:scale-[0.98]"
             >
               📋 {isParcel ? "Track Parcel Preparation Status" : "View Order Status & Bill"}
@@ -217,7 +232,7 @@ export default function CartPage() {
 
             <button
               type="button"
-              onClick={() => router.push(`/r/${restaurantId}/menu`)}
+              onClick={() => router.push(`/r/${restaurantId}/menu${isParcel ? "?type=parcel&table=PARCEL" : ""}`)}
               className="w-full rounded-2xl bg-slate-800 border border-amber-500/30 py-3.5 text-xs font-extrabold text-amber-300 hover:bg-slate-700 font-['Cinzel'] cursor-pointer transition-all"
             >
               ➕ Browse Menu
@@ -387,5 +402,19 @@ export default function CartPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function CartPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-slate-950 text-amber-400 font-['Cinzel'] font-bold text-sm tracking-widest">
+          Loading Cart...
+        </main>
+      }
+    >
+      <CartContent />
+    </Suspense>
   );
 }

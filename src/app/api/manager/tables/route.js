@@ -6,10 +6,28 @@ async function GET() {
   const manager = await getManagerSession();
   if (!manager) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const tables = await db.diningTable.findMany({
+  let tables = await db.diningTable.findMany({
     where: { restaurantId: manager.restaurantId },
     orderBy: { number: "asc" },
   });
+
+  const hasParcel = tables.some(
+    (t) => t.isParcelCounter || t.number.toUpperCase() === "PARCEL" || t.number.toUpperCase() === "P"
+  );
+  if (!hasParcel) {
+    const parcelTable = await db.diningTable
+      .create({
+        data: {
+          restaurantId: manager.restaurantId,
+          number: "PARCEL",
+          capacity: 1,
+          isParcelCounter: true,
+        },
+      })
+      .catch(() => null);
+    if (parcelTable) tables.push(parcelTable);
+  }
+
   return NextResponse.json({ tables, restaurantId: manager.restaurantId });
 }
 
@@ -21,6 +39,11 @@ async function POST(request) {
   const number = (body.number || "").trim();
   if (!number) return NextResponse.json({ error: "Table number is required." }, { status: 400 });
 
+  const isParcelCounter =
+    Boolean(body.isParcelCounter) ||
+    number.toUpperCase() === "PARCEL" ||
+    number.toUpperCase() === "P";
+
   const rawCap = body.capacity || body.size;
   const capacity = rawCap ? parseInt(String(rawCap).replace(/\D/g, ""), 10) : 4;
 
@@ -30,7 +53,7 @@ async function POST(request) {
         restaurantId: manager.restaurantId,
         number,
         capacity: isNaN(capacity) || capacity <= 0 ? 4 : capacity,
-        isParcelCounter: Boolean(body.isParcelCounter),
+        isParcelCounter,
       },
     });
     return NextResponse.json({ ok: true, table });

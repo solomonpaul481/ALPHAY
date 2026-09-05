@@ -178,7 +178,9 @@ export default function KitchenDisplayPage() {
             <div>
               <p className="text-lg uppercase tracking-wider">NEW ORDER ARRIVED!</p>
               <p className="text-sm font-mono">
-                ORDER #{newOrderAlert.orderNumber} · TABLE {newOrderAlert.tableNumber}
+                {newOrderAlert.isParcel || String(newOrderAlert.tableNumber).toUpperCase().includes("PARCEL")
+                  ? `📦 PARCEL TAKEAWAY · TOKEN #${newOrderAlert.token || newOrderAlert.orderNumber}`
+                  : `ORDER #${newOrderAlert.orderNumber} · TABLE ${newOrderAlert.tableNumber}`}
               </p>
             </div>
           </motion.div>
@@ -195,7 +197,9 @@ export default function KitchenDisplayPage() {
             <div>
               <p className="text-lg uppercase tracking-wider">ITEM CANCELLED BY CUSTOMER!</p>
               <p className="text-sm font-mono">
-                TABLE #{cancelAlert.tableNumber} · {cancelAlert.quantity}x {cancelAlert.name} ({cancelAlert.orderNumber})
+                {cancelAlert.isParcel || String(cancelAlert.tableNumber).toUpperCase().includes("PARCEL")
+                  ? `📦 PARCEL TOKEN #${cancelAlert.token || cancelAlert.orderNumber}`
+                  : `TABLE #${cancelAlert.tableNumber}`} · {cancelAlert.quantity}x {cancelAlert.name}
               </p>
             </div>
           </motion.div>
@@ -276,11 +280,24 @@ export default function KitchenDisplayPage() {
                     <div className="flex justify-between items-start border-b border-slate-800 pb-3">
                       <div>
                         <span className="font-mono text-xs font-bold text-red-400">
-                          ORDER #{order.orderNumber}
+                          {order.isParcel || String(order.tableNumber).toUpperCase().includes("PARCEL")
+                            ? "PARCEL TAKEAWAY"
+                            : `ORDER #${order.orderNumber}`}
                         </span>
-                        <h3 className="text-3xl font-black text-white mt-0.5">
-                          TABLE {order.tableNumber}
-                        </h3>
+                        {order.isParcel || String(order.tableNumber).toUpperCase().includes("PARCEL") ? (
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="inline-flex items-center rounded-lg bg-amber-500/20 px-2 py-0.5 text-xs font-black uppercase tracking-wider text-amber-400 border border-amber-500/40 font-mono">
+                              📦 PARCEL
+                            </span>
+                            <h3 className="text-2xl sm:text-3xl font-black text-amber-300 font-mono">
+                              TOKEN #{order.token || order.orderNumber}
+                            </h3>
+                          </div>
+                        ) : (
+                          <h3 className="text-3xl font-black text-white mt-0.5">
+                            TABLE {order.tableNumber}
+                          </h3>
+                        )}
                       </div>
                       <span className="font-mono text-xs font-bold text-slate-400 bg-slate-900 px-2.5 py-1 rounded-lg">
                         {timeAgo(order.createdAt)}
@@ -347,11 +364,24 @@ export default function KitchenDisplayPage() {
                     <div className="flex justify-between items-start border-b border-slate-800 pb-3">
                       <div>
                         <span className="font-mono text-xs font-bold text-amber-400">
-                          ORDER #{order.orderNumber}
+                          {order.isParcel || String(order.tableNumber).toUpperCase().includes("PARCEL")
+                            ? "PARCEL TAKEAWAY"
+                            : `ORDER #${order.orderNumber}`}
                         </span>
-                        <h3 className="text-3xl font-black text-white mt-0.5">
-                          TABLE {order.tableNumber}
-                        </h3>
+                        {order.isParcel || String(order.tableNumber).toUpperCase().includes("PARCEL") ? (
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="inline-flex items-center rounded-lg bg-amber-500/20 px-2 py-0.5 text-xs font-black uppercase tracking-wider text-amber-400 border border-amber-500/40 font-mono">
+                              📦 PARCEL
+                            </span>
+                            <h3 className="text-2xl sm:text-3xl font-black text-amber-300 font-mono">
+                              TOKEN #{order.token || order.orderNumber}
+                            </h3>
+                          </div>
+                        ) : (
+                          <h3 className="text-3xl font-black text-white mt-0.5">
+                            TABLE {order.tableNumber}
+                          </h3>
+                        )}
                       </div>
                       <span className="font-mono text-xs font-bold text-slate-400 bg-slate-900 px-2.5 py-1 rounded-lg">
                         {timeAgo(order.createdAt)}
@@ -418,11 +448,24 @@ export default function KitchenDisplayPage() {
                     <div className="flex justify-between items-start border-b border-slate-800 pb-3">
                       <div>
                         <span className="font-mono text-xs font-bold text-emerald-400">
-                          ORDER #{order.orderNumber}
+                          {order.isParcel || String(order.tableNumber).toUpperCase().includes("PARCEL")
+                            ? "PARCEL TAKEAWAY"
+                            : `ORDER #${order.orderNumber}`}
                         </span>
-                        <h3 className="text-3xl font-black text-white mt-0.5">
-                          TABLE {order.tableNumber}
-                        </h3>
+                        {order.isParcel || String(order.tableNumber).toUpperCase().includes("PARCEL") ? (
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="inline-flex items-center rounded-lg bg-amber-500/20 px-2 py-0.5 text-xs font-black uppercase tracking-wider text-amber-400 border border-amber-500/40 font-mono">
+                              📦 PARCEL
+                            </span>
+                            <h3 className="text-2xl sm:text-3xl font-black text-amber-300 font-mono">
+                              TOKEN #{order.token || order.orderNumber}
+                            </h3>
+                          </div>
+                        ) : (
+                          <h3 className="text-3xl font-black text-white mt-0.5">
+                            TABLE {order.tableNumber}
+                          </h3>
+                        )}
                       </div>
                       <span className="font-mono text-xs font-bold text-slate-400 bg-slate-900 px-2.5 py-1 rounded-lg">
                         {timeAgo(order.createdAt)}
@@ -482,7 +525,9 @@ export default function KitchenDisplayPage() {
                   <div className="flex justify-between items-start border-b border-rose-900/60 pb-2">
                     <div>
                       <span className="font-mono text-[11px] font-bold text-rose-300">
-                        TABLE #{item.tableNumber} · {item.orderNumber}
+                        {item.isParcel || String(item.tableNumber).toUpperCase().includes("PARCEL")
+                          ? `📦 PARCEL TOKEN #${item.token || item.orderNumber}`
+                          : `TABLE #${item.tableNumber} · ${item.orderNumber}`}
                       </span>
                       <p className="text-base font-black text-rose-200">
                         {item.quantity}x {item.name}
