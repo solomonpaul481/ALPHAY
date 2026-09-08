@@ -9,6 +9,8 @@ import CategoryCard from "@/components/CategoryCard";
 import FloatingCart from "@/components/FloatingCart";
 import SearchBar from "@/components/SearchBar";
 import CallStaffButton from "@/components/CallStaffButton";
+import AiWaiterButton from "@/components/AiWaiterButton";
+import AiWaiterModal from "@/components/AiWaiterModal";
 import { useCart } from "@/lib/cart-context";
 import { IconCart, IconSparkles, IconArrowLeft, IconSearch, IconBook, IconListView, IconCardView } from "@/components/Icons";
 
@@ -40,6 +42,7 @@ function MenuContent() {
   const [searchQuery, setSearchQuery] = useState("");
   // View option state: "cart" = Constant Card View (default) | "list" = Item Details List View
   const [viewMode, setViewMode] = useState("cart");
+  const [isAiWaiterOpen, setIsAiWaiterOpen] = useState(false);
 
   const fetchMenu = () => {
     if (!restaurantId) return;
@@ -446,7 +449,18 @@ function MenuContent() {
 
       {/* PERSISTENT FLOATING CART OPTION ON CATEGORIES MENU PAGE */}
       <FloatingCart restaurantId={restaurantId} isParcel={isParcel} />
+      <AiWaiterButton onClick={() => setIsAiWaiterOpen(true)} hasCartItems={totalItems > 0} />
       {!isParcel && <CallStaffButton restaurantId={restaurantId} />}
+
+      {/* FULL-SCREEN AI WAITER CHAT MODAL */}
+      <AiWaiterModal
+        isOpen={isAiWaiterOpen}
+        onClose={() => setIsAiWaiterOpen(false)}
+        restaurantId={restaurantId}
+        restaurantName={menu?.restaurant?.name || "ALPHAY"}
+        menu={menu}
+        isParcel={isParcel}
+      />
     </main>
   );
 }
