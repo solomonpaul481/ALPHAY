@@ -77,7 +77,7 @@ async function POST(request, { params }) {
         orders: { include: { items: true } },
       },
     });
-    if (existingSession && (existingSession.endedAt || existingSession.status === "COMPLETED" || existingSession.status === "CLOSED")) {
+    if (existingSession && (existingSession.endedAt || existingSession.status === "COMPLETED" || existingSession.status === "CLOSED" || existingSession.tableId !== table.id)) {
       existingSession = null;
     }
   }

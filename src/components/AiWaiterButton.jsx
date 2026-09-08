@@ -23,9 +23,9 @@ export default function AiWaiterButton({ onClick, hasCartItems = false }) {
         {/* Ambient pulse glow ring */}
         <span className="absolute -inset-1 rounded-2xl bg-amber-400/30 blur-sm animate-pulse group-hover:bg-amber-400/50 transition-all pointer-events-none" />
 
-        {/* Floating AI Sparkle Badge */}
-        <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-slate-950 border border-amber-400 text-[10px] text-amber-300 shadow-md">
-          ✨
+        {/* Small AI indicator badge */}
+        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-slate-950 border border-amber-400 text-[8px] font-black text-amber-300 shadow-md">
+          AI
         </span>
 
         {/* Letter 'A' icon */}

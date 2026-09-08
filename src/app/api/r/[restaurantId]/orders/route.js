@@ -63,6 +63,33 @@ async function POST(request, { params }) {
       where: { id: session.table.id },
       data: { isParcelCounter: true },
     }).catch(() => {});
+  } else if (!isParcel && body.tableNumber && session.table?.number !== String(body.tableNumber).trim()) {
+    const targetTableNum = String(body.tableNumber).trim();
+    let correctTable = await db.diningTable.findUnique({
+      where: {
+        restaurantId_number: {
+          restaurantId: session.restaurantId,
+          number: targetTableNum,
+        },
+      },
+    });
+    if (!correctTable) {
+      correctTable = await db.diningTable.create({
+        data: {
+          restaurantId: session.restaurantId,
+          number: targetTableNum,
+          isParcelCounter: false,
+        },
+      }).catch(() => null);
+    }
+    if (correctTable) {
+      session.tableId = correctTable.id;
+      session.table = correctTable;
+      await db.customerSession.update({
+        where: { id: session.id },
+        data: { tableId: correctTable.id },
+      }).catch(() => {});
+    }
   }
 
   const { createOnlinePaymentOrder } = require("@/lib/payment-gateway");

@@ -19,7 +19,7 @@ function LandingFormInner() {
     String(rawTable).trim().toUpperCase() === "PARCEL" ||
     String(rawTable).trim().toUpperCase() === "P";
 
-  const tableNumber = isParcel ? "PARCEL" : (rawTable || "12");
+  const tableNumber = isParcel ? "PARCEL" : (rawTable || "1");
 
   const [restaurant, setRestaurant] = useState({ name: "ALPHAY", latitude: 17.4239, longitude: 78.4738 });
   const [submitting, setSubmitting] = useState(false);

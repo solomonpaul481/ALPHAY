@@ -27,7 +27,7 @@ async function GET(request, { params }) {
     String(rawTable).trim().toUpperCase() === "P" ||
     Boolean(session?.table?.isParcelCounter);
 
-  const tableNumber = isParcelReq ? "PARCEL" : (rawTable || "12");
+  const tableNumber = isParcelReq ? "PARCEL" : (rawTable || "1");
 
   let table = await db.diningTable.findUnique({
     where: { restaurantId_number: { restaurantId: resolvedRestaurantId, number: String(tableNumber).trim() } },

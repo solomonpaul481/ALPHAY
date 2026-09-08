@@ -194,7 +194,7 @@ async function GET() {
         return {
           id: o.id,
           status: o.status === "PAID" ? "CONFIRMED" : o.status,
-          table: isParcel ? "PARCEL" : (o.table ? o.table.number : "12"),
+          table: isParcel ? "PARCEL" : (o.table ? o.table.number : "1"),
           isParcel,
           token: tokenStr,
           total: o.total,
@@ -205,7 +205,7 @@ async function GET() {
       staffCalls: staffCalls.map((c) => ({
         id: c.id,
         type: c.type,
-        table: c.table ? c.table.number : "12",
+        table: c.table ? c.table.number : "1",
         createdAt: c.createdAt,
       })),
     });
