@@ -75,6 +75,18 @@ function CartContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restaurantId, isParcelFromUrl]);
 
+  // Intercept browser back button on cart page to return to menu page
+  useEffect(() => {
+    const handlePopState = () => {
+      const targetUrl = `/r/${restaurantId}/menu${
+        isParcel ? "?type=parcel&table=PARCEL" : urlTable ? `?table=${encodeURIComponent(urlTable)}` : ""
+      }`;
+      router.replace(targetUrl);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [restaurantId, isParcel, urlTable, router]);
+
   const gstAmount = Math.round(subtotal * (gstPercent / 100) * 100) / 100;
   const grandTotal = Math.round((subtotal + gstAmount) * 100) / 100;
 
@@ -243,6 +255,10 @@ function CartContent() {
     );
   }
 
+  const menuUrl = `/r/${restaurantId}/menu${
+    isParcel ? "?type=parcel&table=PARCEL" : urlTable ? `?table=${encodeURIComponent(urlTable)}` : ""
+  }`;
+
   if (hydrated && items.length === 0) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center px-6 text-center bg-slate-950 text-white">
@@ -255,7 +271,7 @@ function CartContent() {
         </p>
         <button
           type="button"
-          onClick={() => router.push(`/r/${restaurantId}/menu`)}
+          onClick={() => router.push(menuUrl)}
           className="mt-6 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 px-6 py-3.5 text-xs font-bold text-slate-950 shadow-md hover:from-amber-400 hover:to-amber-500 font-['Cinzel'] cursor-pointer"
         >
           Browse Menu
@@ -271,9 +287,9 @@ function CartContent() {
         <div className="mb-6 flex items-center gap-3">
           <button
             type="button"
-            onClick={() => router.back()}
+            onClick={() => router.push(menuUrl)}
             className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-900 border border-amber-500/30 text-amber-400 shadow-xs hover:bg-slate-800 cursor-pointer"
-            aria-label="Back"
+            aria-label="Back to Menu"
           >
             <IconArrowLeft className="h-5 w-5" />
           </button>

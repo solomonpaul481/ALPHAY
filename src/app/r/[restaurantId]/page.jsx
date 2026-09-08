@@ -29,6 +29,39 @@ function LandingFormInner() {
   useEffect(() => {
     if (!restaurantId) return;
 
+    // If customer already has items in cart or an active session, direct straight to menu page
+    if (typeof window !== "undefined") {
+      try {
+        const rawCart = sessionStorage.getItem(`alphay_cart_${restaurantId}`);
+        if (rawCart) {
+          const parsed = JSON.parse(rawCart);
+          if (parsed.items && parsed.items.length > 0) {
+            router.replace(
+              `/r/${restaurantId}/menu${
+                isParcel ? "?type=parcel&table=PARCEL" : tableNumber ? `?table=${encodeURIComponent(tableNumber)}` : ""
+              }`
+            );
+            return;
+          }
+        }
+      } catch {}
+
+      api
+        .getActiveSession()
+        .then((sessionData) => {
+          if (sessionData && sessionData.sessionId) {
+            const isP = sessionData.isParcel || isParcel;
+            const tableNum = sessionData.table?.number || tableNumber;
+            router.replace(
+              `/r/${restaurantId}/menu${
+                isP ? "?type=parcel&table=PARCEL" : tableNum ? `?table=${encodeURIComponent(tableNum)}` : ""
+              }`
+            );
+          }
+        })
+        .catch(() => {});
+    }
+
     // Fetch restaurant information once without double-rendering or flashing
     if (!hasLoadedInfoRef.current) {
       hasLoadedInfoRef.current = true;

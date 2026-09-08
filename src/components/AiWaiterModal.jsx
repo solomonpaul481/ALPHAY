@@ -96,6 +96,28 @@ export default function AiWaiterModal({
     return allMenuItems.slice(0, 6);
   }, [allMenuItems]);
 
+  // Live matched dishes on top of the typing box as customer types
+  const matchingSuggestions = useMemo(() => {
+    const q = inquiryText.trim().toLowerCase();
+    if (!q) return [];
+    return allMenuItems.filter((item) =>
+      item.name.toLowerCase().includes(q)
+    );
+  }, [inquiryText, allMenuItems]);
+
+  // Intercept browser back button so pressing back on phone or browser closes AI Waiter and returns to menu page
+  useEffect(() => {
+    if (!isOpen) return;
+    window.history.pushState({ aiWaiterOpen: true }, "");
+    const handlePopState = () => {
+      onClose();
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [isOpen, onClose]);
+
   // Reset conversation on open
   useEffect(() => {
     if (isOpen) {
@@ -218,19 +240,20 @@ export default function AiWaiterModal({
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Explicit Back to Menu Button */}
             <button
               type="button"
               onClick={onClose}
-              className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-800/90 border border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white transition-all cursor-pointer font-bold text-sm"
-              aria-label="Close AI Waiter"
+              className="flex items-center gap-1.5 rounded-xl bg-slate-800/90 border border-slate-700 px-3 py-1.5 text-xs font-bold text-slate-200 hover:bg-slate-700 hover:text-white transition-all cursor-pointer font-['Cinzel']"
+              aria-label="Back to Menu"
             >
-              ✕
+              <span>← Back to Menu</span>
             </button>
           </div>
         </header>
 
         {/* CHAT MESSAGES SCROLL AREA */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 max-w-3xl w-full mx-auto pb-28">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 max-w-3xl w-full mx-auto pb-32">
           {/* Quick Dish Inquiry Chips */}
           {popularDishes.length > 0 && (
             <div className="rounded-2xl bg-slate-900/70 border border-amber-500/20 p-3.5">
@@ -387,27 +410,64 @@ export default function AiWaiterModal({
           <div ref={chatEndRef} />
         </main>
 
-        {/* BOTTOM INTERACTIVE TYPING BAR */}
+        {/* BOTTOM INTERACTIVE TYPING BAR WITH MATCHED ITEMS ON TOP */}
         <footer className="border-t border-amber-500/20 bg-slate-900/95 p-3 sm:p-4 backdrop-blur-xl z-20">
-          <form
-            onSubmit={handleFormSubmit}
-            className="max-w-3xl mx-auto flex items-center gap-2"
-          >
-            <input
-              type="text"
-              value={inquiryText}
-              onChange={(e) => setInquiryText(e.target.value)}
-              placeholder='Type any dish name (e.g. "Chicken Biryani", "Paneer Butter Masala")...'
-              className="flex-1 rounded-xl bg-slate-950 border border-slate-700/80 px-4 py-2.5 text-xs sm:text-sm text-slate-100 placeholder:text-slate-500 focus:border-amber-400 focus:outline-none transition-all"
-            />
-            <button
-              type="submit"
-              disabled={!inquiryText.trim()}
-              className="rounded-xl bg-amber-500 px-5 py-2.5 text-xs sm:text-sm font-black text-slate-950 hover:bg-amber-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all font-['Cinzel'] cursor-pointer shrink-0"
+          <div className="max-w-3xl mx-auto flex flex-col gap-2">
+            {/* MATCHED DISH NAMES DISPLAYED ON TOP AS CUSTOMER TYPES */}
+            {inquiryText.trim().length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="max-h-36 overflow-y-auto rounded-2xl bg-slate-950/98 border border-amber-500/40 p-2.5 shadow-2xl backdrop-blur-2xl"
+              >
+                <div className="text-[10px] font-black uppercase tracking-wider text-amber-400/90 font-['Cinzel'] px-1 pb-1.5 flex items-center justify-between">
+                  <span>Matched Dishes:</span>
+                  <span className="text-[9px] text-slate-400 font-sans">Tap to describe with picture</span>
+                </div>
+
+                {matchingSuggestions.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {matchingSuggestions.slice(0, 10).map((dish) => (
+                      <button
+                        key={dish.id}
+                        type="button"
+                        onClick={() => handleAskDish(dish.name)}
+                        className="flex items-center gap-2 rounded-xl bg-slate-900 border border-slate-700 hover:border-amber-400 px-3 py-1.5 text-xs font-bold text-slate-200 hover:text-amber-300 transition-all cursor-pointer active:scale-95"
+                      >
+                        <VegDot isVeg={dish.isVeg} />
+                        <span>{dish.name}</span>
+                        <span className="font-mono text-amber-400 text-[11px]">₹{dish.price}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-xs text-slate-400 px-1 py-1">
+                    No dishes found matching &quot;{inquiryText}&quot;
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            <form
+              onSubmit={handleFormSubmit}
+              className="flex items-center gap-2"
             >
-              Ask
-            </button>
-          </form>
+              <input
+                type="text"
+                value={inquiryText}
+                onChange={(e) => setInquiryText(e.target.value)}
+                placeholder='Type any dish name (e.g. "Chicken Biryani", "Paneer Butter Masala")...'
+                className="flex-1 rounded-xl bg-slate-950 border border-slate-700/80 px-4 py-2.5 text-xs sm:text-sm text-slate-100 placeholder:text-slate-500 focus:border-amber-400 focus:outline-none transition-all"
+              />
+              <button
+                type="submit"
+                disabled={!inquiryText.trim()}
+                className="rounded-xl bg-amber-500 px-5 py-2.5 text-xs sm:text-sm font-black text-slate-950 hover:bg-amber-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all font-['Cinzel'] cursor-pointer shrink-0"
+              >
+                Ask
+              </button>
+            </form>
+          </div>
         </footer>
       </motion.div>
     </AnimatePresence>
