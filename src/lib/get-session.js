@@ -21,7 +21,16 @@ async function getSession(restaurantId) {
     include: { table: true, restaurant: true },
   });
   if (!session) return null;
-  if (session.expiresAt < new Date()) return null;
+  if (session.expiresAt < new Date()) {
+    if (!session.endedAt && session.status !== "COMPLETED" && session.status !== "CLOSED") {
+      await db.customerSession.update({
+        where: { id: session.id },
+        data: { expiresAt: new Date(Date.now() + SESSION_TTL_SECONDS * 1000) },
+      }).catch(() => {});
+    } else {
+      return null;
+    }
+  }
   if (session.endedAt || session.status === "COMPLETED" || session.status === "CLOSED") return null;
 
   // Validate restaurant match by ID or case-insensitive name

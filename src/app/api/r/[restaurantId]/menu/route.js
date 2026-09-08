@@ -60,6 +60,7 @@ async function GET(request, { params }) {
           tableId: table.id,
           endedAt: null,
           status: { in: ["ACTIVE", "BILL_REQUESTED", "BILL_SENT"] },
+          expiresAt: { gt: new Date() },
         },
         orderBy: { createdAt: "desc" },
       });

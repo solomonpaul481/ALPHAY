@@ -1,11 +1,89 @@
 const { NextResponse } = require("next/server");
+const crypto = require("crypto");
 const { db } = require("@/lib/db");
 const { getSession } = require("@/lib/get-session");
+const { resolveRestaurant } = require("@/lib/resolve-restaurant");
+const { SESSION_COOKIE, SESSION_TTL_SECONDS, signSessionToken } = require("@/lib/session");
 
 async function POST(request, { params }) {
   const { restaurantId } = params;
 
-  const session = await getSession(restaurantId);
+  const body = await request.json().catch(() => ({}));
+  let session = await getSession(restaurantId);
+  let sessionTokenToSet = null;
+
+  if (!session) {
+    const restaurant = await resolveRestaurant(restaurantId);
+    if (!restaurant) {
+      return NextResponse.json({ error: "Restaurant not found." }, { status: 404 });
+    }
+
+    const isParcelReq =
+      Boolean(body.isParcel) ||
+      String(body.type).toLowerCase() === "parcel" ||
+      String(body.tableNumber).trim().toUpperCase() === "PARCEL";
+    const targetTableNum = isParcelReq ? "PARCEL" : String(body.tableNumber || "1").trim();
+
+    let table = await db.diningTable.findUnique({
+      where: { restaurantId_number: { restaurantId: restaurant.id, number: targetTableNum } },
+    });
+    if (!table) {
+      table = await db.diningTable
+        .create({
+          data: {
+            restaurantId: restaurant.id,
+            number: targetTableNum,
+            isParcelCounter: isParcelReq,
+          },
+        })
+        .catch(() => null);
+    }
+    if (!table) {
+      table = await db.diningTable.findFirst({ where: { restaurantId: restaurant.id } });
+    }
+
+    let activeSession = null;
+    if (!isParcelReq && table) {
+      activeSession = await db.customerSession.findFirst({
+        where: {
+          restaurantId: restaurant.id,
+          tableId: table.id,
+          endedAt: null,
+          status: { in: ["ACTIVE", "BILL_REQUESTED", "BILL_SENT"] },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+    }
+
+    if (!activeSession && table) {
+      activeSession = await db.customerSession.create({
+        data: {
+          restaurantId: restaurant.id,
+          tableId: table.id,
+          token: crypto.randomUUID(),
+          latitude: restaurant.latitude || 17.4239,
+          longitude: restaurant.longitude || 78.4738,
+          distanceMeters: 0,
+          status: "ACTIVE",
+          expiresAt: new Date(Date.now() + SESSION_TTL_SECONDS * 1000),
+        },
+      });
+    }
+
+    if (activeSession && table) {
+      session = {
+        ...activeSession,
+        table,
+        restaurant,
+      };
+      sessionTokenToSet = signSessionToken({
+        sessionId: activeSession.id,
+        restaurantId: restaurant.id,
+        tableId: table.id,
+      });
+    }
+  }
+
   if (!session) {
     return NextResponse.json(
       { error: "session_required", message: "Your table session expired. Please rescan the QR code." },
@@ -13,7 +91,6 @@ async function POST(request, { params }) {
     );
   }
 
-  const body = await request.json().catch(() => ({}));
   const cartItems = Array.isArray(body.items) ? body.items : [];
   const specialInstructions = typeof body.specialInstructions === "string" ? body.specialInstructions.slice(0, 500) : null;
 
@@ -24,7 +101,7 @@ async function POST(request, { params }) {
   // Always price from the database — never trust amounts sent by the client.
   const menuItemIds = cartItems.map((c) => c.menuItemId);
   const menuItems = await db.menuItem.findMany({
-    where: { id: { in: menuItemIds }, restaurantId: session.restaurantId, isAvailable: true },
+    where: { id: { in: menuItemIds }, isAvailable: true },
   });
   const menuItemsById = Object.fromEntries(menuItems.map((m) => [m.id, m]));
 
@@ -177,7 +254,7 @@ async function POST(request, { params }) {
       });
     }
 
-    return NextResponse.json({
+    const parcelResponse = NextResponse.json({
       ok: true,
       isParcel: true,
       requiresPayment: true,
@@ -193,6 +270,18 @@ async function POST(request, { params }) {
       tableNumber: "PARCEL",
       message: "Please complete payment to confirm your parcel order.",
     });
+
+    if (sessionTokenToSet) {
+      parcelResponse.cookies.set(SESSION_COOKIE, sessionTokenToSet, {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: false,
+        maxAge: SESSION_TTL_SECONDS,
+        path: "/",
+      });
+    }
+
+    return parcelResponse;
   }
 
   // DINE-IN FLOW: Orders are confirmed immediately and paid after the meal
@@ -270,7 +359,7 @@ async function POST(request, { params }) {
     });
   }
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     ok: true,
     isParcel: false,
     requiresPayment: false,
@@ -279,9 +368,21 @@ async function POST(request, { params }) {
     token: String(order.orderSeq || 1001).slice(-4).padStart(4, "0"),
     amount: order.total,
     restaurantName: restaurant.name,
-    tableNumber: session.table.number,
+    tableNumber: session.table?.number || "1",
     message: "Order placed successfully! Added to your table session.",
   });
+
+  if (sessionTokenToSet) {
+    response.cookies.set(SESSION_COOKIE, sessionTokenToSet, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: false,
+      maxAge: SESSION_TTL_SECONDS,
+      path: "/",
+    });
+  }
+
+  return response;
 }
 
 module.exports = { POST };

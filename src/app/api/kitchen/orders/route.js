@@ -1,44 +1,40 @@
 const { NextResponse } = require("next/server");
 const { db } = require("@/lib/db");
 const { getManagerSession } = require("@/lib/manager-auth");
+const { resolveRestaurant } = require("@/lib/resolve-restaurant");
 
 async function GET(request) {
   const { searchParams } = new URL(request.url);
-  let restaurantId = searchParams.get("restaurantId");
+  const restaurantQuery = searchParams.get("restaurantId");
 
-  if (!restaurantId) {
+  let restaurant = null;
+  if (restaurantQuery) {
+    restaurant = await resolveRestaurant(restaurantQuery);
+  }
+
+  if (!restaurant) {
     const manager = await getManagerSession();
-    if (manager) {
-      restaurantId = manager.restaurantId;
-    } else {
-      // Fallback to first active restaurant for easy kitchen kiosk access
-      const firstRest = await db.restaurant.findFirst({ where: { status: "ACTIVE" } });
-      if (firstRest) restaurantId = firstRest.id;
+    if (manager?.restaurantId) {
+      restaurant = await resolveRestaurant(manager.restaurantId);
     }
   }
 
-  if (!restaurantId) {
-    return NextResponse.json({ error: "Restaurant not found" }, { status: 404 });
+  if (!restaurant) {
+    // Fallback to first active restaurant for easy kitchen kiosk access
+    restaurant = await db.restaurant.findFirst({ where: { status: "ACTIVE" } });
   }
-
-  const restaurant = await db.restaurant.findUnique({
-    where: { id: restaurantId },
-    select: { id: true, name: true, logoUrl: true },
-  });
 
   if (!restaurant) {
     return NextResponse.json({ error: "Restaurant not found" }, { status: 404 });
   }
 
-  // Only query orders for sessions that are STILL ACTIVE (not ended or completed or closed)
+  const restaurantId = restaurant.id;
+
+  // Query all active orders for the kitchen (CONFIRMED, PREPARING, READY, PAID)
   const activeOrders = await db.order.findMany({
     where: {
       restaurantId,
       status: { in: ["PAID", "CONFIRMED", "PREPARING", "READY"] },
-      session: {
-        endedAt: null,
-        status: { in: ["ACTIVE", "BILL_REQUESTED", "BILL_SENT"] },
-      },
     },
     include: {
       items: true,
@@ -47,13 +43,10 @@ async function GET(request) {
     orderBy: { createdAt: "asc" },
   });
 
-  // Query cancelled items/orders for active dining sessions
+  // Query cancelled items/orders
   const cancelledOrdersAndItems = await db.order.findMany({
     where: {
       restaurantId,
-      session: {
-        endedAt: null,
-      },
       OR: [
         { status: "CANCELLED" },
         { items: { some: { isCancelled: true } } },
@@ -64,6 +57,7 @@ async function GET(request) {
       table: true,
     },
     orderBy: { updatedAt: "desc" },
+    take: 20,
   });
 
   const cancelledList = [];
