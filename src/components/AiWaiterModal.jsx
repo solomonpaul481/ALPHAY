@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/lib/cart-context";
 import VegDot from "@/components/VegDot";
@@ -105,18 +106,31 @@ export default function AiWaiterModal({
     );
   }, [inquiryText, allMenuItems]);
 
+  const router = useRouter();
+
+  // Return to the menu page and close modal
+  const handleBackToMenu = () => {
+    onClose();
+    if (restaurantId) {
+      const query = isParcel
+        ? "?type=parcel&table=PARCEL"
+        : (activeTableNumber ? `?table=${encodeURIComponent(activeTableNumber)}` : "");
+      router.push(`/r/${restaurantId}/menu${query}`);
+    }
+  };
+
   // Intercept browser back button so pressing back on phone or browser closes AI Waiter and returns to menu page
   useEffect(() => {
     if (!isOpen) return;
     window.history.pushState({ aiWaiterOpen: true }, "");
     const handlePopState = () => {
-      onClose();
+      handleBackToMenu();
     };
     window.addEventListener("popstate", handlePopState);
     return () => {
       window.removeEventListener("popstate", handlePopState);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, restaurantId, isParcel, activeTableNumber]);
 
   // Reset conversation on open
   useEffect(() => {
@@ -243,7 +257,7 @@ export default function AiWaiterModal({
             {/* Explicit Back to Menu Button */}
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleBackToMenu}
               className="flex items-center gap-1.5 rounded-xl bg-slate-800/90 border border-slate-700 px-3 py-1.5 text-xs font-bold text-slate-200 hover:bg-slate-700 hover:text-white transition-all cursor-pointer font-['Cinzel']"
               aria-label="Back to Menu"
             >

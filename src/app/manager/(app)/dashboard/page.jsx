@@ -243,15 +243,30 @@ export default function ManagerDashboardPage() {
             <span className="h-2.5 w-2.5 rounded-full bg-amber-500 animate-pulse" />
           </div>
 
-          <div className="rounded-2xl bg-white dark:bg-slate-900 p-4 sm:p-5 border border-amber-500/20 shadow-md flex items-center justify-between">
+          <div
+            id="completed-metric-box"
+            onClick={() => {
+              const el = document.getElementById("completed-orders-box");
+              if (el) {
+                el.scrollIntoView({ behavior: "smooth" });
+              }
+            }}
+            className="rounded-2xl bg-white dark:bg-slate-900 p-4 sm:p-5 border border-amber-500/20 shadow-md flex items-center justify-between cursor-pointer hover:border-emerald-500/50 hover:shadow-lg transition-all group"
+            title="Click to jump to Completed Orders section below"
+          >
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-400 border border-emerald-400/40">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-400 border border-emerald-400/40 group-hover:scale-105 transition-transform">
                 <IconCheck className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 font-['Cinzel']">
-                  Completed
-                </p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 font-['Cinzel']">
+                    Completed
+                  </p>
+                  <span className="text-[9px] text-emerald-500 font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                    View ↓
+                  </span>
+                </div>
                 <p className="text-xl font-extrabold text-slate-900 dark:text-white font-mono">
                   {loading ? "..." : data?.completedToday ?? 0}
                 </p>
@@ -586,6 +601,123 @@ export default function ManagerDashboardPage() {
                           ✕
                         </button>
                       </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        {/* COMPLETED ORDERS SECTION BOX */}
+        <section
+          id="completed-orders-box"
+          className="rounded-3xl bg-white dark:bg-slate-900 p-6 border border-emerald-500/30 shadow-2xl space-y-6"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-emerald-500/20 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                <IconCheck className="h-6 w-6" />
+              </div>
+              <div>
+                <h2 className="text-lg font-extrabold font-['Cinzel'] text-slate-900 dark:text-white tracking-wide flex items-center gap-2">
+                  Completed Orders
+                  <span className="rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-black font-['Cinzel']">
+                    {data?.completedOrders?.length ?? data?.completedToday ?? 0} COMPLETED TODAY
+                  </span>
+                </h2>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  Fulfilled dining table orders and takeaway parcels completed today
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                {data?.completedOrders?.length ?? 0} Record{(data?.completedOrders?.length ?? 0) === 1 ? "" : "s"}
+              </span>
+            </div>
+          </div>
+
+          {!data?.completedOrders || data.completedOrders.length === 0 ? (
+            <div className="py-12 text-center rounded-3xl bg-slate-50 dark:bg-slate-950/60 border border-dashed border-emerald-500/20 p-8 space-y-2">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                <IconCheck className="h-6 w-6" />
+              </div>
+              <h4 className="text-sm font-extrabold text-slate-900 dark:text-white font-['Cinzel'] tracking-wide">
+                No Completed Orders Yet Today
+              </h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                When dining tables are served/paid or parcel orders are handed over, they will appear here in the completed orders box.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {data.completedOrders.map((order) => {
+                const token = order.token || String(order.orderSeq || "1001").slice(-4).padStart(4, "0");
+                const timeStr = order.completedAt
+                  ? new Date(order.completedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                  : "";
+
+                return (
+                  <div
+                    key={order.id}
+                    className="rounded-2xl bg-slate-50 dark:bg-slate-950 p-4 border border-emerald-500/20 shadow-md flex flex-col justify-between space-y-3 hover:border-emerald-500/40 transition-all"
+                  >
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between border-b border-emerald-500/10 pb-2.5">
+                        <div>
+                          <span className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 font-['Cinzel']">
+                            {order.isParcel ? "PARCEL PICKUP" : `TABLE #${order.table}`}
+                          </span>
+                          <h4 className="text-base font-black text-slate-900 dark:text-white font-mono tracking-wider">
+                            #{token}
+                          </h4>
+                        </div>
+
+                        <div className="text-right space-y-1">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-black font-['Cinzel']">
+                            <span>✓</span>
+                            <span>COMPLETED</span>
+                          </span>
+                          {timeStr && (
+                            <p className="text-[10px] font-mono text-slate-400">
+                              {timeStr}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* ITEMS */}
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1 font-['Cinzel']">
+                          Dishes ({order.items.reduce((acc, i) => acc + i.quantity, 0)})
+                        </p>
+                        <ul className="space-y-1 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                          {order.items.map((item, idx) => (
+                            <li key={idx} className="flex justify-between items-center">
+                              <span className="truncate pr-2 font-['Cinzel']">
+                                <strong className="text-emerald-600 dark:text-emerald-400 font-mono mr-1">
+                                  {item.quantity}x
+                                </strong>
+                                {item.name}
+                              </span>
+                              <span className="font-mono text-slate-400 whitespace-nowrap">
+                                ₹{(item.price * item.quantity).toFixed(0)}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+
+                    <div className="pt-2.5 border-t border-emerald-500/10 flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase text-slate-400 font-['Cinzel']">
+                        Total Paid
+                      </span>
+                      <span className="font-mono text-base font-black text-emerald-600 dark:text-emerald-400">
+                        ₹{(order.total || 0).toFixed(2)}
+                      </span>
                     </div>
                   </div>
                 );

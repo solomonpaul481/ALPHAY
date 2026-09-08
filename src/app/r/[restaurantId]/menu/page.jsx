@@ -219,21 +219,6 @@ function MenuContent() {
                 />
               </button>
             </div>
-
-            {/* CART ICON BUTTON */}
-            <button
-              type="button"
-              onClick={() => router.push(`/r/${restaurantId}/cart${isParcel ? "?type=parcel&table=PARCEL" : ""}`)}
-              className="relative flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-500 text-slate-950 shadow-md hover:bg-amber-400 transition-all cursor-pointer active:scale-95"
-              aria-label="View Cart"
-            >
-              <IconCart className="h-4 w-4 text-slate-950" />
-              {totalItems > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-slate-950 text-[10px] font-black text-amber-400 border border-amber-400 shadow-md animate-bounce">
-                  {totalItems}
-                </span>
-              )}
-            </button>
           </div>
         </div>
       </header>
@@ -267,8 +252,8 @@ function MenuContent() {
                   ? "bg-amber-500 text-slate-950 shadow-sm"
                   : "text-slate-400 hover:text-white"
               }`}
-              title="Cart / Card View"
-              aria-label="Cart / Card View"
+              title="Card View"
+              aria-label="Card View"
             >
               <IconCardView className="h-4 w-4" />
             </button>

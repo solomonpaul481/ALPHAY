@@ -17,7 +17,7 @@ async function GET() {
     }
     const restaurantId = manager.restaurantId;
 
-    const [summary, liveOrders, completedToday, staffCalls, restaurant, activeSessions, parcelOrdersList] = await Promise.all([
+    const [summary, liveOrders, completedOrdersList, staffCalls, restaurant, activeSessions, parcelOrdersList] = await Promise.all([
       getRevenueSummary(restaurantId),
       db.order.findMany({
         where: {
@@ -31,8 +31,27 @@ async function GET() {
         include: { items: true, table: true },
         orderBy: { createdAt: "asc" },
       }),
-      db.order.count({
-        where: { restaurantId, status: "SERVED", createdAt: { gte: startOfDay() } },
+      db.order.findMany({
+        where: {
+          restaurantId,
+          status: { notIn: ["CANCELLED", "PAYMENT_FAILED"] },
+          OR: [
+            { status: "SERVED" },
+            {
+              session: {
+                endedAt: { not: null },
+              },
+            },
+            {
+              session: {
+                status: { in: ["COMPLETED", "CLOSED"] },
+              },
+            },
+          ],
+          createdAt: { gte: startOfDay() },
+        },
+        include: { items: true, table: true, session: true },
+        orderBy: { updatedAt: "desc" },
       }),
       db.staffCallRequest.findMany({
         where: { restaurantId, status: "PENDING" },
@@ -164,6 +183,35 @@ async function GET() {
       };
     });
 
+    // Format Completed orders (Dine-in served/completed and parcel fulfilled)
+    const formattedCompletedOrders = completedOrdersList.map((o) => {
+      const isParcel =
+        o.table?.isParcelCounter ||
+        String(o.table?.number).toUpperCase().includes("PARCEL") ||
+        String(o.table?.number).toUpperCase() === "P" ||
+        Boolean(o.specialInstructions?.includes("[PARCEL]"));
+      const tokenStr = String(o.orderSeq || 1001).slice(-4).padStart(4, "0");
+      return {
+        id: o.id,
+        orderNumber: `ORD-${tokenStr}`,
+        token: tokenStr,
+        orderSeq: o.orderSeq,
+        table: isParcel ? "PARCEL" : (o.table ? o.table.number : "1"),
+        isParcel,
+        total: o.total,
+        status: o.status === "PAID" && (o.session?.status === "COMPLETED" || o.session?.endedAt) ? "SERVED" : o.status,
+        createdAt: o.createdAt,
+        updatedAt: o.updatedAt,
+        specialInstructions: o.specialInstructions,
+        items: (o.items || []).map((i) => ({
+          id: i.id,
+          name: i.name,
+          quantity: i.quantity,
+          price: i.price,
+        })),
+      };
+    });
+
     return NextResponse.json({
       restaurantId: restaurant.id,
       restaurantName: restaurant.name,
@@ -181,7 +229,8 @@ async function GET() {
       monthEarnings: summary.month.total,
       active: activeCount,
       ready: readyCount,
-      completedToday,
+      completedToday: formattedCompletedOrders.length,
+      completedOrders: formattedCompletedOrders,
       allToday: summary.today.count,
       activeSessions: formattedActiveSessions,
       parcelOrders: formattedParcelOrders,

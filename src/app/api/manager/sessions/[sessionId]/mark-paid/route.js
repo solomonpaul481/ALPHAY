@@ -32,10 +32,10 @@ async function POST(request, { params }) {
     },
   });
 
-  // Mark all orders in the session as PAID
+  // Mark all orders in the session as SERVED (dining completed)
   await db.order.updateMany({
     where: { sessionId },
-    data: { status: "PAID" },
+    data: { status: "SERVED" },
   });
 
   // Resolve any pending staff call requests for this table
