@@ -1,6 +1,6 @@
 const { cookies } = require("next/headers");
 const { db } = require("./db");
-const { SESSION_COOKIE, verifySessionToken } = require("./session");
+const { SESSION_COOKIE, SESSION_TTL_SECONDS, verifySessionToken } = require("./session");
 
 /**
  * Resolves the caller's verified table session for a given restaurant.

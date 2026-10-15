@@ -62,6 +62,7 @@ async function GET(request) {
 
   const cancelledList = [];
   cancelledOrdersAndItems.forEach((ord) => {
+    const isOrderAcknowledged = Boolean(ord.specialInstructions?.includes("[ACKNOWLEDGED_BY_KITCHEN]"));
     const isParcel =
       ord.table?.isParcelCounter ||
       String(ord.table?.number).toUpperCase().includes("PARCEL") ||
@@ -72,10 +73,12 @@ async function GET(request) {
     const tableNo = isParcel ? "PARCEL" : (ord.table ? ord.table.number : "1");
 
     ord.items.forEach((it) => {
-      if (it.isCancelled || ord.status === "CANCELLED") {
+      const isItemAcknowledged = Boolean(it.notes?.includes("[ACKNOWLEDGED_BY_KITCHEN]"));
+      if ((it.isCancelled || ord.status === "CANCELLED") && !isItemAcknowledged && !isOrderAcknowledged) {
         cancelledList.push({
           id: `${ord.id}_${it.id}`,
           orderId: ord.id,
+          orderItemId: it.id,
           orderNumber: orderNo,
           tableNumber: tableNo,
           isParcel,

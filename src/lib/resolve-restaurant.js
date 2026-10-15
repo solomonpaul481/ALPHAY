@@ -7,30 +7,47 @@ const { db } = require("./db");
  * 3. Fallback to the latest active restaurant
  */
 async function resolveRestaurant(restaurantId) {
-  if (!restaurantId) return null;
+  let restaurant = null;
 
-  // 1. Try finding by ID
-  let restaurant = await db.restaurant.findUnique({
-    where: { id: restaurantId },
-  }).catch(() => null);
+  if (
+    restaurantId &&
+    restaurantId !== "undefined" &&
+    restaurantId !== "null" &&
+    restaurantId !== "default" &&
+    restaurantId !== "menu"
+  ) {
+    // 1. Try finding by ID
+    restaurant = await db.restaurant.findUnique({
+      where: { id: restaurantId },
+    }).catch(() => null);
 
-  if (restaurant) return restaurant;
+    if (restaurant) return restaurant;
 
-  // 2. Try finding by Name (case-insensitive)
-  const decoded = decodeURIComponent(restaurantId).trim();
-  restaurant = await db.restaurant.findFirst({
-    where: {
-      name: { equals: decoded, mode: "insensitive" },
-    },
-  }).catch(() => null);
+    // 2. Try finding by Name (case-insensitive)
+    try {
+      const decoded = decodeURIComponent(restaurantId).trim();
+      restaurant = await db.restaurant.findFirst({
+        where: {
+          name: { equals: decoded, mode: "insensitive" },
+        },
+      }).catch(() => null);
 
-  if (restaurant) return restaurant;
+      if (restaurant) return restaurant;
+    } catch {}
+  }
 
   // 3. Fallback: Return first active restaurant
   restaurant = await db.restaurant.findFirst({
     where: { status: "ACTIVE" },
     orderBy: { createdAt: "desc" },
   }).catch(() => null);
+
+  // If no ACTIVE restaurant, fallback to any restaurant
+  if (!restaurant) {
+    restaurant = await db.restaurant.findFirst({
+      orderBy: { createdAt: "desc" },
+    }).catch(() => null);
+  }
 
   return restaurant;
 }

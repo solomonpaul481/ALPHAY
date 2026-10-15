@@ -45,7 +45,11 @@ function MenuContent() {
   const [isAiWaiterOpen, setIsAiWaiterOpen] = useState(false);
 
   const fetchMenu = () => {
-    if (!restaurantId) return;
+    const effectiveRestaurantId =
+      restaurantId && restaurantId !== "undefined"
+        ? restaurantId
+        : (typeof window !== "undefined" ? sessionStorage.getItem("alphay_restaurant_id") : null) || "sapphire";
+
     setLoadError(false);
     const params = new URLSearchParams();
     if (urlType) params.set("type", urlType);
@@ -54,27 +58,55 @@ function MenuContent() {
     else if (isParcel) params.set("table", "PARCEL");
     const query = params.toString() ? `?${params.toString()}` : "";
 
-    api
-      .getMenu(query)
-      .then((data) => {
-        setMenu(data);
-      })
-      .catch((err) => {
-        console.error("Menu fetch error, attempting retry:", err);
-        // Automatic retry after 600ms
-        setTimeout(() => {
-          api
-            .getMenu(query)
-            .then((data) => {
-              setMenu(data);
-              setLoadError(false);
-            })
-            .catch((retryErr) => {
-              console.error("Menu retry failed:", retryErr);
-              setLoadError(true);
-            });
-        }, 600);
-      });
+    const activeApi = (effectiveRestaurantId && effectiveRestaurantId !== restaurantId)
+      ? createApiClient(effectiveRestaurantId)
+      : api;
+
+    const executeFetch = (attempt = 1) => {
+      activeApi
+        .getMenu(query)
+        .then((data) => {
+          if (data && (data.veg || data.nonVeg || data.restaurantName)) {
+            setMenu(data);
+            setLoadError(false);
+            if (typeof window !== "undefined" && effectiveRestaurantId) {
+              try {
+                sessionStorage.setItem("alphay_restaurant_id", effectiveRestaurantId);
+                sessionStorage.setItem(`alphay_cached_menu_${effectiveRestaurantId}`, JSON.stringify(data));
+              } catch {}
+            }
+          } else {
+            throw new Error("Invalid menu payload received");
+          }
+        })
+        .catch((err) => {
+          console.warn(`Menu fetch attempt ${attempt} failed:`, err);
+          if (attempt === 1) {
+            setTimeout(() => executeFetch(2), 800);
+          } else if (attempt === 2) {
+            setTimeout(() => executeFetch(3), 1800);
+          } else {
+            // Check if we have a locally cached menu for this restaurant before showing error
+            if (typeof window !== "undefined") {
+              try {
+                const cached = sessionStorage.getItem(`alphay_cached_menu_${effectiveRestaurantId}`);
+                if (cached) {
+                  const parsed = JSON.parse(cached);
+                  if (parsed && (parsed.veg || parsed.nonVeg)) {
+                    setMenu(parsed);
+                    setLoadError(false);
+                    return;
+                  }
+                }
+              } catch {}
+            }
+            console.error("All menu fetch retries exhausted:", err);
+            setLoadError(true);
+          }
+        });
+    };
+
+    executeFetch(1);
   };
 
   useEffect(() => {
