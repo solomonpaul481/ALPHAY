@@ -202,8 +202,36 @@ export default function ManagerDashboardPage() {
       <Topbar title="DASHBOARD" />
 
       <div className="p-4 sm:p-6 lg:p-8 space-y-8 max-w-7xl mx-auto">
+        {/* SUSPENSION ALERT OVERLAY BANNER */}
+        {data?.restaurantStatus === "SUSPENDED" && (
+          <div className="rounded-3xl bg-slate-900/95 border-2 border-rose-500/70 p-6 sm:p-8 text-center shadow-2xl space-y-4">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-500/20 text-rose-500 text-3xl border border-rose-500/40 animate-pulse">
+              🚫
+            </div>
+            <div className="space-y-1">
+              <span className="inline-block rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/40 px-3 py-0.5 text-xs font-black uppercase font-['Cinzel'] tracking-wider">
+                ACCOUNT SUSPENDED
+              </span>
+              <h2 className="text-xl sm:text-2xl font-black font-['Cinzel'] text-white">
+                Your {data?.isCafeteria ? "Cafeteria" : "Restaurant"} has been suspended
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-300 max-w-md mx-auto leading-relaxed">
+                This establishment has been suspended by the ALPHAY Administrator. Online ordering, customer QR menus, and kitchen displays are paused.
+              </p>
+            </div>
+            <div className="flex justify-center gap-3 pt-2">
+              <a
+                href="mailto:support@alphay.demo"
+                className="rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 px-5 py-2.5 text-xs font-black text-slate-950 font-['Cinzel'] shadow-md"
+              >
+                Contact Administrator ✉️
+              </a>
+            </div>
+          </div>
+        )}
+
         {/* CAFETERIA NOTICE BANNER */}
-        {data?.isCafeteria && (
+        {data?.isCafeteria && data?.restaurantStatus !== "SUSPENDED" && (
           <div className="rounded-3xl bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-amber-500/5 border border-amber-500/40 p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 shadow-xl">
             <div className="flex items-center gap-3">
               <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-500 text-slate-950 font-bold text-2xl shadow-md">

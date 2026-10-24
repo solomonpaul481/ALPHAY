@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, Suspense } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { createApiClient } from "@/lib/api-client";
 import { IconArrowLeft, IconCheck, IconSparkles } from "@/components/Icons";
+import { playOrderReadyChime, notifyOrderReady, requestAlertNotification } from "@/lib/order-ready-sound";
 
 function loadRazorpayScript() {
   return new Promise((resolve) => {
@@ -39,11 +40,28 @@ function SessionTrackContent() {
   const [requestingBill, setRequestingBill] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("ONLINE"); // ONLINE | CASH
   const [paying, setPaying] = useState(false);
+  const prevReadyRef = useRef(false);
 
   const fetchSession = async () => {
     try {
       const data = await api.getActiveSession();
       setSessionData(data);
+
+      const isReadyNow = Boolean(
+        data?.hasReadyOrders ||
+        data?.orders?.some((o) => o.status === "READY")
+      );
+
+      // Trigger audio chime, phone vibration, and notification when newly marked READY
+      if (isReadyNow && !prevReadyRef.current) {
+        const activeToken = data?.pickupToken || data?.readyTokens?.[0] || data?.orders?.find((o) => o.status === "READY")?.token || "1024";
+        notifyOrderReady({
+          token: activeToken,
+          isCafeteria: Boolean(data?.isCafeteria),
+        });
+      }
+      prevReadyRef.current = isReadyNow;
+
       setLoading(false);
     } catch (err) {
       if (err.status === 401) {
@@ -67,6 +85,27 @@ function SessionTrackContent() {
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restaurantId]);
+
+  // Unlock AudioContext on first tap/interaction so mobile autoplay is permitted
+  useEffect(() => {
+    const unlock = () => {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) {
+          const ctx = new AudioCtx();
+          ctx.resume();
+        }
+      } catch (e) {}
+      window.removeEventListener("click", unlock);
+      window.removeEventListener("touchstart", unlock);
+    };
+    window.addEventListener("click", unlock, { once: true });
+    window.addEventListener("touchstart", unlock, { once: true });
+    return () => {
+      window.removeEventListener("click", unlock);
+      window.removeEventListener("touchstart", unlock);
+    };
+  }, []);
 
   const handleRequestBill = async () => {
     if (requestingBill) return;
@@ -341,6 +380,60 @@ function SessionTrackContent() {
           </div>
         )}
 
+        {/* ORDER READY FOR COLLECTION ALERT BANNER (TRIGGERED BY CHEF / KITCHEN) */}
+        {Boolean(sessionData?.hasReadyOrders || sessionData?.orders?.some((o) => o.status === "READY")) && (
+          <div className="mb-6 rounded-3xl bg-gradient-to-br from-emerald-950 via-slate-900 to-slate-950 border-2 border-emerald-400 p-6 text-center shadow-2xl space-y-4 relative overflow-hidden animate-pulse">
+            <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-emerald-500/20 blur-2xl pointer-events-none" />
+            <div className="absolute -left-8 -bottom-8 h-32 w-32 rounded-full bg-amber-500/20 blur-2xl pointer-events-none" />
+
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-3xl shadow-lg shadow-emerald-500/20">
+              🔔
+            </div>
+
+            <div className="space-y-1.5">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-3.5 py-1 text-xs font-black uppercase tracking-widest text-emerald-400 border border-emerald-500/40 font-['Cinzel']">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+                YOUR ORDER IS READY!
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-black font-['Cinzel'] text-white tracking-wider">
+                Food Ready at Counter!
+              </h2>
+              <div className="py-2">
+                <span className="text-[11px] font-black uppercase tracking-widest text-amber-400 font-['Cinzel'] block">
+                  Show Your Token Number
+                </span>
+                <span className="font-mono text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-emerald-300 tracking-wider">
+                  #{sessionData?.pickupToken || sessionData?.readyTokens?.[0] || sessionData?.orders?.find((o) => o.status === "READY")?.token || "1024"}
+                </span>
+              </div>
+              <p className="text-xs text-slate-200 font-medium max-w-sm mx-auto leading-relaxed">
+                The chef has completed your order! Please head to the counter now to collect your hot meal.
+              </p>
+            </div>
+
+            <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => playOrderReadyChime()}
+                className="rounded-2xl bg-emerald-500 hover:bg-emerald-400 px-4 py-2.5 text-xs font-black text-slate-950 font-['Cinzel'] shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+              >
+                <span>🔊</span> Play Chime Again
+              </button>
+              {typeof window !== "undefined" && "Notification" in window && Notification.permission === "default" && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await requestAlertNotification();
+                  }}
+                  className="rounded-2xl bg-slate-800 hover:bg-slate-700 border border-emerald-500/30 px-4 py-2.5 text-xs font-bold text-emerald-300 font-['Cinzel'] transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <span>📲</span> Enable Phone Alerts
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* SESSION STATUS BANNER */}
         <div className="mb-6 rounded-3xl bg-slate-900/95 p-6 border border-amber-500/30 shadow-2xl backdrop-blur-xl text-center relative overflow-hidden">
           <div className="absolute -right-6 -top-6 h-28 w-28 rounded-full bg-amber-500/10 blur-2xl pointer-events-none" />
@@ -383,39 +476,57 @@ function SessionTrackContent() {
           ) : sessionData?.isCafeteria ? (
             <div className="space-y-4">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 text-2xl shadow-lg shadow-amber-500/15 animate-pulse">
-                ☕
+                {Boolean(sessionData?.hasReadyOrders || sessionData?.orders?.some((o) => o.status === "READY")) ? "🔔" : "☕"}
               </div>
               <div>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-950/80 px-3.5 py-1 text-[11px] font-black uppercase tracking-widest text-emerald-400 border border-emerald-500/40 font-['Cinzel'] shadow-sm">
                   <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-                  Pre-Paid Order In Preparation
+                  {Boolean(sessionData?.hasReadyOrders || sessionData?.orders?.some((o) => o.status === "READY"))
+                    ? "ORDER READY FOR COLLECTION ✓"
+                    : "Pre-Paid Order In Preparation"}
                 </span>
                 <h2 className="text-2xl font-black text-white font-['Cinzel'] tracking-wider mt-2">
-                  Preparing Your Cafeteria Order
+                  {Boolean(sessionData?.hasReadyOrders || sessionData?.orders?.some((o) => o.status === "READY"))
+                    ? "Your Order is Ready!"
+                    : "Preparing Your Cafeteria Order"}
                 </h2>
                 <p className="mt-1.5 text-xs text-slate-300 max-w-sm mx-auto">
-                  Your payment is verified. When your token <strong>#{sessionData?.pickupToken || "1024"}</strong> is called, please collect your order at the counter.
+                  {Boolean(sessionData?.hasReadyOrders || sessionData?.orders?.some((o) => o.status === "READY"))
+                    ? `Please show Token #${sessionData?.pickupToken || sessionData?.readyTokens?.[0] || "1024"} at the collection counter now.`
+                    : `Your payment is verified. When your token #${sessionData?.pickupToken || "1024"} is called, please collect your order at the counter.`}
                 </p>
               </div>
             </div>
           ) : (
             <div className="space-y-4">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-2xl shadow-lg shadow-emerald-500/15">
-                {sessionData?.isParcel ? "📦" : "👨‍🍳"}
+                {Boolean(sessionData?.hasReadyOrders || sessionData?.orders?.some((o) => o.status === "READY"))
+                  ? "🔔"
+                  : sessionData?.isParcel
+                  ? "📦"
+                  : "👨‍🍳"}
               </div>
 
               <div>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-950/80 px-3.5 py-1 text-[11px] font-black uppercase tracking-widest text-emerald-400 border border-emerald-500/40 font-['Cinzel'] shadow-sm">
                   <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-                  {sessionData?.isParcel
+                  {Boolean(sessionData?.hasReadyOrders || sessionData?.orders?.some((o) => o.status === "READY"))
+                    ? "Order Ready for Pickup ✓"
+                    : sessionData?.isParcel
                     ? "Parcel Confirmed & Kitchen Packing"
                     : "Order Confirmed & Kitchen Preparing!"}
                 </span>
                 <h2 className="mt-2 text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-100 font-['Cinzel'] tracking-wide">
-                  {sessionData?.isParcel ? "Preparing Your Takeaway" : "Your Order is Being Prepared"}
+                  {Boolean(sessionData?.hasReadyOrders || sessionData?.orders?.some((o) => o.status === "READY"))
+                    ? "Food Ready for Collection!"
+                    : sessionData?.isParcel
+                    ? "Preparing Your Takeaway"
+                    : "Your Order is Being Prepared"}
                 </h2>
                 <p className="mt-1 text-xs text-slate-300 font-medium">
-                  {sessionData?.isParcel
+                  {Boolean(sessionData?.hasReadyOrders || sessionData?.orders?.some((o) => o.status === "READY"))
+                    ? "The kitchen team has completed preparation. Please collect your order."
+                    : sessionData?.isParcel
                     ? "Kitchen team is packaging your fresh dishes for pickup."
                     : "The kitchen team has confirmed your table order and is cooking your dishes now."}
                 </p>
@@ -425,15 +536,23 @@ function SessionTrackContent() {
               <div className="pt-2 grid grid-cols-3 gap-2 text-center text-[10px] font-bold font-['Cinzel']">
                 <div className="rounded-xl bg-slate-950/80 border border-emerald-500/30 p-2 text-emerald-400">
                   <span className="block text-sm mb-0.5">💳</span>
-                  <span>{sessionData?.isParcel ? "Paid & Placed ✓" : "Order Placed ✓"}</span>
+                  <span>{sessionData?.isParcel || sessionData?.isCafeteria ? "Paid & Placed ✓" : "Order Placed ✓"}</span>
                 </div>
-                <div className="rounded-xl bg-amber-500/15 border border-amber-500/40 p-2 text-amber-300 ring-1 ring-amber-400/30">
+                <div className={`rounded-xl p-2 ${
+                  !Boolean(sessionData?.hasReadyOrders || sessionData?.orders?.some((o) => o.status === "READY"))
+                    ? "bg-amber-500/15 border border-amber-500/40 text-amber-300 ring-1 ring-amber-400/30"
+                    : "bg-slate-950/80 border border-slate-800 text-slate-400"
+                }`}>
                   <span className="block text-sm mb-0.5">🔥</span>
                   <span>{sessionData?.isParcel ? "Kitchen Packing" : "Cooking Live"}</span>
                 </div>
-                <div className="rounded-xl bg-slate-950/60 border border-slate-800 p-2 text-slate-400">
-                  <span className="block text-sm mb-0.5">{sessionData?.isParcel ? "🛍️" : "🍽️"}</span>
-                  <span>{sessionData?.isParcel ? "Ready for Pickup" : "Served to Table"}</span>
+                <div className={`rounded-xl p-2 ${
+                  Boolean(sessionData?.hasReadyOrders || sessionData?.orders?.some((o) => o.status === "READY"))
+                    ? "bg-emerald-500/25 border-2 border-emerald-400 text-emerald-300 ring-2 ring-emerald-400/50 animate-pulse font-black"
+                    : "bg-slate-950/60 border border-slate-800 text-slate-400"
+                }`}>
+                  <span className="block text-sm mb-0.5">{Boolean(sessionData?.hasReadyOrders || sessionData?.orders?.some((o) => o.status === "READY")) ? "🔔" : sessionData?.isParcel ? "🛍️" : "🍽️"}</span>
+                  <span>{Boolean(sessionData?.hasReadyOrders || sessionData?.orders?.some((o) => o.status === "READY")) ? "Ready to Collect!" : (sessionData?.isParcel ? "Ready for Pickup" : "Served to Table")}</span>
                 </div>
               </div>
             </div>
@@ -454,18 +573,29 @@ function SessionTrackContent() {
           ) : (
             <div className="space-y-4">
               {sessionData?.orders?.map((ord, idx) => {
-                const canCancelOrder = ord.status !== "SERVED" && ord.status !== "PAID" && ord.status !== "CANCELLED";
+                const canCancelOrder = ord.status !== "SERVED" && ord.status !== "PAID" && ord.status !== "CANCELLED" && ord.status !== "READY";
+                const isReady = ord.status === "READY";
 
                 return (
-                  <div key={ord.id} className="rounded-2xl bg-slate-900 p-4 border border-amber-500/20 shadow-md">
+                  <div key={ord.id} className={`rounded-2xl bg-slate-900 p-4 border shadow-md transition-all ${isReady ? "border-emerald-500/60 ring-2 ring-emerald-500/20" : "border-amber-500/20"}`}>
                     <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
                       <span className="font-mono text-xs font-bold text-amber-400">
                         Order #{ord.orderSeq ? ord.orderSeq : idx + 1} · {new Date(ord.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                       <div className="flex items-center gap-2">
-                        <span className="rounded-full bg-emerald-950/80 px-2.5 py-0.5 text-[10px] font-black text-emerald-400 border border-emerald-500/40 font-['Cinzel']">
-                          Order Confirmed ✓
-                        </span>
+                        {isReady ? (
+                          <span className="rounded-full bg-emerald-500/25 px-2.5 py-0.5 text-[10px] font-black text-emerald-300 border border-emerald-400/60 font-['Cinzel'] animate-pulse">
+                            🔔 READY TO COLLECT ✓
+                          </span>
+                        ) : ord.status === "PREPARING" ? (
+                          <span className="rounded-full bg-blue-500/20 px-2.5 py-0.5 text-[10px] font-black text-blue-400 border border-blue-500/40 font-['Cinzel']">
+                            👨‍🍳 COOKING LIVE
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-emerald-950/80 px-2.5 py-0.5 text-[10px] font-black text-emerald-400 border border-emerald-500/40 font-['Cinzel']">
+                            Order Confirmed ✓
+                          </span>
+                        )}
                         {canCancelOrder && (
                           <button
                             type="button"

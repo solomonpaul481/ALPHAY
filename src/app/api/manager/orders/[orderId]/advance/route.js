@@ -16,6 +16,10 @@ async function POST(request, { params }) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
+  if (manager.restaurant?.status === "SUSPENDED") {
+    return NextResponse.json({ error: "Your establishment has been suspended by administration." }, { status: 403 });
+  }
+
   const order = await db.order.findUnique({ where: { id: params.orderId } });
   if (!order || order.restaurantId !== manager.restaurantId) {
     return NextResponse.json({ error: "Order not found." }, { status: 404 });

@@ -67,9 +67,15 @@ async function GET(request, { params }) {
         )
       : null;
 
+  const tokenStr = order.orderSeq ? String(order.orderSeq).slice(-4).padStart(4, "0") : String(order.id.slice(-4)).toUpperCase();
+
   return NextResponse.json({
     id: order.id,
+    orderNumber: `#${tokenStr}`,
+    token: tokenStr,
+    orderSeq: order.orderSeq,
     status: order.status,
+    isReady: order.status === "READY",
     subtotal: order.subtotal,
     gstAmount: order.gstAmount,
     total: order.total,

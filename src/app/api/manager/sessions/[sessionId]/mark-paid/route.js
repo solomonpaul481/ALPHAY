@@ -8,6 +8,10 @@ async function POST(request, { params }) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
+  if (manager.restaurant?.status === "SUSPENDED") {
+    return NextResponse.json({ error: "Your establishment has been suspended by administration." }, { status: 403 });
+  }
+
   const { sessionId } = params;
   const session = await db.customerSession.findUnique({
     where: { id: sessionId },

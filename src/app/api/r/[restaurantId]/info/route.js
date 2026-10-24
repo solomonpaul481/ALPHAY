@@ -17,6 +17,7 @@ async function GET(request, { params }) {
     isCafeteria: restaurant.category === "CAFETERIA",
     logoUrl: restaurant.logoUrl,
     gstPercent: restaurant.gstPercent,
+    status: restaurant.status || "ACTIVE",
     latitude: restaurant.latitude,
     longitude: restaurant.longitude,
     geofenceRadiusMeters: restaurant.geofenceRadiusMeters,

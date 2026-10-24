@@ -6,13 +6,14 @@ import { createApiClient } from "@/lib/api-client";
 import Timeline from "@/components/Timeline";
 import CallStaffButton from "@/components/CallStaffButton";
 import { IconCheck, IconClock } from "@/components/Icons";
+import { playOrderReadyChime, notifyOrderReady, requestAlertNotification } from "@/lib/order-ready-sound";
 
 const POLL_INTERVAL_MS = 3000;
 
 const STATUS_MESSAGE = {
   CONFIRMED: "✓ Order Confirmed by Kitchen",
   PREPARING: "👨‍🍳 Chef is Preparing Your Food",
-  READY: "🔔 Your Order is Ready to Serve!",
+  READY: "🔔 Your Order is Ready to Collect!",
   SERVED: "🍽️ Order Served! Enjoy your meal",
 };
 
@@ -24,6 +25,28 @@ export default function TrackOrderPage() {
   const [order, setOrder] = useState(null);
   const [toast, setToast] = useState(null);
   const lastStatus = useRef(null);
+  const prevReadyRef = useRef(false);
+
+  // Unlock Web Audio API on first touch/click
+  useEffect(() => {
+    const unlock = () => {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) {
+          const ctx = new AudioCtx();
+          ctx.resume();
+        }
+      } catch (e) {}
+      window.removeEventListener("click", unlock);
+      window.removeEventListener("touchstart", unlock);
+    };
+    window.addEventListener("click", unlock, { once: true });
+    window.addEventListener("touchstart", unlock, { once: true });
+    return () => {
+      window.removeEventListener("click", unlock);
+      window.removeEventListener("touchstart", unlock);
+    };
+  }, []);
 
   useEffect(() => {
     if (!restaurantId || !orderId) return;
@@ -34,6 +57,15 @@ export default function TrackOrderPage() {
         const data = await api.getOrder(orderId);
         if (cancelled) return;
         setOrder(data);
+
+        const isReadyNow = data.status === "READY";
+        if (isReadyNow && !prevReadyRef.current) {
+          notifyOrderReady({
+            token: data.token || data.id?.slice(-4)?.toUpperCase() || "1024",
+            isCafeteria: Boolean(data.isCafeteria),
+          });
+        }
+        prevReadyRef.current = isReadyNow;
 
         if (lastStatus.current && lastStatus.current !== data.status && STATUS_MESSAGE[data.status]) {
           setToast(STATUS_MESSAGE[data.status]);
@@ -76,6 +108,37 @@ export default function TrackOrderPage() {
       )}
 
       <div className="mx-auto max-w-md space-y-6">
+        {/* Prominent Order Ready Banner */}
+        {order.status === "READY" && (
+          <div className="rounded-3xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white p-6 shadow-xl border-2 border-emerald-400/60 animate-pulse space-y-3 text-center">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-1 text-xs font-black tracking-widest uppercase">
+              🔔 ORDER READY FOR PICKUP!
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-emerald-100 font-medium">Please proceed to the counter to collect your order:</p>
+              <p className="text-4xl sm:text-5xl font-black font-mono tracking-wider text-amber-300 drop-shadow">
+                #{order.token || order.id.slice(-4).toUpperCase()}
+              </p>
+            </div>
+            <div className="pt-2 flex flex-wrap items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => playOrderReadyChime()}
+                className="rounded-xl bg-white/20 hover:bg-white/30 px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer"
+              >
+                🔊 Play Chime Again
+              </button>
+              <button
+                type="button"
+                onClick={() => requestAlertNotification()}
+                className="rounded-xl bg-slate-900/40 hover:bg-slate-900/60 px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer"
+              >
+                📲 Enable Alerts
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Order Header Card */}
         <div className="rounded-3xl bg-white dark:bg-zinc-900 p-6 shadow-sm border border-slate-200 dark:border-zinc-800">
           <div className="flex items-center justify-between border-b border-slate-200 dark:border-zinc-800 pb-4">

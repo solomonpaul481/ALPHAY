@@ -54,6 +54,9 @@ async function GET(request, { params }) {
 
   const firstOrder = sessionWithDetails.orders[0];
   const pickupToken = firstOrder?.orderSeq ? String(firstOrder.orderSeq).slice(-4).padStart(4, "0") : null;
+  const readyOrders = sessionWithDetails.orders.filter((o) => o.status === "READY");
+  const hasReadyOrders = readyOrders.length > 0;
+  const readyTokens = readyOrders.map((o) => (o.orderSeq ? String(o.orderSeq).slice(-4).padStart(4, "0") : pickupToken || "1024"));
 
   return NextResponse.json({
     sessionId: sessionWithDetails.id,
@@ -61,6 +64,9 @@ async function GET(request, { params }) {
     tableNumber: sessionWithDetails.table.number,
     isParcel,
     pickupToken,
+    hasReadyOrders,
+    readyCount: readyOrders.length,
+    readyTokens,
     restaurantName: sessionWithDetails.restaurant.name,
     restaurantCategory: sessionWithDetails.restaurant.category || "RESTAURANT",
     restaurantSubCategory: sessionWithDetails.restaurant.subCategory || null,
