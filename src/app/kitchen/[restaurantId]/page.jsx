@@ -97,15 +97,15 @@ function KitchenOrderCard({ order, currentStatus, onUpdateStatus }) {
                 isNew ? "text-red-400" : isPrep ? "text-amber-400" : "text-emerald-400"
               }`}
             >
-              {isParcel ? "PARCEL TAKEAWAY" : `ORDER #${order.orderNumber}`}
+              {order.isCafeteria ? "CAFETERIA TOKEN" : (isParcel ? "PARCEL TAKEAWAY" : `ORDER #${order.orderNumber}`)}
             </span>
-            {isParcel ? (
+            {order.isCafeteria || isParcel ? (
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="inline-flex items-center rounded-lg bg-amber-500/20 px-2 py-0.5 text-xs font-black uppercase tracking-wider text-amber-400 border border-amber-500/40 font-mono">
-                  📦 PARCEL
+                  {order.isCafeteria ? "☕ TOKEN" : "📦 PARCEL"}
                 </span>
                 <h3 className="text-2xl sm:text-3xl font-black text-amber-300 font-mono">
-                  TOKEN #{order.token || order.orderNumber}
+                  #{order.token || order.orderNumber}
                 </h3>
               </div>
             ) : (

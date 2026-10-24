@@ -105,6 +105,7 @@ async function GET(request) {
         orderNumber: `#${token}`,
         token,
         isParcel,
+        isCafeteria: restaurant.category === "CAFETERIA",
         tableNumber: isParcel ? "PARCEL" : (order.table ? order.table.number : "1"),
         status: order.status === "PAID" ? "CONFIRMED" : order.status,
         createdAt: order.createdAt,

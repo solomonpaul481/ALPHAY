@@ -113,9 +113,12 @@ async function GET() {
       return !isParcel && o.status === "READY";
     }).length;
 
-    // Filter active sessions to ONLY include physical DINE-IN tables (strictly exclude parcel counter)
+    const isCafeteria = restaurant.category === "CAFETERIA";
+
+    // Filter active sessions: for cafeteria, include all customer orders in the token queue; for restaurants, include physical dine-in tables only
     const formattedActiveSessions = activeSessions
       .filter((sess) => {
+        if (isCafeteria) return true;
         const isParcel =
           sess.table?.isParcelCounter ||
           String(sess.table?.number).toUpperCase().includes("PARCEL") ||
@@ -139,9 +142,18 @@ async function GET() {
           });
         });
 
+        const firstOrder = sess.orders[0];
+        const tokenStr = firstOrder?.orderSeq
+          ? String(firstOrder.orderSeq).slice(-4).padStart(4, "0")
+          : (sess.orders.length > 0 ? String(1000 + (sess.orders[0].id.charCodeAt(0) % 900)).padStart(4, "0") : "1001");
+
         return {
           id: sess.id,
           tableNumber: sess.table ? sess.table.number : "1",
+          token: tokenStr,
+          pickupToken: tokenStr,
+          orderSeq: firstOrder?.orderSeq || null,
+          tokens: sess.orders.map((o) => String(o.orderSeq || 1001).slice(-4).padStart(4, "0")),
           status: sess.status,
           paymentStatus: sess.paymentStatus,
           paymentMethod: sess.paymentMethod,

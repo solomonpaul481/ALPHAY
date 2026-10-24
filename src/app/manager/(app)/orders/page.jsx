@@ -188,24 +188,28 @@ export default function ManagerOrdersPage() {
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <div
-                        className={`flex h-11 ${isParcel ? "px-3" : "w-11"} items-center justify-center rounded-2xl font-mono text-xs font-black shadow-xs ${
-                          isParcel
+                        className={`flex h-11 ${isParcel || ordersData?.isCafeteria ? "px-3" : "w-11"} items-center justify-center rounded-2xl font-mono text-xs font-black shadow-xs ${
+                          isParcel || ordersData?.isCafeteria
                             ? "bg-amber-500/20 text-amber-400 border border-amber-500/40"
                             : "bg-amber-100 text-amber-900 dark:bg-amber-500/20 border border-amber-300 dark:border-amber-500/40 dark:text-amber-300"
                         }`}
                       >
-                        {isParcel ? `📦 #${parcelToken}` : `T#${order.tableNumber}`}
+                        {ordersData?.isCafeteria ? `☕ #${parcelToken}` : (isParcel ? `📦 #${parcelToken}` : `T#${order.tableNumber}`)}
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-xs font-black text-amber-600 dark:text-amber-400">
-                            {isParcel ? `TOKEN #${parcelToken}` : order.orderNumber}
+                            {ordersData?.isCafeteria || isParcel ? `TOKEN #${parcelToken}` : order.orderNumber}
                           </span>
-                          {isParcel && (
+                          {ordersData?.isCafeteria ? (
+                            <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-400 border border-amber-500/30 font-['Cinzel']">
+                              {isParcel ? "Takeaway Parcel" : `Table #${order.tableNumber}`}
+                            </span>
+                          ) : isParcel ? (
                             <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-400 border border-amber-500/30 font-['Cinzel']">
                               Takeaway Parcel
                             </span>
-                          )}
+                          ) : null}
                           <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${
                             order.paymentStatus === "PAID"
                               ? "bg-emerald-100 text-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-400 border border-emerald-400 dark:border-emerald-500/30"

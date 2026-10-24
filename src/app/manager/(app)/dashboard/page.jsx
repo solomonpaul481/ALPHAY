@@ -93,6 +93,25 @@ export default function ManagerDashboardPage() {
     }
   };
 
+  const handleCompleteOrder = async (sessionId, token) => {
+    if (!confirm(`Complete Order #${token || ""} and mark food handed over to customer?`)) return;
+    setBusySessionId(sessionId);
+    try {
+      const res = await fetch(`/api/manager/sessions/${sessionId}/mark-paid`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentMethod: "ONLINE" }),
+      });
+      if (res.ok) {
+        await fetchDashboardData();
+      }
+    } catch (err) {
+      console.error("Failed to complete order:", err);
+    } finally {
+      setBusySessionId(null);
+    }
+  };
+
   const getStatusBadge = (status) => {
     switch (status) {
       case "CONFIRMED":
@@ -139,7 +158,7 @@ export default function ManagerDashboardPage() {
       label = isParcel ? "Mark Ready for Pickup 🛍️" : "Mark Ready 🔔";
       btnStyle = "bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-black";
     } else if (status === "READY") {
-      label = isParcel ? "Mark as Parceled 📦" : "Mark as Served 🍽️";
+      label = data?.isCafeteria ? "✓ Complete Order" : (isParcel ? "Mark as Parceled 📦" : "Mark as Served 🍽️");
       btnStyle = "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black";
     } else {
       return null;
@@ -183,6 +202,36 @@ export default function ManagerDashboardPage() {
       <Topbar title="DASHBOARD" />
 
       <div className="p-4 sm:p-6 lg:p-8 space-y-8 max-w-7xl mx-auto">
+        {/* CAFETERIA NOTICE BANNER */}
+        {data?.isCafeteria && (
+          <div className="rounded-3xl bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-amber-500/5 border border-amber-500/40 p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 shadow-xl">
+            <div className="flex items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-500 text-slate-950 font-bold text-2xl shadow-md">
+                ☕
+              </span>
+              <div>
+                <h2 className="text-sm sm:text-base font-extrabold text-amber-500 font-['Cinzel'] tracking-wider flex items-center gap-2">
+                  CAFETERIA MANAGER DASHBOARD
+                  <span className="rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2.5 py-0.5 text-[10px] font-black font-['Cinzel']">
+                    PAY-FIRST MODE ✓
+                  </span>
+                </h2>
+                <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
+                  {data?.restaurantName} · Customers pay before collection. Check token number on active order and click Complete Order upon handover.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <a
+                href="/manager/cafeteria"
+                className="rounded-2xl bg-amber-500 hover:bg-amber-400 px-4 py-2 text-xs font-black text-slate-950 shadow-md font-['Cinzel'] transition-all"
+              >
+                Open Token Screen ↗
+              </a>
+            </div>
+          </div>
+        )}
+
         {/* TOP OF THE PAGE: NO. OF ORDERS & TODAY'S EARNING */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           <div className="rounded-3xl bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent dark:from-amber-500/20 dark:via-amber-500/10 p-6 border border-amber-500/30 shadow-xl transition-all hover:border-amber-500/50">
@@ -277,29 +326,35 @@ export default function ManagerDashboardPage() {
 
           <div className="rounded-2xl bg-white dark:bg-slate-900 p-4 sm:p-5 border border-amber-500/20 shadow-md flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-400 border border-rose-400/40">
-                <span className="text-base">🧾</span>
+              <div className={`flex h-10 w-10 items-center justify-center rounded-xl border ${
+                data?.isCafeteria
+                  ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-400 border-emerald-400/40"
+                  : "bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-400 border-rose-400/40"
+              }`}>
+                <span className="text-base">{data?.isCafeteria ? "🔔" : "🧾"}</span>
               </div>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 font-['Cinzel']">
-                  Bill Requests
+                  {data?.isCafeteria ? "Ready Orders" : "Bill Requests"}
                 </p>
                 <p className="text-xl font-extrabold text-slate-900 dark:text-white font-mono">
-                  {billRequestedSessions.length}
+                  {data?.isCafeteria ? (data?.ready ?? 0) : billRequestedSessions.length}
                 </p>
               </div>
             </div>
-            {billRequestedSessions.length > 0 && <span className="h-2.5 w-2.5 rounded-full bg-rose-500 animate-ping" />}
+            {(data?.isCafeteria ? (data?.ready ?? 0) > 0 : billRequestedSessions.length > 0) && (
+              <span className={`h-2.5 w-2.5 rounded-full animate-ping ${data?.isCafeteria ? "bg-emerald-500" : "bg-rose-500"}`} />
+            )}
           </div>
 
           <div className="rounded-2xl bg-white dark:bg-slate-900 p-4 sm:p-5 border border-amber-500/20 shadow-md flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                <span className="text-base">🪑</span>
+                <span className="text-base">{data?.isCafeteria ? "🎫" : "🪑"}</span>
               </div>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 font-['Cinzel']">
-                  Occupied Tables
+                  {data?.isCafeteria ? "Active Tokens" : "Occupied Tables"}
                 </p>
                 <p className="text-xl font-extrabold text-slate-900 dark:text-white font-mono">
                   {activeSessionsList.length}
@@ -310,41 +365,51 @@ export default function ManagerDashboardPage() {
           </div>
         </section>
 
-        {/* ACTIVE DINING TABLES & BILL REQUESTS (MANAGER ACTIONS) */}
+        {/* ACTIVE SESSIONS / QUEUE (MANAGER ACTIONS) */}
         <section className="rounded-3xl bg-white dark:bg-slate-900 p-6 border border-amber-500/30 shadow-2xl space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-amber-500/20 pb-4">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xl">
-                🧾
+                {data?.isCafeteria ? "☕" : "🧾"}
               </div>
               <div>
                 <h2 className="text-lg font-extrabold font-['Cinzel'] text-slate-900 dark:text-white tracking-wide flex items-center gap-2">
-                  Active Dining Tables & Bill Requests
-                  {billRequestedSessions.length > 0 && (
-                    <span className="rounded-full bg-rose-500 text-white px-2.5 py-0.5 text-[10px] font-black animate-pulse">
-                      {billRequestedSessions.length} BILL{billRequestedSessions.length === 1 ? "" : "S"} REQUESTED
+                  {data?.isCafeteria ? "Active Cafeteria Orders (Token Queue)" : "Active Dining Tables & Bill Requests"}
+                  {data?.isCafeteria ? (
+                    <span className="rounded-full bg-amber-500/20 text-amber-500 border border-amber-500/40 px-2.5 py-0.5 text-[10px] font-black font-['Cinzel']">
+                      PAY-FIRST QUEUE
                     </span>
+                  ) : (
+                    billRequestedSessions.length > 0 && (
+                      <span className="rounded-full bg-rose-500 text-white px-2.5 py-0.5 text-[10px] font-black animate-pulse">
+                        {billRequestedSessions.length} BILL{billRequestedSessions.length === 1 ? "" : "S"} REQUESTED
+                      </span>
+                    )
                   )}
                 </h2>
                 <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                  Review itemized orders, send bills, and collect Cash / Razorpay payments
+                  {data?.isCafeteria
+                    ? "Customer prepaid orders with 4-digit pickup tokens. Call token number and click Complete Order upon collection."
+                    : "Review itemized orders, send bills, and collect Cash / Razorpay payments"}
                 </p>
               </div>
             </div>
 
             <div className="text-xs font-mono text-amber-500 font-bold">
-              {activeSessionsList.length} Active Table{activeSessionsList.length === 1 ? "" : "s"}
+              {activeSessionsList.length} Active {data?.isCafeteria ? "Token" : "Table"}{activeSessionsList.length === 1 ? "" : "s"}
             </div>
           </div>
 
           {activeSessionsList.length === 0 ? (
             <div className="py-8 text-center space-y-2">
-              <p className="text-3xl">🍽️</p>
+              <p className="text-3xl">{data?.isCafeteria ? "☕" : "🍽️"}</p>
               <h4 className="text-sm font-extrabold text-slate-700 dark:text-slate-300 font-['Cinzel']">
-                No Active Dining Sessions Right Now
+                {data?.isCafeteria ? "No Active Cafeteria Orders Right Now" : "No Active Dining Sessions Right Now"}
               </h4>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                When customers scan table QR codes and order dishes, active tables and bill requests will appear here.
+                {data?.isCafeteria
+                  ? "When customers scan cafeteria QR codes and place orders, their orders and pickup tokens will appear here."
+                  : "When customers scan table QR codes and order dishes, active tables and bill requests will appear here."}
               </p>
             </div>
           ) : (
@@ -352,28 +417,60 @@ export default function ManagerDashboardPage() {
               {activeSessionsList.map((sess) => {
                 const isBillReq = sess.status === "BILL_REQUESTED";
                 const isBillSent = sess.status === "BILL_SENT";
+                const token = sess.token || sess.pickupToken || String(sess.orderSeq || "1001").slice(-4).padStart(4, "0");
 
                 return (
                   <div
                     key={sess.id}
-                    className={`rounded-2xl p-5 border shadow-lg flex flex-col justify-between space-y-4 transition-all ${isBillReq
+                    className={`rounded-2xl p-5 border shadow-lg flex flex-col justify-between space-y-4 transition-all ${
+                      isBillReq
                         ? "bg-rose-500/5 dark:bg-rose-950/20 border-rose-500/50 shadow-rose-500/10"
                         : "bg-slate-50 dark:bg-slate-950 border-amber-500/20 hover:border-amber-500/40"
-                      }`}
+                    }`}
                   >
                     <div className="space-y-3">
                       <div className="flex items-center justify-between border-b border-amber-500/10 pb-3">
                         <div>
-                          <span className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 font-['Cinzel']">
-                            Dining Table
-                          </span>
-                          <h4 className="text-lg font-black text-slate-900 dark:text-white font-mono">
-                            Table #{sess.tableNumber}
-                          </h4>
+                          {data?.isCafeteria ? (
+                            <div className="flex items-center gap-2.5">
+                              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-500 text-lg font-bold border border-amber-500/30">
+                                ☕
+                              </span>
+                              <div>
+                                <span className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 font-['Cinzel']">
+                                  Customer Token
+                                </span>
+                                <h4 className="text-2xl font-black text-amber-600 dark:text-amber-300 font-mono tracking-wider">
+                                  #{token}
+                                </h4>
+                                <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                                  Table #{sess.tableNumber}
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            <div>
+                              <span className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 font-['Cinzel']">
+                                Dining Table
+                              </span>
+                              <h4 className="text-lg font-black text-slate-900 dark:text-white font-mono">
+                                Table #{sess.tableNumber}
+                              </h4>
+                            </div>
+                          )}
                         </div>
 
                         <div>
-                          {isBillReq ? (
+                          {data?.isCafeteria ? (
+                            <div className="text-right space-y-1">
+                              <span className="rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-3 py-1 text-[11px] font-bold font-['Cinzel']">
+                                PAID (ONLINE) ✓
+                              </span>
+                              <p className="text-[10px] font-mono text-slate-400">
+                                Ready for Pickup
+                              </p>
+                            </div>
+                          ) : isBillReq ? (
                             <span className="rounded-full bg-rose-500 text-white px-3 py-1 text-[11px] font-black animate-pulse font-['Cinzel']">
                               BILL REQUESTED 🔔
                             </span>
@@ -419,24 +516,37 @@ export default function ManagerDashboardPage() {
                       </div>
 
                       {/* Manager Action Buttons */}
-                      <div className="grid grid-cols-2 gap-2 pt-1">
-                        <button
-                          type="button"
-                          onClick={() => handleSendBill(sess.id)}
-                          disabled={busySessionId === sess.id}
-                          className="rounded-xl bg-slate-800 hover:bg-slate-700 border border-amber-500/30 py-2.5 px-2 text-[11px] font-extrabold text-amber-300 font-['Cinzel'] transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
-                        >
-                          📄 Send Bill
-                        </button>
+                      <div className="pt-1">
+                        {data?.isCafeteria ? (
+                          <button
+                            type="button"
+                            onClick={() => handleCompleteOrder(sess.id, token)}
+                            disabled={busySessionId === sess.id}
+                            className="w-full rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 py-2.5 px-3 text-xs font-black text-slate-950 font-['Cinzel'] transition-all cursor-pointer shadow-md hover:shadow-emerald-500/20 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-1.5"
+                          >
+                            {busySessionId === sess.id ? "Completing Order..." : "✓ Complete Order"}
+                          </button>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleSendBill(sess.id)}
+                              disabled={busySessionId === sess.id}
+                              className="rounded-xl bg-slate-800 hover:bg-slate-700 border border-amber-500/30 py-2.5 px-2 text-[11px] font-extrabold text-amber-300 font-['Cinzel'] transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                            >
+                              📄 Send Bill
+                            </button>
 
-                        <button
-                          type="button"
-                          onClick={() => handleMarkPaid(sess.id, "CASH")}
-                          disabled={busySessionId === sess.id}
-                          className="rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 py-2.5 px-2 text-[11px] font-black text-slate-950 font-['Cinzel'] transition-all cursor-pointer shadow-md disabled:opacity-50 flex items-center justify-center gap-1"
-                        >
-                          💵 Cash Received
-                        </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMarkPaid(sess.id, "CASH")}
+                              disabled={busySessionId === sess.id}
+                              className="rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 py-2.5 px-2 text-[11px] font-black text-slate-950 font-['Cinzel'] transition-all cursor-pointer shadow-md disabled:opacity-50 flex items-center justify-center gap-1"
+                            >
+                              💵 Cash Received
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

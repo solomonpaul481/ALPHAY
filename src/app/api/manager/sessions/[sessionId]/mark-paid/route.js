@@ -39,14 +39,18 @@ async function POST(request, { params }) {
   });
 
   // Resolve any pending staff call requests for this table
-  await db.staffCallRequest.updateMany({
-    where: { restaurantId: manager.restaurantId, tableId: session.tableId, status: "PENDING" },
-    data: { status: "RESOLVED" },
-  });
+  if (session.tableId) {
+    await db.staffCallRequest.updateMany({
+      where: { restaurantId: manager.restaurantId, tableId: session.tableId, status: "PENDING" },
+      data: { status: "RESOLVED" },
+    });
+  }
+
+  const tableIdentifier = session.table?.number ? `Table #${session.table.number}` : "Order";
 
   return NextResponse.json({
     ok: true,
-    message: `Table ${session.table.number} session marked PAID. Active session cleared!`,
+    message: `${tableIdentifier} session marked COMPLETED & PAID. Active session cleared!`,
   });
 }
 
