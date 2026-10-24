@@ -6,11 +6,19 @@ const { getAdminSession } = require("@/lib/admin-auth");
 const { getRevenueSummary } = require("@/lib/analytics");
 const { isValidCoordinate } = require("@/lib/geolocation");
 
-async function GET() {
+async function GET(request) {
   const admin = await getAdminSession();
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
+  const { searchParams } = new URL(request.url);
+  const categoryFilter = searchParams.get("category");
+
+  const whereClause = categoryFilter
+    ? { category: categoryFilter.toUpperCase() }
+    : {};
+
   const restaurants = await db.restaurant.findMany({
+    where: whereClause,
     include: { managers: true },
     orderBy: { createdAt: "asc" },
   });
@@ -22,6 +30,8 @@ async function GET() {
       return {
         id: r.id,
         name: r.name,
+        category: r.category || "RESTAURANT",
+        subCategory: r.subCategory || null,
         latitude: r.latitude,
         longitude: r.longitude,
         geofenceRadiusMeters: r.geofenceRadiusMeters,
@@ -52,6 +62,8 @@ async function POST(request) {
   const body = await request.json().catch(() => ({}));
   const {
     name,
+    category,
+    subCategory,
     latitude,
     longitude,
     geofenceRadiusMeters,
@@ -67,7 +79,7 @@ async function POST(request) {
 
   if (!name || !isValidCoordinate(latNum, lngNum)) {
     return NextResponse.json(
-      { error: "Restaurant name and valid GPS coordinates (Latitude between -90 and 90, Longitude between -180 and 180) are required." },
+      { error: "Venue name and valid GPS coordinates (Latitude between -90 and 90, Longitude between -180 and 180) are required." },
       { status: 400 }
     );
   }
@@ -90,10 +102,14 @@ async function POST(request) {
   }
 
   const passwordHash = await bcrypt.hash(managerPassword, 10);
+  const cleanCategory = String(category || "RESTAURANT").toUpperCase() === "CAFETERIA" ? "CAFETERIA" : "RESTAURANT";
+  const cleanSubCategory = subCategory ? String(subCategory).trim().toUpperCase() : (cleanCategory === "CAFETERIA" ? "COLLEGE" : null);
 
   const restaurant = await db.restaurant.create({
     data: {
       name,
+      category: cleanCategory,
+      subCategory: cleanSubCategory,
       latitude: latNum,
       longitude: lngNum,
       geofenceRadiusMeters: radiusNum,
@@ -114,7 +130,15 @@ async function POST(request) {
 
   return NextResponse.json({
     ok: true,
-    restaurant: { id: restaurant.id, name: restaurant.name, latitude: restaurant.latitude, longitude: restaurant.longitude, geofenceRadiusMeters: restaurant.geofenceRadiusMeters },
+    restaurant: {
+      id: restaurant.id,
+      name: restaurant.name,
+      category: restaurant.category,
+      subCategory: restaurant.subCategory,
+      latitude: restaurant.latitude,
+      longitude: restaurant.longitude,
+      geofenceRadiusMeters: restaurant.geofenceRadiusMeters,
+    },
     manager: { email: restaurant.managers[0].email },
     customerUrl: appUrl(`/r/${restaurant.id}`),
     qr: {

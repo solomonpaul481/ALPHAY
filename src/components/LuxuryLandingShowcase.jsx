@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { IconArrowRight, IconBook } from "./Icons";
 
-export default function LuxuryLandingShowcase({ onProceed, restaurantName, submitting, isParcel }) {
+export default function LuxuryLandingShowcase({ onProceed, restaurantName, submitting, isParcel, isCafeteria }) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.98 }}
@@ -50,7 +50,7 @@ export default function LuxuryLandingShowcase({ onProceed, restaurantName, submi
           transition={{ duration: 0.7, delay: 0.4 }}
           className="mt-1 text-[10px] sm:text-xs font-semibold tracking-[0.35em] text-amber-400/90 uppercase font-['Cinzel']"
         >
-          {isParcel ? "📦 TAKEAWAY & PARCEL ORDERING" : "FLAVOR THAT CONNECTS"}
+          {isCafeteria ? "☕ CAFETERIA SELF-ORDERING · PAY FIRST & COLLECT" : isParcel ? "📦 TAKEAWAY & PARCEL ORDERING" : "FLAVOR THAT CONNECTS"}
         </motion.p>
       </div>
 
@@ -151,7 +151,11 @@ export default function LuxuryLandingShowcase({ onProceed, restaurantName, submi
         </button>
 
         <p className="mt-3 text-[10px] font-semibold tracking-widest text-amber-300/80 uppercase">
-          {isParcel ? "📦 Takeaway Parcel Counter · Fast Packaging & Pickup" : "Table Auto-Detected · Instant Digital Ordering"}
+          {isCafeteria
+            ? "☕ Pre-Paid Cafeteria · Pay Online & Collect at Counter with Token"
+            : isParcel
+            ? "📦 Takeaway Parcel Counter · Fast Packaging & Pickup"
+            : "Table Auto-Detected · Instant Digital Ordering"}
         </p>
       </motion.div>
     </motion.div>

@@ -12,6 +12,9 @@ async function GET(request, { params }) {
   return NextResponse.json({
     id: restaurant.id,
     name: restaurant.name,
+    category: restaurant.category || "RESTAURANT",
+    subCategory: restaurant.subCategory || null,
+    isCafeteria: restaurant.category === "CAFETERIA",
     logoUrl: restaurant.logoUrl,
     gstPercent: restaurant.gstPercent,
     latitude: restaurant.latitude,

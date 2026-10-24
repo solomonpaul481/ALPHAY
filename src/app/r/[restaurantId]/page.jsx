@@ -148,6 +148,7 @@ function LandingFormInner() {
         onProceed={handleExploreMenu}
         submitting={submitting}
         isParcel={isParcel}
+        isCafeteria={restaurant?.category === "CAFETERIA" || restaurant?.isCafeteria}
       />
     </div>
   );

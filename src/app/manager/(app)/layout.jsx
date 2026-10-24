@@ -7,6 +7,7 @@ import FullscreenButton from "@/components/FullscreenButton";
 const NAV_ITEMS = [
   { href: "/manager/dashboard", label: "Dashboard", icon: "💻" },
   { href: "/manager/orders", label: "Orders", icon: "🛎️" },
+  { href: "/manager/cafeteria", label: "Cafeteria", icon: "☕" },
   { href: "/kitchen", label: "Kitchen Display", icon: "👨‍🍳" },
   { href: "/manager/transactions", label: "Transactions", icon: "💳" },
   { href: "/manager/menu", label: "Menu Management", icon: "🍽️" },

@@ -171,8 +171,11 @@ async function POST(request, { params }) {
 
   const { createOnlinePaymentOrder } = require("@/lib/payment-gateway");
 
-  if (isParcel) {
-    // Generate unique 4-digit pickup code
+  const isCafeteria = restaurant.category === "CAFETERIA";
+  const requiresUpfrontPayment = isParcel || isCafeteria;
+
+  if (requiresUpfrontPayment) {
+    // Generate unique 4-digit pickup token
     const random4Digit = Math.floor(1000 + Math.random() * 9000);
     const orderSeq = random4Digit;
     const tokenStr = String(orderSeq);
@@ -181,6 +184,11 @@ async function POST(request, { params }) {
     const total = Math.round((subtotal + gstAmount) * 100) / 100;
 
     const isCashOrder = String(body.paymentMethod).toUpperCase() === "CASH" || body.payAtCounter === true;
+
+    const prefixTag = isCafeteria
+      ? (isParcel ? "[CAFETERIA PARCEL] " : "[CAFETERIA DINE-IN] ")
+      : "[PARCEL] ";
+    const orderNotes = specialInstructions ? `${prefixTag}${specialInstructions}` : prefixTag.trim();
 
     const order = await db.order.create({
       data: {
@@ -191,7 +199,7 @@ async function POST(request, { params }) {
         subtotal,
         gstAmount,
         total,
-        specialInstructions: specialInstructions ? `[PARCEL] ${specialInstructions}` : "[PARCEL]",
+        specialInstructions: orderNotes,
         orderSeq,
         paymentGateway: isCashOrder ? "CASH" : "RAZORPAY",
         items: { create: orderItemsData },
@@ -202,7 +210,8 @@ async function POST(request, { params }) {
     if (isCashOrder) {
       return NextResponse.json({
         ok: true,
-        isParcel: true,
+        isParcel,
+        isCafeteria,
         requiresPayment: false,
         orderId: order.id,
         orderSeq,
@@ -210,8 +219,10 @@ async function POST(request, { params }) {
         amount: total,
         currency: "INR",
         restaurantName: restaurant.name,
-        tableNumber: "PARCEL",
-        message: "Parcel order placed! Pay at counter when collecting.",
+        tableNumber: isParcel ? "PARCEL" : (session.table?.number || "1"),
+        message: isCafeteria
+          ? "Cafeteria order placed! Pay at counter when collecting."
+          : "Parcel order placed! Pay at counter when collecting.",
       });
     }
 
@@ -219,12 +230,12 @@ async function POST(request, { params }) {
     try {
       paymentOrder = await createOnlinePaymentOrder({
         amountInRupees: total,
-        receipt: `PRCL_${order.id.slice(-6)}`,
+        receipt: `${isCafeteria ? "CAF" : "PRCL"}_${order.id.slice(-6)}`,
         notes: {
           restaurantId,
           orderId: order.id,
           token: tokenStr,
-          type: "PARCEL",
+          type: isCafeteria ? (isParcel ? "CAFETERIA_PARCEL" : "CAFETERIA_DINE_IN") : "PARCEL",
         },
       });
 
@@ -233,15 +244,16 @@ async function POST(request, { params }) {
         data: { razorpayOrderId: paymentOrder.orderId },
       });
     } catch (payErr) {
-      console.error("Razorpay order creation error for parcel:", payErr);
-      // If online gateway creation fails, fallback gracefully to pay at counter so the parcel order is not lost
+      console.error("Razorpay order creation error:", payErr);
+      // Fallback gracefully so order is not lost
       await db.order.update({
         where: { id: order.id },
         data: { status: "CONFIRMED", paymentGateway: "CASH" },
       });
       return NextResponse.json({
         ok: true,
-        isParcel: true,
+        isParcel,
+        isCafeteria,
         requiresPayment: false,
         orderId: order.id,
         orderSeq,
@@ -249,14 +261,17 @@ async function POST(request, { params }) {
         amount: total,
         currency: "INR",
         restaurantName: restaurant.name,
-        tableNumber: "PARCEL",
-        message: "Order placed! Please pay at the counter when picking up.",
+        tableNumber: isParcel ? "PARCEL" : (session.table?.number || "1"),
+        message: isCafeteria
+          ? "Order placed! Please pay at the counter and collect with your token."
+          : "Order placed! Please pay at the counter when picking up.",
       });
     }
 
-    const parcelResponse = NextResponse.json({
+    const payResponse = NextResponse.json({
       ok: true,
-      isParcel: true,
+      isParcel,
+      isCafeteria,
       requiresPayment: true,
       orderId: order.id,
       orderSeq,
@@ -267,12 +282,14 @@ async function POST(request, { params }) {
       keyId: paymentOrder.keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_TUtBMqf8GaZllM",
       currency: "INR",
       restaurantName: restaurant.name,
-      tableNumber: "PARCEL",
-      message: "Please complete payment to confirm your parcel order.",
+      tableNumber: isParcel ? "PARCEL" : (session.table?.number || "1"),
+      message: isCafeteria
+        ? "Please complete payment to confirm your cafeteria order and get your pickup token."
+        : "Please complete payment to confirm your parcel order.",
     });
 
     if (sessionTokenToSet) {
-      parcelResponse.cookies.set(SESSION_COOKIE, sessionTokenToSet, {
+      payResponse.cookies.set(SESSION_COOKIE, sessionTokenToSet, {
         httpOnly: true,
         sameSite: "lax",
         secure: false,
@@ -281,7 +298,7 @@ async function POST(request, { params }) {
       });
     }
 
-    return parcelResponse;
+    return payResponse;
   }
 
   // DINE-IN FLOW: Orders are confirmed immediately and paid after the meal

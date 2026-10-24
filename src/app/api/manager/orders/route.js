@@ -71,6 +71,7 @@ async function GET(request) {
       razorpayPaymentId: o.razorpayPaymentId,
       paymentMethod: o.session ? o.session.paymentMethod || "CASH" : "ONLINE",
       paymentStatus: o.status === "PENDING_PAYMENT" ? "UNPAID" : "PAID",
+      isCafeteria: Boolean(manager.restaurant?.category === "CAFETERIA" || o.specialInstructions?.includes("[CAFETERIA")),
       items: o.items.map((i) => ({
         id: i.id,
         name: i.name,
@@ -84,6 +85,9 @@ async function GET(request) {
   return NextResponse.json({
     range,
     count: formattedOrders.length,
+    restaurantCategory: manager.restaurant?.category || "RESTAURANT",
+    restaurantSubCategory: manager.restaurant?.subCategory || null,
+    isCafeteria: manager.restaurant?.category === "CAFETERIA",
     orders: formattedOrders,
   });
 }

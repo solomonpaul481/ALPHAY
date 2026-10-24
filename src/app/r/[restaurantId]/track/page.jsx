@@ -299,7 +299,11 @@ function SessionTrackContent() {
             <h1 className="text-lg font-black font-['Cinzel'] tracking-wider text-amber-200">
               {sessionData?.restaurantName || "ALPHAY"}
             </h1>
-            {isParcel ? (
+            {sessionData?.isCafeteria ? (
+              <span className="inline-block rounded-md bg-gradient-to-r from-amber-500 to-amber-600 px-3 py-1 text-xs font-black text-slate-950 font-['Cinzel'] tracking-wider shadow-sm">
+                ☕ CAFETERIA · TOKEN #{sessionData?.pickupToken || sessionData?.orders?.[0]?.token || "1024"}
+              </span>
+            ) : isParcel ? (
               <span className="inline-block rounded-md bg-gradient-to-r from-amber-500 to-amber-600 px-3 py-1 text-xs font-black text-slate-950 font-['Cinzel'] tracking-wider shadow-sm">
                 📦 TAKEAWAY / PARCEL
               </span>
@@ -315,22 +319,24 @@ function SessionTrackContent() {
             onClick={() => router.push(`/r/${restaurantId}/menu${isParcel ? "?type=parcel&table=PARCEL" : ""}`)}
             className="flex items-center gap-1.5 rounded-2xl bg-amber-500/15 border border-amber-500/30 px-3 py-2 text-xs font-extrabold text-amber-400 hover:bg-amber-500/30 transition-all cursor-pointer font-['Cinzel']"
           >
-            <span>➕</span> {isParcel ? "Add Items" : "Continue"}
+            <span>➕</span> {sessionData?.isCafeteria ? "Order More" : isParcel ? "Add Items" : "Continue"}
           </button>
         </div>
 
-        {/* 4-DIGIT PARCEL PICKUP TOKEN CARD IF PARCEL */}
-        {sessionData?.isParcel && (
+        {/* 4-DIGIT PICKUP TOKEN CARD (CAFETERIA OR PARCEL) */}
+        {(sessionData?.isParcel || sessionData?.isCafeteria) && (
           <div className="mb-6 rounded-3xl bg-slate-900 border-2 border-amber-400 p-5 text-center shadow-2xl space-y-2 relative overflow-hidden">
             <div className="absolute right-0 top-0 -mr-6 -mt-6 h-20 w-20 rounded-full bg-amber-500/20 blur-xl" />
             <p className="text-[10px] font-black uppercase tracking-widest text-amber-400 font-['Cinzel']">
-              Your Parcel Pickup Token
+              {sessionData?.isCafeteria ? "Your Cafeteria Pickup Token" : "Your Parcel Pickup Token"}
             </p>
             <div className="font-mono text-4xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-100 tracking-wider">
               #{sessionData?.pickupToken || sessionData?.orders?.[0]?.token || "1024"}
             </div>
             <p className="text-xs text-slate-300 font-medium pt-1">
-              Please quote this 4-digit number at the Parcel Counter to collect your packed order.
+              {sessionData?.isCafeteria
+                ? "Your order is paid! Show this token at the cafeteria counter to collect your food when called."
+                : "Please quote this 4-digit number at the Parcel Counter to collect your packed order."}
             </p>
           </div>
         )}
@@ -340,7 +346,7 @@ function SessionTrackContent() {
           <div className="absolute -right-6 -top-6 h-28 w-28 rounded-full bg-amber-500/10 blur-2xl pointer-events-none" />
           <div className="absolute -left-6 -bottom-6 h-28 w-28 rounded-full bg-emerald-500/10 blur-2xl pointer-events-none" />
 
-          {isBillSent && !sessionData?.isParcel ? (
+          {isBillSent && !sessionData?.isParcel && !sessionData?.isCafeteria ? (
             <div className="space-y-3">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 text-2xl shadow-lg animate-bounce">
                 🧾
@@ -357,7 +363,7 @@ function SessionTrackContent() {
                 </p>
               </div>
             </div>
-          ) : isBillRequested && !sessionData?.isParcel ? (
+          ) : isBillRequested && !sessionData?.isParcel && !sessionData?.isCafeteria ? (
             <div className="space-y-3">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 text-2xl shadow-lg animate-pulse">
                 ⏳
@@ -371,6 +377,24 @@ function SessionTrackContent() {
                 </h2>
                 <p className="mt-1 text-xs text-slate-300">
                   Manager has been notified to review and dispatch your table bill.
+                </p>
+              </div>
+            </div>
+          ) : sessionData?.isCafeteria ? (
+            <div className="space-y-4">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 text-2xl shadow-lg shadow-amber-500/15 animate-pulse">
+                ☕
+              </div>
+              <div>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-950/80 px-3.5 py-1 text-[11px] font-black uppercase tracking-widest text-emerald-400 border border-emerald-500/40 font-['Cinzel'] shadow-sm">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+                  Pre-Paid Order In Preparation
+                </span>
+                <h2 className="text-2xl font-black text-white font-['Cinzel'] tracking-wider mt-2">
+                  Preparing Your Cafeteria Order
+                </h2>
+                <p className="mt-1.5 text-xs text-slate-300 max-w-sm mx-auto">
+                  Your payment is verified. When your token <strong>#{sessionData?.pickupToken || "1024"}</strong> is called, please collect your order at the counter.
                 </p>
               </div>
             </div>
@@ -589,7 +613,15 @@ function SessionTrackContent() {
         {/* BOTTOM ACTION BUTTONS */}
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-amber-500/20 bg-slate-900/95 px-4 py-4 backdrop-blur-md">
           <div className="mx-auto max-w-lg flex gap-3">
-            {sessionData?.isParcel ? (
+            {sessionData?.isCafeteria ? (
+              <button
+                type="button"
+                onClick={() => router.push(`/r/${restaurantId}/menu`)}
+                className="w-full rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-4 text-xs font-black text-slate-950 shadow-lg font-['Cinzel'] tracking-wider cursor-pointer transition-all active:scale-[0.98]"
+              >
+                ☕ Order More Items (Pre-Paid)
+              </button>
+            ) : sessionData?.isParcel ? (
               <button
                 type="button"
                 onClick={() => router.push(`/r/${restaurantId}/menu?type=parcel&table=PARCEL`)}

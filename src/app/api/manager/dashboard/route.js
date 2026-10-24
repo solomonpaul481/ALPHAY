@@ -215,6 +215,9 @@ async function GET() {
     return NextResponse.json({
       restaurantId: restaurant.id,
       restaurantName: restaurant.name,
+      category: restaurant.category || "RESTAURANT",
+      subCategory: restaurant.subCategory || null,
+      isCafeteria: restaurant.category === "CAFETERIA",
       managerName: manager.name,
       managerEmail: manager.email,
       geofenceRadiusMeters: restaurant.geofenceRadiusMeters ?? 150,

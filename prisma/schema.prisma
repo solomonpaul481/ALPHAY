@@ -27,6 +27,8 @@ enum BillingStatus {
 model Restaurant {
   id                   String   @id @default(cuid())
   name                 String
+  category             String   @default("RESTAURANT") // RESTAURANT | CAFETERIA
+  subCategory          String?  // COLLEGE, ROADSIDE, OFFICE, GENERAL
   logoUrl              String?
   latitude             Float
   longitude            Float

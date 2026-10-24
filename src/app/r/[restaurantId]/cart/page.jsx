@@ -50,6 +50,7 @@ function CartContent() {
   const [gstPercent, setGstPercent] = useState(5);
   const [restaurantName, setRestaurantName] = useState("");
   const [isParcel, setIsParcel] = useState(isParcelFromUrl);
+  const [isCafeteria, setIsCafeteria] = useState(false);
   const [parcelToken, setParcelToken] = useState(null);
 
   useEffect(() => {
@@ -59,15 +60,21 @@ function CartContent() {
       .then((info) => {
         setGstPercent(info.gstPercent ?? 5);
         setRestaurantName(info.name ?? "");
+        if (info.category === "CAFETERIA" || info.isCafeteria) {
+          setIsCafeteria(true);
+        }
       })
       .catch(() => {});
 
-    // Check if customer is on a Parcel Takeaway session
+    // Check if customer is on a Parcel Takeaway or Cafeteria session
     fetch(`/api/r/${restaurantId}/session/active`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data) {
           setIsParcel(Boolean(data.isParcel || isParcelFromUrl));
+          if (data.isCafeteria || data.restaurantCategory === "CAFETERIA") {
+            setIsCafeteria(true);
+          }
           if (data.pickupToken) setParcelToken(data.pickupToken);
         }
       })
@@ -121,9 +128,12 @@ function CartContent() {
       if (res.token || res.orderSeq) {
         setParcelToken(res.token || String(res.orderSeq));
       }
+      if (res.isCafeteria) {
+        setIsCafeteria(true);
+      }
 
-      // If this is a Parcel Order, launch Razorpay upfront
-      if (res.isParcel && res.requiresPayment) {
+      // If this order requires upfront payment (Any Cafeteria order or Parcel Takeaway)
+      if (res.requiresPayment) {
         const isLoaded = await loadRazorpayScript();
         if (!isLoaded || typeof window === "undefined" || !window.Razorpay) {
           throw new Error("Could not load Razorpay SDK. Please check internet connection.");
@@ -134,7 +144,9 @@ function CartContent() {
           amount: res.amountInPaise || Math.round(res.amount * 100),
           currency: res.currency || "INR",
           name: res.restaurantName || "ALPHAY",
-          description: `Parcel Pickup Token #${res.token || res.orderSeq}`,
+          description: res.isCafeteria
+            ? `Cafeteria Token #${res.token || res.orderSeq}`
+            : `Parcel Pickup Token #${res.token || res.orderSeq}`,
           order_id: res.razorpayOrderId,
           theme: { color: "#F59E0B" },
           handler: async function (payResponse) {
@@ -179,7 +191,7 @@ function CartContent() {
         return;
       }
 
-      // Dine-in Immediate Confirmation
+      // Dine-in Immediate Confirmation (Only for standard Restaurant where pay-later is enabled)
       setOrderSuccess(true);
       setSubmitting(false);
       clearCart();
@@ -194,41 +206,50 @@ function CartContent() {
   };
 
   if (orderSuccess) {
+    const isTokenPickup = isParcel || isCafeteria;
     return (
       <main className="flex min-h-screen flex-col items-center justify-center bg-slate-950 px-4 py-8 text-white relative overflow-hidden">
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 h-72 w-72 rounded-full bg-amber-500/15 blur-3xl pointer-events-none animate-pulse" />
 
         <div className="w-full max-w-md rounded-3xl bg-slate-900 border border-amber-500/40 p-7 text-center shadow-2xl relative z-10 space-y-6">
           <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-amber-500/20 text-amber-400 border border-amber-500/40 text-4xl shadow-lg animate-bounce">
-            {isParcel ? "📦" : "👨‍🍳"}
+            {isCafeteria ? "☕" : isParcel ? "📦" : "👨‍🍳"}
           </div>
 
           <div>
             <span className="inline-block rounded-full bg-emerald-950/80 px-3.5 py-1 text-xs font-black uppercase tracking-widest text-emerald-400 border border-emerald-500/40 font-['Cinzel']">
-              {isParcel ? "Payment Verified ✓ Order Confirmed" : "Order Placed ✓"}
+              {isTokenPickup ? "Payment Verified ✓ Order Confirmed" : "Order Placed ✓"}
             </span>
             <h1 className="mt-3 text-2xl font-extrabold text-white font-['Cinzel'] tracking-wider">
-              {isParcel ? "Parcel Order Confirmed!" : "Order Sent to Kitchen!"}
+              {isCafeteria
+                ? "Cafeteria Order Confirmed & Paid!"
+                : isParcel
+                ? "Parcel Order Confirmed!"
+                : "Order Sent to Kitchen!"}
             </h1>
             <p className="mt-2 text-xs font-medium text-slate-300">
-              {isParcel
+              {isCafeteria
+                ? "Your payment is verified. Present your pickup token at the counter to collect your order."
+                : isParcel
                 ? "Your payment is verified. The kitchen has begun packing your order."
                 : "Your delicious items have been placed and the kitchen team is preparing them now."}
             </p>
           </div>
 
-          {/* 4-DIGIT PARCEL PICKUP TOKEN DISPLAY */}
-          {isParcel && (
+          {/* TOKEN DISPLAY (BOTH CAFETERIA & PARCEL) */}
+          {isTokenPickup && (
             <div className="rounded-3xl bg-slate-950/90 border-2 border-amber-400 p-5 shadow-2xl space-y-2 text-center relative overflow-hidden">
               <div className="absolute right-0 top-0 -mr-4 -mt-4 h-16 w-16 rounded-full bg-amber-500/20 blur-lg" />
               <p className="text-[11px] font-black uppercase tracking-widest text-amber-400 font-['Cinzel']">
-                Your 4-Digit Pickup Token
+                {isCafeteria ? "Your Cafeteria Pickup Token" : "Your 4-Digit Pickup Token"}
               </p>
               <div className="font-mono text-4xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-100 tracking-wider">
                 #{parcelToken || "1024"}
               </div>
               <p className="text-[11px] text-slate-400 font-medium pt-1">
-                Show this 4-digit number at the Parcel Counter to collect your packaged food.
+                {isCafeteria
+                  ? "Show this token at the collection counter when your number is called."
+                  : "Show this 4-digit number at the Parcel Counter to collect your packaged food."}
               </p>
             </div>
           )}
@@ -239,7 +260,7 @@ function CartContent() {
               onClick={() => router.push(`/r/${restaurantId}/track${isParcel ? "?type=parcel&table=PARCEL" : ""}`)}
               className="w-full rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-4 text-xs font-extrabold text-slate-950 shadow-lg shadow-amber-500/25 font-['Cinzel'] tracking-wider cursor-pointer transition-all active:scale-[0.98]"
             >
-              📋 {isParcel ? "Track Parcel Preparation Status" : "View Order Status & Bill"}
+              📋 {isTokenPickup ? "Track Preparation & Token Status" : "View Order Status & Bill"}
             </button>
 
             <button
@@ -381,11 +402,15 @@ function CartContent() {
             </span>
           </div>
 
-          {isParcel && (
+          {isCafeteria ? (
+            <p className="mt-3 rounded-xl bg-amber-500/10 border border-amber-500/20 p-2.5 text-[11px] text-amber-300 font-medium">
+              ☕ <strong>Pay-First Cafeteria:</strong> In this cafeteria, all orders (both dine-in and parcel) must be paid first before food is prepared. Payment confirms your order and generates your collection token.
+            </p>
+          ) : isParcel ? (
             <p className="mt-3 rounded-xl bg-amber-500/10 border border-amber-500/20 p-2.5 text-[11px] text-amber-300 font-medium">
               💳 <strong>Pay-First Parcel:</strong> Instant online payment via Razorpay confirms your order and generates your individual 4-digit pickup token.
             </p>
-          )}
+          ) : null}
         </section>
 
         {error && (
@@ -407,6 +432,8 @@ function CartContent() {
             <span>
               {submitting
                 ? "Processing..."
+                : isCafeteria
+                ? "💳 Pay & Get Pickup Token"
                 : isParcel
                 ? "💳 Pay & Confirm Parcel Order"
                 : "Place Order & Send to Kitchen"}

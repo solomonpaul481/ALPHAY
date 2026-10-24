@@ -96,6 +96,14 @@ function ManagerProfileModal({ data, onClose }) {
               <span className="font-bold text-slate-900 dark:text-white">{data.restaurantName}</span>
             </div>
             <div className="flex justify-between">
+              <span className="text-slate-500 font-sans">Category:</span>
+              <span className="font-bold text-amber-600 dark:text-amber-400">
+                {data.isCafeteria || data.category === "CAFETERIA"
+                  ? `☕ CAFETERIA (${data.subCategory || "COLLEGE"})`
+                  : "🏬 RESTAURANT"}
+              </span>
+            </div>
+            <div className="flex justify-between">
               <span className="text-slate-500 font-sans">Venue ID:</span>
               <span className="font-bold text-indigo-600 dark:text-indigo-400">#{data.restaurantId?.slice(-6).toUpperCase()}</span>
             </div>

@@ -6,6 +6,8 @@ import { IconBuilding, IconPlus, IconSettings, IconLogout } from "@/components/I
 
 const EMPTY_FORM = {
   name: "",
+  category: "RESTAURANT",
+  subCategory: "COLLEGE",
   latitude: "",
   longitude: "",
   geofenceRadiusMeters: "150",
@@ -129,12 +131,60 @@ function AddRestaurantPanel({ onCreated, onClose }) {
 
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
-          <label className="text-xs font-bold uppercase text-ink2">Restaurant Venue Name</label>
+          <label className="text-xs font-bold uppercase text-ink2">Venue Category</label>
+          <div className="mt-1.5 grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setForm({ ...form, category: "RESTAURANT" })}
+              className={`p-3 rounded-2xl text-left border transition-all cursor-pointer ${
+                form.category === "RESTAURANT"
+                  ? "bg-purple-50 border-purple text-purple ring-1 ring-purple font-bold"
+                  : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300"
+              }`}
+            >
+              <p className="text-xs">🏬 Restaurant</p>
+              <p className="text-[10px] text-ink2 mt-0.5">Dine-in post-meal pay & parcel</p>
+            </button>
+            <button
+              type="button"
+              onClick={() => setForm({ ...form, category: "CAFETERIA" })}
+              className={`p-3 rounded-2xl text-left border transition-all cursor-pointer ${
+                form.category === "CAFETERIA"
+                  ? "bg-amber-500/15 border-amber-500 text-amber-700 dark:text-amber-300 ring-1 ring-amber-500 font-bold"
+                  : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300"
+              }`}
+            >
+              <p className="text-xs">☕ Cafeteria</p>
+              <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">Pay-first & token pickup</p>
+            </button>
+          </div>
+        </div>
+
+        {form.category === "CAFETERIA" && (
+          <div className="sm:col-span-2">
+            <label className="text-xs font-bold uppercase text-amber-600 dark:text-amber-400">Cafeteria Type</label>
+            <select
+              value={form.subCategory}
+              onChange={(e) => setForm({ ...form, subCategory: e.target.value })}
+              className="mt-1.5 w-full rounded-2xl border border-amber-500/30 bg-amber-50/50 dark:bg-slate-950 px-4 py-3 text-xs font-bold text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none"
+            >
+              <option value="COLLEGE">🎓 College / University Cafeteria</option>
+              <option value="ROADSIDE">🛣️ Roadside / Highway Cafeteria</option>
+              <option value="OFFICE">🏢 Office / Tech Park Cafeteria</option>
+              <option value="FOOD_COURT">🍽️ Food Court / Self-Service Canteen</option>
+            </select>
+          </div>
+        )}
+
+        <div className="sm:col-span-2">
+          <label className="text-xs font-bold uppercase text-ink2">
+            {form.category === "CAFETERIA" ? "Cafeteria Name" : "Restaurant Venue Name"}
+          </label>
           <input
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             className="mt-1.5 w-full rounded-2xl border border-purple/20 bg-purple-50/40 px-4 py-3 text-xs font-bold text-ink focus:border-purple focus:outline-none"
-            placeholder="e.g. Sapphire Fine Dining"
+            placeholder={form.category === "CAFETERIA" ? "e.g. Oxford Engineering College Cafeteria" : "e.g. Sapphire Fine Dining"}
           />
         </div>
 
@@ -793,6 +843,7 @@ function RestaurantDetailsModal({ restaurant, onClose, onLaunch, onUpdated, onTo
 
 export default function AdminRestaurantsPage() {
   const [restaurants, setRestaurants] = useState(null);
+  const [categoryFilter, setCategoryFilter] = useState("ALL"); // ALL | RESTAURANT | CAFETERIA
   const [busyId, setBusyId] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [viewingDetailsRestaurant, setViewingDetailsRestaurant] = useState(null);
@@ -815,7 +866,11 @@ export default function AdminRestaurantsPage() {
         alert(data.error || "Couldn't open Manager Portal.");
         return;
       }
-      window.open("/manager/orders", "_blank");
+      if (r.category === "CAFETERIA") {
+        window.open("/manager/cafeteria", "_blank");
+      } else {
+        window.open("/manager/orders", "_blank");
+      }
     } finally {
       setBusyId(null);
     }
@@ -833,6 +888,17 @@ export default function AdminRestaurantsPage() {
     }
   };
 
+  const filteredRestaurants = restaurants
+    ? restaurants.filter((r) => {
+        if (categoryFilter === "RESTAURANT") return (r.category || "RESTAURANT") === "RESTAURANT";
+        if (categoryFilter === "CAFETERIA") return r.category === "CAFETERIA";
+        return true;
+      })
+    : null;
+
+  const restaurantCount = restaurants ? restaurants.filter((r) => (r.category || "RESTAURANT") === "RESTAURANT").length : 0;
+  const cafeteriaCount = restaurants ? restaurants.filter((r) => r.category === "CAFETERIA").length : 0;
+
   return (
     <>
       <Topbar
@@ -845,7 +911,7 @@ export default function AdminRestaurantsPage() {
               className="flex items-center gap-2 rounded-2xl bg-purple px-4 py-2.5 text-xs font-bold text-white shadow-soft hover:bg-purple-deep transition-all cursor-pointer"
             >
               <IconPlus className="h-4 w-4" />
-              <span>Add Restaurant</span>
+              <span>Add Venue</span>
             </button>
           )
         }
@@ -855,12 +921,49 @@ export default function AdminRestaurantsPage() {
           <AddRestaurantPanel onCreated={load} onClose={() => setShowAddForm(false)} />
         )}
 
+        {/* CATEGORY FILTER TABS */}
+        <div className="flex flex-wrap items-center gap-2 bg-white dark:bg-slate-900 p-2 rounded-2xl shadow-sm border border-amber-500/20">
+          <button
+            type="button"
+            onClick={() => setCategoryFilter("ALL")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              categoryFilter === "ALL"
+                ? "bg-purple text-white shadow-sm"
+                : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+            }`}
+          >
+            All Venues ({restaurants ? restaurants.length : 0})
+          </button>
+          <button
+            type="button"
+            onClick={() => setCategoryFilter("RESTAURANT")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              categoryFilter === "RESTAURANT"
+                ? "bg-purple text-white shadow-sm"
+                : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+            }`}
+          >
+            🏬 Restaurants ({restaurantCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => setCategoryFilter("CAFETERIA")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              categoryFilter === "CAFETERIA"
+                ? "bg-amber-500 text-slate-950 font-black shadow-sm font-['Cinzel']"
+                : "text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-slate-800"
+            }`}
+          >
+            ☕ Cafeterias ({cafeteriaCount})
+          </button>
+        </div>
+
         <div className="overflow-x-auto rounded-3xl bg-white dark:bg-slate-900 shadow-xl border border-amber-500/30">
           <table className="w-full text-left font-mono text-xs">
             <thead>
               <tr className="border-b border-amber-500/20 bg-amber-50/80 dark:bg-slate-950/80 font-['Cinzel'] text-[11px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400">
                 <th className="px-5 py-4">Venue ID</th>
-                <th className="px-5 py-4">Venue Name</th>
+                <th className="px-5 py-4">Venue Name & Category</th>
                 <th className="px-5 py-4">Manager Credentials</th>
                 <th className="px-5 py-4">GPS Location</th>
                 <th className="px-5 py-4">Status</th>
@@ -868,17 +971,38 @@ export default function AdminRestaurantsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-amber-100 dark:divide-slate-800 font-semibold text-slate-900 dark:text-white">
-              {restaurants === null ? (
+              {filteredRestaurants === null ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-8 text-center text-xs font-bold text-slate-500 dark:text-slate-400">
                     Loading venues...
                   </td>
                 </tr>
+              ) : filteredRestaurants.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-xs font-bold text-slate-500 dark:text-slate-400 font-['Cinzel']">
+                    No venues found in this category.
+                  </td>
+                </tr>
               ) : (
-                restaurants.map((r) => (
+                filteredRestaurants.map((r) => (
                   <tr key={r.id} className="hover:bg-amber-50/40 dark:hover:bg-slate-950/40 transition-colors">
                     <td className="px-5 py-4 font-bold text-amber-600 dark:text-amber-300">#{r.id.slice(-6).toUpperCase()}</td>
-                    <td className="px-5 py-4 font-bold text-slate-900 dark:text-white">{r.name}</td>
+                    <td className="px-5 py-4">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-slate-900 dark:text-white">{r.name}</span>
+                        <div className="mt-1 flex items-center gap-1.5">
+                          {r.category === "CAFETERIA" ? (
+                            <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                              ☕ {r.subCategory || "COLLEGE"} CAFETERIA
+                            </span>
+                          ) : (
+                            <span className="rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-purple border border-purple/20">
+                              🏬 RESTAURANT
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
                     <td className="px-5 py-4 font-sans text-xs">
                       <div className="rounded-xl bg-amber-50 dark:bg-slate-950 p-2 border border-amber-500/20 space-y-0.5">
                         <p className="font-bold text-slate-900 dark:text-white">📧 {r.managerEmail}</p>

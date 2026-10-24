@@ -15,6 +15,8 @@ async function PATCH(request, { params }) {
   const body = await request.json().catch(() => ({}));
   const {
     name,
+    category,
+    subCategory,
     latitude,
     longitude,
     geofenceRadiusMeters,
@@ -104,16 +106,25 @@ async function PATCH(request, { params }) {
     });
   }
 
+  const updateData = {
+    name: cleanName,
+    latitude: latNum,
+    longitude: lngNum,
+    geofenceRadiusMeters: radiusNum,
+    gstPercent: isNaN(gstNum) ? restaurant.gstPercent : gstNum,
+    commissionPercent: isNaN(commissionNum) ? restaurant.commissionPercent : commissionNum,
+  };
+
+  if (category) {
+    updateData.category = String(category).toUpperCase() === "CAFETERIA" ? "CAFETERIA" : "RESTAURANT";
+  }
+  if (subCategory !== undefined) {
+    updateData.subCategory = subCategory ? String(subCategory).trim().toUpperCase() : null;
+  }
+
   const updated = await db.restaurant.update({
     where: { id },
-    data: {
-      name: cleanName,
-      latitude: latNum,
-      longitude: lngNum,
-      geofenceRadiusMeters: radiusNum,
-      gstPercent: isNaN(gstNum) ? restaurant.gstPercent : gstNum,
-      commissionPercent: isNaN(commissionNum) ? restaurant.commissionPercent : commissionNum,
-    },
+    data: updateData,
   });
 
   return NextResponse.json({
